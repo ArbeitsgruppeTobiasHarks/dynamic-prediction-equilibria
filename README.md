@@ -10,5 +10,5 @@ To start working with the predictor:
 To start the import procedure from a simulated matsim scenario,
 use the following command inside the activated pipenv:
 ```sh
-python predictor/src/importer/matsim_importer path/to/matsim/output
+python predictor/src/main.py import path/to/matsim/output
 ```
