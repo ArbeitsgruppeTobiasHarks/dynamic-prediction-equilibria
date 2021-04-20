@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 matsim-tools = "*"
+click = "*"
 
 [dev-packages]
 

@@ -2,14 +2,13 @@
 
 ## Predictor
 To start working with the predictor:
-* Install Python 3.8
-* Create a new python virtualenv:
-`python -m venv venv`
-* Activate the virtualenv
-* Run `pip install -r requirements.txt`
+* Install Python 3.8 (if not already)
+* Install pipenv (if not already) `python3 -m pip install --user pipenv`
+* Run `pipenv install`
 
 ### Import from Matsim
-To start the import procedure from a simulated matsim scenario, use the following command:
+To start the import procedure from a simulated matsim scenario,
+use the following command inside the activated pipenv:
 ```sh
-python 
+python predictor/src/importer/matsim_importer path/to/matsim/output
 ```
