@@ -9,18 +9,13 @@ def import_from_matsim(output_folder_path):
     print("Reading network... This may take a while.")
     net = matsim.read_network(join(output_folder_path, net_file))
     print("Successfully read network ({0} nodes, {1} links)".format(len(net.nodes), len(net.links)))
-    events_file = [f for f in files if f.endswith("output_events.xml")][0]
-    events_reader = matsim.event_reader(join(output_folder_path, events_file), types=['linkEnter', 'linkLeave'])
+    events_file = [f for f in files if f.endswith("output_events.xml.gz")][0]
+    events_reader = matsim.event_reader(join(output_folder_path, events_file), types='left link,entered link')
 
-    def handle_event(event):
-        print(event)
-
-    first_event = next(events_reader)
-    first_time = first_event.time
-    last_time = first_time + 10
-    handle_event(first_event)
+    first_time = 0
+    last_time = first_time + 1000
 
     for event in events_reader:
-        if event.time > last_time:
+        if event["time"] > last_time:
             break
-        handle_event(event)
+        print(event)

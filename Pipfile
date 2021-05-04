@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 matsim-tools = "*"
 click = "*"
+cython = "*"
 
 [dev-packages]
 
