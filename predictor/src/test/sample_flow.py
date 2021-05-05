@@ -18,15 +18,15 @@ class TestPartialDynamicFlow(unittest.TestCase):
 
         self.assertTrue(np.array_equal(flow.queues[0], np.zeros(m)), "Queues don't match at time 0!")
 
-        time1 = flow.extend(np.array([2, 1, 0, 0, 0]), float('inf'), None)
+        time1 = flow.extend(np.array([2, 1, 0, 0, 0]), float('inf'))
         self.assertEqual(time1, 1.)
         self.assertTrue(np.array_equal(flow.queues[1], np.zeros(m)), f"Queues don't match at time {time1}!")
-        self.assertEqual(nsmallest(2, flow.change_events), [1., 3.])
+        self.assertEqual(nsmallest(2, flow.change_events), [3.])
 
-        flow.extend(np.array([0, 0, 2, 0, 4]), float('inf'), None)
+        flow.extend(np.array([0, 0, 2, 0, 4]), float('inf'))
         self.assertTrue(np.array_equal(flow.queues[2], np.array([0, 0, 0, 0, 3])))
 
-        flow.extend(np.array([0, 0, 0, 1, 1]), float('inf'), None)
+        flow.extend(np.array([0, 0, 0, 1, 1]), float('inf'))
         self.assertTrue(np.array_equal(flow.queues[3], np.array([0, 0, 0, 0, 3])))
 
 
