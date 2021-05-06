@@ -1,9 +1,12 @@
-from heapq import heappush, heappop
+from __future__ import annotations
+
+from dataclasses import dataclass
 from typing import List, Dict
 
 import numpy as np
 
 from core.network import Network
+from utilities.queues import PriorityQueue
 
 
 class PartialDynamicFlow:
@@ -12,10 +15,11 @@ class PartialDynamicFlow:
     """
 
     # We use List for fast extensions
-    times: List[float]  #
+    times: List[float]
     inflow: List[np.ndarray]  # inflow[k][e] is the constant value of fₑ⁺ on [times[k], times[k+1])
+    curr_outflow: np.ndarray  # outflow[e] is the constant value of fₑ⁻ starting from times[-1]
     queues: List[np.ndarray]  # queue[k][e] is the queue length at e at time times[k]
-    change_events: List[float]  # A heapq priority queue with times where some edge outflow changes
+    change_events: PriorityQueue[OutflowChangeEvent]  # A priority queue with times where some edge outflow changes
 
     __network: Network
 
@@ -24,7 +28,8 @@ class PartialDynamicFlow:
         self.times = [0.]
         self.inflow = []
         self.queues = [np.zeros(len(network.graph.edges))]
-        self.change_events = []
+        self.curr_outflow = np.zeros(len(network.graph.edges))
+        self.change_events = PriorityQueue()
 
     def extend(self, new_inflow: np.ndarray, max_extension_length: float) -> float:
         """
@@ -39,48 +44,59 @@ class PartialDynamicFlow:
         travel_time = self.__network.travel_time
 
         # determine how long we can extend without changing any edge outflow
+        queue_depletion_events: List[QueueDepletionEvent] = []
         for e in range(m):
             if self.queues[-1][e] > 0:
                 if new_inflow[e] < capacity[e]:
-                    heappush(
-                        self.change_events,
-                        phi + travel_time[e] + self.queues[-1][e] / (capacity[e] - new_inflow[e])
-                    )
+                    depletion_time = phi + self.queues[-1][e] / (capacity[e] - new_inflow[e])
+                    queue_depletion_events.append(QueueDepletionEvent(
+                        edge=e, change_time=depletion_time + travel_time[e], depletion_time=depletion_time
+                    ))
             elif self.queues[-1][e] == 0 and new_inflow[e] != (0 if phi == 0 else self.inflow[-1][e]):
-                heappush(self.change_events, phi + travel_time[e])
+                event = OutflowChangeEvent(e, phi + travel_time[e], new_outflow=min(capacity[e], new_inflow[e]))
+                self.change_events.push(event)
 
-        first_event = min(self.change_events, default=float('inf'))
-        eps = min(first_event - phi, max_extension_length)
-        if eps < max_extension_length:
-            while min(self.change_events, default=float('inf')) <= first_event:
-                heappop(self.change_events)
+        first_change_time = min(
+            min((event.change_time for event in queue_depletion_events), default=float('inf')),
+            self.change_events.min_time()
+        )
+
+        # Finally: The actual extension length
+        eps = min(first_change_time - phi, max_extension_length)
+        new_phi = phi + eps
+        for depl_ev in queue_depletion_events:
+            if depl_ev.depletion_time <= new_phi:
+                self.change_events.push(OutflowChangeEvent(depl_ev.edge, depl_ev.change_time, new_inflow[depl_ev.edge]))
+
+        while self.change_events.min_time() <= new_phi:
+            event = self.change_events.pop()
+            self.curr_outflow[event.edge] = event.new_outflow
 
         self.inflow.append(new_inflow)
         # qₑ(θ + ε) = max{ 0, qₑ(θ) + ε(fₑ⁺ - νₑ) }
         self.queues.append(np.maximum(0, self.queues[-1] + eps * (new_inflow - capacity)))
-        self.times.append(phi + eps)
+        self.times.append(new_phi)
 
-        return phi + eps
-
-    def current_outflow(self) -> np.ndarray:
-        t = len(self.inflow)
-        m = len(self.__network.graph.edges)
-        tau = self.__network.travel_time
-
-        queue_on_entry: np.ndarray = np.asarray([
-            tau[e] > t or self.queues[t - tau[e]][1] > 0 for e in range(m)
-        ])
-        inflow_on_entry: np.ndarray = np.asarray([
-            self.inflow[t - tau[e]] if tau[e] > t else 0 for e in range(m)
-        ])
-
-        return np.where(queue_on_entry, self.__network.capacity, inflow_on_entry)
+        return new_phi
 
     def verify_balance(self, new_inflow: np.ndarray, verify_balance: Dict[int, float]):
-        current_outflow = self.current_outflow()
         for (node_id, balance) in verify_balance:
             assert node_id in self.__network.graph.nodes.keys(), f"Could not find node#{node_id}"
             node = self.__network.graph.nodes[node_id]
-            node_inflow = sum(current_outflow[e.id] for e in node.incoming_edges)
+            node_inflow = sum(self.curr_outflow[e.id] for e in node.incoming_edges)
             node_outflow = sum(new_inflow[e.id] for e in node.outgoing_edges)
             assert balance == node_inflow - node_outflow, f"Balance for node#{node_id} does not match"
+
+
+@dataclass
+class OutflowChangeEvent:
+    edge: int
+    time: float
+    new_outflow: float
+
+
+@dataclass
+class QueueDepletionEvent:
+    edge: int
+    change_time: float
+    depletion_time: float
