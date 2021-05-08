@@ -7,6 +7,7 @@ name = "pypi"
 matsim-tools = "*"
 click = "*"
 pylint = "*"
+matplotlib = "*"
 
 [dev-packages]
 

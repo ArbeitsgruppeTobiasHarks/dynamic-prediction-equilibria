@@ -6,7 +6,7 @@ from typing import List, Dict
 import numpy as np
 
 from core.network import Network
-from utilities.queues import PriorityQueue
+from utilities.queues import PriorityQueue, PriorityItem
 
 
 class PartialDynamicFlow:
@@ -54,7 +54,7 @@ class PartialDynamicFlow:
                     ))
             elif self.queues[-1][e] == 0 and new_inflow[e] != (0 if phi == 0 else self.inflow[-1][e]):
                 event = OutflowChangeEvent(e, phi + travel_time[e], new_outflow=min(capacity[e], new_inflow[e]))
-                self.change_events.push(event)
+                self.change_events.push(PriorityItem(event.time, event))
 
         first_change_time = min(
             min((event.change_time for event in queue_depletion_events), default=float('inf')),
@@ -66,7 +66,10 @@ class PartialDynamicFlow:
         new_phi = phi + eps
         for depl_ev in queue_depletion_events:
             if depl_ev.depletion_time <= new_phi:
-                self.change_events.push(OutflowChangeEvent(depl_ev.edge, depl_ev.change_time, new_inflow[depl_ev.edge]))
+                self.change_events.push(PriorityItem(
+                    depl_ev.change_time,
+                    OutflowChangeEvent(depl_ev.edge, depl_ev.change_time, new_inflow[depl_ev.edge])
+                ))
 
         while self.change_events.min_time() <= new_phi:
             event = self.change_events.pop()
