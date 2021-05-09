@@ -84,9 +84,8 @@ class LinearlyInterpolatedFunction:
 
     def compose(self, f: LinearlyInterpolatedFunction) -> LinearlyInterpolatedFunction:
         g = self
-        # We calculate phi -> g( f( phi ) )
-        assert g.is_monotone() and f.is_monotone(), "Composition only implemented for monotone incr. functions"
-        # assert f.domain[0] > float('-inf'), "Composition only implemented for left-finite intervals"
+        # We calculate g ⚬ f
+        assert f.is_monotone(), "Composition g ⚬ f only implemented for monotone incr. function f"
         assert g.domain[0] <= f.image()[0] and g.domain[1] >= f.image()[1], \
             "The domains do not match for composition!"
 
@@ -102,8 +101,9 @@ class LinearlyInterpolatedFunction:
             while g_ind < len(g.times) and g.times[g_ind] <= f_after:
                 times.append(f.inverse(g.times[g_ind], f_ind))
                 g_ind += 1
-            if f_ind < len(f.times) -1 and f.times[f_ind + 1] > times[-1]:
-                times.append(f.times[f_ind + 1])
+            if f_ind + 1 < len(f.times):
+                if len(times) == 0 or f.times[f_ind + 1] > times[-1]:
+                    times.append(f.times[f_ind + 1])
             f_ind += 1
 
         values: List[float] = [g(f(phi)) for phi in times]
@@ -113,5 +113,5 @@ class LinearlyInterpolatedFunction:
         return all(self.values[i] < self.values[i + 1] for i in range(len(self.values) - 1))
 
     def image(self) -> Tuple[float, float]:
-        assert self.is_monotone(), "Only implented for monotone functions"
+        assert self.is_monotone(), "Only implemented for monotone functions"
         return self(self.domain[0]), self(self.domain[1])
