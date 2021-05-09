@@ -66,7 +66,15 @@ class LinearlyInterpolatedFunction:
         return LinearlyInterpolatedFunction(times, values, new_domain)
 
     def inverse(self, x: float, i: int) -> float:
-        assert 0 <= i < len(self.times)
+        assert -1 <= i < len(self.times)
+        if i == -1:
+            assert (self.gradient(0) > 0 and x <= self.values[0]) \
+                   or (self.gradient(0) < 0 and x >= self.values[0])
+            return self.times[0] + (x - self.values[0]) / self.gradient(0)
+        elif i == len(self.times) - 1:
+            assert (self.gradient(0) > 0 and x >= self.values[0]) \
+                   or (self.gradient(0) < 0 and x <= self.values[0])
+            return self.times[-1] + (x - self.values[-1]) / self.gradient(-2)
         assert self.values[i] < self.values[i + 1] or self.values[i] > self.values[i + 1], \
             "Can only determine inverse on strictly monotone interval"
         assert self.values[i] <= x <= self.values[i + 1] or self.values[i] >= x >= self.values[i + 1], \
@@ -77,28 +85,27 @@ class LinearlyInterpolatedFunction:
     def compose(self, f: LinearlyInterpolatedFunction) -> LinearlyInterpolatedFunction:
         g = self
         # We calculate phi -> g( f( phi ) )
-        assert self.is_monotone() and f.is_monotone(), "Composition only implemented for monotone incr. functions"
-        assert f.domain[0] > float('-inf'), "Composition only implemented for left-finite intervals"
+        assert g.is_monotone() and f.is_monotone(), "Composition only implemented for monotone incr. functions"
+        # assert f.domain[0] > float('-inf'), "Composition only implemented for left-finite intervals"
         assert g.domain[0] <= f.image()[0] and g.domain[1] >= f.image()[1], \
             "The domains do not match for composition!"
 
-        assert f.domain[0] == f.times[0] and f.domain[1] == f.times[-1], "Assert domain are numbers in times"
-
         times = []
 
-        f_ind = 0  # Start of analyzed interval
+        f_ind = -1  # Start of analyzed interval
         g_ind = max(0, elem_rank(g.times, f(f.domain[0])))  # Start of interval
-        assert g.times[g_ind] <= f.values[f_ind] <= g.times[g_ind + 1]
+        assert f.domain[0] <= g.times[g_ind + 1]
 
-        while f_ind < len(f.times) - 1:
-            f_after = f.values[f_ind + 1]
+        while f_ind < len(f.times):
+            f_after = f.values[f_ind + 1] if f_ind < len(f.times) - 1 else f(f.domain[1])
 
             while g_ind < len(g.times) and g.times[g_ind] <= f_after:
                 times.append(f.inverse(g.times[g_ind], f_ind))
                 g_ind += 1
-            if f.times[f_ind + 1] > times[-1]:
+            if f_ind < len(f.times) -1 and f.times[f_ind + 1] > times[-1]:
                 times.append(f.times[f_ind + 1])
             f_ind += 1
+
         values: List[float] = [g(f(phi)) for phi in times]
         return LinearlyInterpolatedFunction(times, values, f.domain)
 
