@@ -1,7 +1,7 @@
 from typing import List, Iterable
 
 
-def find_arg_min(list: Iterable, key=lambda x: x):
+def arg_min(list: Iterable, key=lambda x: x):
     minimum = None
     min_item = None
     for item in list:

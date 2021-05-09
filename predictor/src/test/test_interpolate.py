@@ -1,4 +1,5 @@
 import unittest
+from typing import List
 
 import matplotlib.pyplot as plt
 
@@ -59,9 +60,23 @@ class TestLinearlyInterpolatedFunction(unittest.TestCase):
         sum1 = f1.plus(f2)
         plot(sum1)
 
+    def test_min(self):
+        f1 = LinearlyInterpolatedFunction([0, 1, 2], [0., 0., 0.], (0, float('inf')))
+        f2 = LinearlyInterpolatedFunction([0, 1, 2], [1., -1., 1.], (0, float('inf')))
+        min = f1.minimum(f2)
+        plot_many([f1, f2, min])
+
 
 def plot(f: LinearlyInterpolatedFunction):
     plt.plot([f.domain[0]] + f.times + [f.domain[1]],
              [f(f.domain[0])] + f.values + [f(f.domain[1])])
+    plt.grid(which='both', axis='both')
+    plt.show()
+
+
+def plot_many(fs: List[LinearlyInterpolatedFunction]):
+    for f in fs:
+        plt.plot([f.domain[0]] + f.times + [f.domain[1]],
+                 [f(f.domain[0])] + f.values + [f(f.domain[1])])
     plt.grid(which='both', axis='both')
     plt.show()

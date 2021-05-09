@@ -109,6 +109,51 @@ class LinearlyInterpolatedFunction:
         values: List[float] = [g(f(phi)) for phi in times]
         return LinearlyInterpolatedFunction(times, values, f.domain)
 
+    def minimum(self, otherf: LinearlyInterpolatedFunction) -> LinearlyInterpolatedFunction:
+        # Calculate the pointwise minimum of self and otherf.
+        # TODO: This procedure is by no means perfect yet.
+        new_domain = (max(self.domain[0], otherf.domain[0]), min(self.domain[1], otherf.domain[1]))
+        assert new_domain[0] < new_domain[1], "Intersection of function domains is empty."
+
+        f = [self, otherf]
+        curr_min = 0 if f[0](new_domain[0]) < f[1](new_domain[0]) else 1
+        other = 1 - curr_min
+        ind = [0, 0]
+        times = []
+        while ind[0] < len(f[0].times) or ind[1] < len(f[1].times):
+            if ind[other] >= len(f[other].times):
+                fct = curr_min
+            elif ind[curr_min] >= len(f[curr_min].times):
+                fct = other
+            elif f[other].times[ind[other]] <= f[curr_min].times[ind[curr_min]]:
+                fct = other
+            else:
+                fct = curr_min
+            next_time = f[fct].times[ind[fct]]
+            if fct != curr_min:
+                curr_min_val = f[curr_min](next_time)
+                if f[fct].values[ind[fct]] < curr_min_val:
+                    # The minimum function has changed!
+                    # Find the intersecting time with x=next_time:
+                    # t = x + (g(x) - f(x)) / (grad_f - grad_g)
+                    grad_min = f[curr_min].gradient(ind[curr_min] - 1)
+                    grad_other = f[fct].gradient(ind[fct] - 1)
+                    difference = grad_min - grad_other
+                    t = next_time + (f[fct].values[ind[fct]] - curr_min_val) / difference
+                    if len(times) == 0 or t > times[-1]:
+                        times.append(t)
+                    if next_time > times[-1]:
+                        times.append(next_time)
+                    curr_min = fct
+                    other = 1 - fct
+                ind[fct] += 1
+            else:
+                times.append(next_time)
+                ind[fct] += 1
+
+        values = [min(self(t), otherf(t)) for t in times]
+        return LinearlyInterpolatedFunction(times, values, new_domain)
+
     def is_monotone(self):
         return all(self.values[i] < self.values[i + 1] for i in range(len(self.values) - 1))
 
