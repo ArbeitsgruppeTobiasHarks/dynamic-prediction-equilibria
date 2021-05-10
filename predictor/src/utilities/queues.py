@@ -32,6 +32,14 @@ class PriorityQueue(Generic[T]):
     def next(self) -> T:
         return self._data[0][2]
 
+    def decrease_key(self, item: T, key: float):
+        # Todo: The performance of this operation can be improved.
+        for i in range(len(self._data)):
+            if self._data[i][2] == item:
+                assert key <= self._data[i][0]
+                self._data[i] = (key, self._data[i][1], item)
+        heapq.heapify(self._data)
+
     def min_time(self) -> float:
         return float('inf') if len(self._data) == 0 else self._data[0][0]
 

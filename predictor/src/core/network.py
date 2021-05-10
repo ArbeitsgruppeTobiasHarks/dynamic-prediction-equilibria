@@ -8,7 +8,7 @@ from core.graph import DirectedGraph, Node
 class Network:
     graph: DirectedGraph
     capacity: np.ndarray[float]
-    travel_time: np.ndarray[int]  # We use integers for a simpler discretization of time
+    travel_time: np.ndarray[float]
     sink: Node
 
     def __init__(self):

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import List, Dict
 
 from core.graph import DirectedGraph, Node
+from utilities.interpolate import LinearlyInterpolatedFunction
 from utilities.queues import PriorityQueue, PriorityItem
 
 """
@@ -20,18 +21,19 @@ def time_refinement(graph: DirectedGraph, source: Node, weights: List[LinearlyIn
     tau: Dict[Node, float] = {source: phi}
     for v in nodes:
         if v != source:
-            g[v] = LinearlyInterpolatedFunction([phi, phi + 1], [float('inf'), float('inf')])
             tau[v] = phi
 
     queue: PriorityQueue[Node] = PriorityQueue([
-        PriorityItem(g[v].eval(tau[v]), v) for v in nodes
+        PriorityItem(phi if v == source else float('inf'), v) for v in nodes
     ])
     while len(queue) >= 2:
         i = queue.pop()
         k = queue.next()
 
-        delta = min([weights[e.id](g[k](tau[k])) for e in i.incoming_edges], default=float('inf'))
-        bound = g[k](tau[k]) + delta
+        g_k_of_tau_k = g[k](tau[k]) if k in g.keys() else float('inf')
+        delta = min([weights[e.id](g_k_of_tau_k) for e in i.incoming_edges],
+                    default=float('inf'))
+        bound = g_k_of_tau_k + delta
 
         #  Calculate new_tau_i = max t s.t. g_i(t) <= g_k(tau_k) + delta
         index = None
@@ -40,21 +42,17 @@ def time_refinement(graph: DirectedGraph, source: Node, weights: List[LinearlyIn
                 index = index_j - 1
                 break
         if index is None:
-            new_tau_i = float('inf')
+            tau[i] = float('inf')
         else:
-            new_tau_i = g[i].inverse(bound, index - 1)
+            tau[i] = g[i].inverse(bound, index)
 
         for e in i.outgoing_edges:
             j: Node = e.node_to
-            g_j = g[i].plus(weights[e.id].compose(g[i]))
-            for t in range(pair_i.tau[pair_i.v], tau_i_first + 1):
-                gj_first[t] = pair_i.g[t] + Gt.weights[e](pair_i.g[t])
-                g[e[1]][t] = min(g[e[1]][t], gj_first[t])
+            bound_for_g_j = g[i].plus(weights[e.id].compose(g[i]))
+            g[j] = g[j].minimum(bound_for_g_j) if j in g.keys() else bound_for_g_j
+            new_val = g[j](tau[j])
+            queue.decrease_key(j, new_val)
 
-            tmpQ = PriorityQueue()
-            for p in Q.queue:
-                tmpQ.put(p)
-            Q = tmpQ
+        # if tau[i] >=
 
-        tau[i] = new_tau_i
-    return g
+    return g, tau

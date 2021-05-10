@@ -24,6 +24,9 @@ class Node:
         self.incoming_edges = []
         self.outgoing_edges = []
 
+    def __str__(self):
+        return str(self.id)
+
 
 class DirectedGraph:
     edges: List[Edge]
