@@ -66,6 +66,12 @@ class TestLinearlyInterpolatedFunction(unittest.TestCase):
         min = f1.minimum(f2)
         plot_many([f1, f2, min])
 
+    def test_min_inf(self):
+        f1 = LinearlyInterpolatedFunction([0., 1., 2.], [0., 1., 4], (0, float('inf')))
+        f2 = LinearlyInterpolatedFunction([0., 1., 2.], [0., -1., 3], (0, float('inf')))
+        min = f1.minimum(f2)
+        plot_many([f1, f2, min])
+
 
 def plot(f: LinearlyInterpolatedFunction):
     plt.plot([f.domain[0]] + f.times + [f.domain[1]],
@@ -76,7 +82,9 @@ def plot(f: LinearlyInterpolatedFunction):
 
 def plot_many(fs: List[LinearlyInterpolatedFunction]):
     for f in fs:
-        plt.plot([f.domain[0]] + f.times + [f.domain[1]],
-                 [f(f.domain[0])] + f.values + [f(f.domain[1])])
+        l_time = f.times[0] - (f.times[-1] - f.times[0]) if f.domain[1] == float('-inf') else f.domain[0]
+        r_time = f.times[-1] + (f.times[-1] - f.times[0]) if f.domain[1] == float('inf') else f.domain[1]
+        plt.plot([l_time] + f.times + [r_time],
+                 [f(l_time)] + f.values + [f(r_time)])
     plt.grid(which='both', axis='both')
     plt.show()
