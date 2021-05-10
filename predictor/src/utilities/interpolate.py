@@ -99,7 +99,7 @@ class LinearlyInterpolatedFunction:
 
         f_ind = -1  # Start of analyzed interval
         g_ind = max(0, elem_rank(g.times, f(f.domain[0])))  # Start of interval
-        assert f.domain[0] <= g.times[g_ind + 1]
+        assert g_ind == len(g.times) - 1 or f.domain[0] <= g.times[g_ind + 1]
 
         while f_ind < len(f.times):
             f_after = f.values[f_ind + 1] if f_ind < len(f.times) - 1 else f(f.domain[1])

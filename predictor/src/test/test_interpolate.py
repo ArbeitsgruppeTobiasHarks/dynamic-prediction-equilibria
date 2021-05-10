@@ -49,6 +49,14 @@ class TestLinearlyInterpolatedFunction(unittest.TestCase):
         self.assertListEqual(comp.values, [-4., 1., 2., 0., -8.])
         plot(comp)
 
+    def test_another_compose(self):
+        g = LinearlyInterpolatedFunction([0., 1.], [0., 1.], (0., float('inf')))
+        f = LinearlyInterpolatedFunction([0., 1.], [3., 4.], (0., float('inf')))
+        comp = g.compose(f)
+        self.assertListEqual(comp.times, [0., 1.])
+        self.assertListEqual(comp.values, [3., 4.])
+        plot(comp)
+
     def test_sum(self):
         f1 = LinearlyInterpolatedFunction([0, 1, 2], [0., 1., 4.])
         f2 = LinearlyInterpolatedFunction([-1, 4], [-1, 10])
