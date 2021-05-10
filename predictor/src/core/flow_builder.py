@@ -10,8 +10,6 @@ from core.predictor import Predictor
 from core.time_refinement import time_refinement
 from utilities.interpolate import LinearlyInterpolatedFunction
 
-eps = 1e-5
-
 
 class FlowBuilder:
     network: Network
@@ -53,7 +51,7 @@ class FlowBuilder:
                     inflow += 3
                 found_active_edge = False
                 for e in v.outgoing_edges:
-                    is_active = labels[e.node_to](phi + costs[e.id](phi)) <= labels[v](phi) + eps
+                    is_active = labels[e.node_to](phi + costs[e.id](phi)) <= labels[v](phi)
                     if is_active:
                         new_inflow[e.id] = inflow
                         found_active_edge = True
