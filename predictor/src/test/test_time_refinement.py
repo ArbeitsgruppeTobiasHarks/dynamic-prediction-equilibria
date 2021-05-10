@@ -13,12 +13,12 @@ class TestTimeRefinement(unittest.TestCase):
         network = build_sample_network()
         weights = [
             LinearlyInterpolatedFunction([0., 1.], [1., 1.]),
-            LinearlyInterpolatedFunction([0., 1., 5.], [1., 1., 10.]),
+            LinearlyInterpolatedFunction([0., 1., 5.], [1., 1., 30.]),
             LinearlyInterpolatedFunction([0., 1.], [1., 1.]),
             LinearlyInterpolatedFunction([0., 1.], [1., 1.]),
             LinearlyInterpolatedFunction([0., 1.], [1., 1.])
         ]
-        g, tau = time_refinement(network.graph, network.graph.nodes[0], weights, 0)
+        g = time_refinement(network.graph, network.sink, weights, 0)
         plot_many(g)
 
 
