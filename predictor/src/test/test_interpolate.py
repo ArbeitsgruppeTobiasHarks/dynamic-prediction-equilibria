@@ -21,36 +21,32 @@ class TestLinearlyInterpolatedFunction(unittest.TestCase):
         g = LinearlyInterpolatedFunction([0., 1.], [0., 2.])
         f = LinearlyInterpolatedFunction([0.5, 1.], [0.5, 1.])
         comp = g.compose(f)
-        self.assertListEqual(
-            comp.times, [0., 0.5, 1.]
-        )
-        self.assertListEqual(
-            comp.values, [0., 1., 2.]
-        )
+        self.assertListEqual(comp.times, [0., 0.5, 1.])
+        self.assertListEqual(comp.values, [0., 1., 2.])
+        plot(comp)
+
+    def test_compose_bounded(self):
+        f = LinearlyInterpolatedFunction([0., 1., 5.], [1., 2., 15.], (0, float('inf')))
+        g = LinearlyInterpolatedFunction([0., 1.], [0., 1.], (0, float('inf')))
+        comp = g.compose(f)
+        self.assertListEqual(comp.times, [0, 1, 5])
+        self.assertListEqual(comp.values, [1., 2., 15.])
         plot(comp)
 
     def test_compose_non_monotone(self):
         g = LinearlyInterpolatedFunction([0., 1., 2.], [0., 2., 0.])
         f = LinearlyInterpolatedFunction([0.5, 1.], [0.5, 1.])
         comp = g.compose(f)
-        self.assertListEqual(
-            comp.times, [0., 0.5, 1., 2.]
-        )
-        self.assertListEqual(
-            comp.values, [0., 1., 2., 0.]
-        )
+        self.assertListEqual(comp.times, [0., 0.5, 1., 2.])
+        self.assertListEqual(comp.values, [0., 1., 2., 0.])
         plot(comp)
 
     def test_compose_with_domain(self):
         g = LinearlyInterpolatedFunction([0., 1., 2.], [1., 2., 0.], (float('-inf'), 6.))
         f = LinearlyInterpolatedFunction([-10., -5., -2.], [-5., 0., 6.], (-12., -2.))
         comp = g.compose(f)
-        self.assertListEqual(
-            comp.times, [-10., -5., -4.5, -4., -2.]
-        )
-        self.assertListEqual(
-            comp.values, [-4., 1., 2., 0., -8.]
-        )
+        self.assertListEqual(comp.times, [-10., -5., -4.5, -4., -2.])
+        self.assertListEqual(comp.values, [-4., 1., 2., 0., -8.])
         plot(comp)
 
     def test_sum(self):

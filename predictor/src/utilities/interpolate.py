@@ -105,7 +105,10 @@ class LinearlyInterpolatedFunction:
             f_after = f.values[f_ind + 1] if f_ind < len(f.times) - 1 else f(f.domain[1])
 
             while g_ind < len(g.times) and g.times[g_ind] <= f_after:
-                times.append(f.inverse(g.times[g_ind], f_ind))
+                next_time = max(f(f.domain[0]), g.times[g_ind])
+                inverse = f.inverse(next_time, f_ind)
+                if len(times) == 0 or inverse > times[-1]:
+                    times.append(inverse)
                 g_ind += 1
             if f_ind + 1 < len(f.times):
                 if len(times) == 0 or f.times[f_ind + 1] > times[-1]:
@@ -185,3 +188,6 @@ class LinearlyInterpolatedFunction:
     def image(self) -> Tuple[float, float]:
         assert self.is_monotone(), "Only implemented for monotone functions"
         return self(self.domain[0]), self(self.domain[1])
+
+
+identity = LinearlyInterpolatedFunction([0., 1.], [0., 1.])
