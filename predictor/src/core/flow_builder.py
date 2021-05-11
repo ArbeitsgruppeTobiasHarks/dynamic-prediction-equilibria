@@ -4,6 +4,7 @@ from typing import Generator
 
 import numpy as np
 
+from core.distributor import Distributor
 from core.dynamic_flow import PartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
@@ -14,12 +15,14 @@ from utilities.interpolate import LinearlyInterpolatedFunction
 class FlowBuilder:
     network: Network
     predictor: Predictor
+    distributor: Distributor
     max_extension_length: float
 
-    def __init__(self, network: Network, predictor: Predictor, max_extension_length: float):
+    def __init__(self, network: Network, predictor: Predictor, distributor: Distributor, max_extension_length: float):
         self.network = network
         self.predictor = predictor
         self.max_extension_length = max_extension_length
+        self.distributor = distributor
 
     def build_flow(self) -> Generator[PartialDynamicFlow, None, None]:
         flow = PartialDynamicFlow(self.network)
@@ -42,23 +45,8 @@ class FlowBuilder:
             labels = time_refinement(self.network.graph, self.network.sink, costs, phi)
 
             # Determine a good flow-split on active outgoing edges
+            new_inflow = self.distributor.distribute(flow, labels, costs)
 
-            # Todo: Will just put everything in one edge for now
-            new_inflow = np.zeros(m)
-            for index in self.network.graph.nodes:
-                v = self.network.graph.nodes[index]
-                inflow = sum(flow.curr_outflow[e.id] for e in v.incoming_edges)
-                # Todo: Remove this in favor of a network attribute
-                if v.id == 0:
-                    inflow += 3
-                found_active_edge = False
-                for e in v.outgoing_edges:
-                    is_active = labels[e.node_to](phi + costs[e.id](phi)) <= labels[v](phi)
-                    if is_active:
-                        new_inflow[e.id] = inflow
-                        found_active_edge = True
-                        break
-                assert v == self.network.sink or found_active_edge
             flow.extend(new_inflow, self.max_extension_length)
             phi = flow.times[-1]
 
