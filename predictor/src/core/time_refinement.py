@@ -19,16 +19,18 @@ def time_refinement(graph: DirectedGraph, sink: Node, costs: List[LinearlyInterp
     g: Dict[Node, LinearlyInterpolatedFunction] = {
         sink: identity
     }
-    tau: Dict[Node, float] = {sink: phi}
-    for v in nodes:
-        if v != sink:
-            tau[v] = phi
+    tau: Dict[Node, float] = {v: phi for v in nodes}
 
     queue: PriorityQueue[Node] = PriorityQueue([
         PriorityItem(phi if v == sink else float('inf'), v) for v in nodes
     ])
-    while len(queue) >= 2:
+
+    nodes_left = len(nodes)
+
+    while len(queue) >= 2 and nodes_left > 0:
         i = queue.pop()
+        if tau[i] == phi:
+            nodes_left -= 1
         g_k_of_tau_k = queue.min_time()
         #  We probably need to adjust the bound g_k_of_tau_k + delta from the paper:
         #  delta = min([costs[e.id](g_k_of_tau_k) for e in i.outgoing_edges], default=float('inf'))
@@ -49,7 +51,10 @@ def time_refinement(graph: DirectedGraph, sink: Node, costs: List[LinearlyInterp
         else:
             t_prime = g[i].inverse(g_k_of_tau_k, index)
 
-        tau[i] = t_prime + min([costs[e.id](t_prime) for e in i.outgoing_edges], default=float('inf'))
+        if t_prime == float('inf'):
+            tau[i] = float('inf')
+        else:
+            tau[i] = t_prime + min([costs[e.id](t_prime) for e in i.outgoing_edges], default=float('inf'))
 
         for e in i.incoming_edges:  # Different to algorithm from paper
             j: Node = e.node_from

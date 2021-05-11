@@ -14,10 +14,12 @@ from utilities.interpolate import LinearlyInterpolatedFunction
 class FlowBuilder:
     network: Network
     predictor: Predictor
+    max_extension_length: float
 
-    def __init__(self, network: Network, predictor: Predictor):
+    def __init__(self, network: Network, predictor: Predictor, max_extension_length: float):
         self.network = network
         self.predictor = predictor
+        self.max_extension_length = max_extension_length
 
     def build_flow(self) -> Generator[PartialDynamicFlow, None, None]:
         flow = PartialDynamicFlow(self.network)
@@ -57,7 +59,7 @@ class FlowBuilder:
                         found_active_edge = True
                         break
                 assert v == self.network.sink or found_active_edge
-            flow.extend(new_inflow, float('inf'))
+            flow.extend(new_inflow, self.max_extension_length)
             phi = flow.times[-1]
 
             yield flow
