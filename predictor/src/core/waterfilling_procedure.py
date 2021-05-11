@@ -12,7 +12,7 @@ def waterfilling_procedure(inflow: float,
                            alpha: List[float],
                            beta: List[float]):
     deg = len(beta)
-    sorted_beta = [(beta, i) for i in range(deg)]
+    sorted_beta = [(beta[i], i) for i in range(deg)]
     sorted_beta.sort()
     _, perm = zip(*sorted_beta)
     inv_perm = [0] * len(beta)
@@ -39,7 +39,7 @@ def waterfilling_procedure(inflow: float,
         z = np.zeros(len(beta))
         for i in range(r):
             z[inv_perm[i]] = max_z_rp1[i]
-        z[inv_perm[r]] = inflow - sum(z[i] for i in range(r))
+        z[inv_perm[r]] = inflow - sum(z[inv_perm[i]] for i in range(r))
         assert abs(sum(z) - inflow) < .005
         return z
     else:
