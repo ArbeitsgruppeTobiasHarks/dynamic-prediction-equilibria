@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from utilities.arrays import elem_rank
 
@@ -194,11 +194,16 @@ class LinearlyInterpolatedFunction:
         assert self.is_monotone(), "Only implemented for monotone functions"
         return self(self.domain[0]), self(self.domain[1])
 
-    def max_t_below_bound(self, bound: float):
+    def max_t_below_bound(self, bound: float, default: Optional[float] = None):
         """
         Returns max t s.t. self(t) <= bound
+        If such a t does not exist, we return default if is given.
+        Otherwise we throw an error.
         """
         assert self.is_monotone(), "Only implemented for monotone functions"
+        assert default is not None or self(self.domain[0]) <= bound
+        if self(self.domain[0]) > bound:
+            return default
         index = None
         for index_j in range(len(self.times)):
             if self.values[index_j] > bound:
