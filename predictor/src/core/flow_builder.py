@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generator
+from typing import Generator, Optional
 
 import numpy as np
 
@@ -18,11 +18,16 @@ class FlowBuilder:
     distributor: Distributor
     max_extension_length: float
 
-    def __init__(self, network: Network, predictor: Predictor, distributor: Distributor, max_extension_length: float):
+    def __init__(self, network: Network,
+                 predictor: Predictor,
+                 distributor: Distributor,
+                 max_extension_length: float,
+                 stop_at_queue_changes: Optional[bool] = False):
         self.network = network
         self.predictor = predictor
         self.max_extension_length = max_extension_length
         self.distributor = distributor
+        self.stop_at_queue_changes = stop_at_queue_changes
 
     def build_flow(self) -> Generator[PartialDynamicFlow, None, None]:
         flow = PartialDynamicFlow(self.network)
@@ -47,7 +52,7 @@ class FlowBuilder:
             # Determine a good flow-split on active outgoing edges
             new_inflow = self.distributor.distribute(flow, labels, costs)
 
-            flow.extend(new_inflow, self.max_extension_length)
+            flow.extend(new_inflow, self.max_extension_length, self.stop_at_queue_changes)
             phi = flow.times[-1]
 
             yield flow

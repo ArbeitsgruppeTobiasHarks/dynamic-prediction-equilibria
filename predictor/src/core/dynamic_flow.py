@@ -31,7 +31,7 @@ class PartialDynamicFlow:
         self.curr_outflow = np.zeros(len(network.graph.edges))
         self.change_events = PriorityQueue()
 
-    def extend(self, new_inflow: np.ndarray, max_extension_length: float) -> float:
+    def extend(self, new_inflow: np.ndarray, max_extension_length: float, stop_at_queue_changes: bool) -> float:
         """
         Extends the flow with constant inflows new_inflow until some edge outflow changes.
         The user can also specify a maximum extension length using max_extension_length.
@@ -62,7 +62,13 @@ class PartialDynamicFlow:
         )
 
         # Finally: The actual extension length
-        eps = min(first_change_time - phi, max_extension_length)
+        eps = min(
+            first_change_time - phi,
+            max_extension_length,
+            min((event.depletion_time for event in queue_depletion_events), default=float('inf'))
+            if stop_at_queue_changes else
+            float('inf')
+        )
         new_phi = phi + eps
         for depl_ev in queue_depletion_events:
             if depl_ev.depletion_time <= new_phi:
