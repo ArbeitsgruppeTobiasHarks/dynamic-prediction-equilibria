@@ -18,6 +18,10 @@ class Predictor(ABC):
     def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
         pass
 
+    @abstractmethod
+    def type(self) -> str:
+        pass
+
 
 @dataclass
 class PredictionResult:

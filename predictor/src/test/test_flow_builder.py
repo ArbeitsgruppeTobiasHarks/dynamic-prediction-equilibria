@@ -26,7 +26,8 @@ class TestFlowBuilder(unittest.TestCase):
         for e in range(len(network.graph.edges)):
             plt.plot(flow.times, queues[:, e], label=str(e))
         plt.legend()
-        plt.title("Constant predictor")
+        plt.grid(which='both')
+        plt.title(f"{predictor.type()}, {distributor.type()}, α={max_extension_length}")
         plt.show()
 
     def test_linear_flow_builder(self):
@@ -44,5 +45,6 @@ class TestFlowBuilder(unittest.TestCase):
         for e in range(len(network.graph.edges)):
             plt.plot(flow.times, queues[:, e], label=str(e))
         plt.legend()
-        plt.title("Linear Predictor")
+        plt.grid(which='both')
+        plt.title(f"{predictor.type()}, {distributor.type()}, α={max_extension_length}")
         plt.show()

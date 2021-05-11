@@ -23,3 +23,7 @@ class Distributor(ABC):
                    labels: Dict[Node, LinearlyInterpolatedFunction],
                    costs: List[LinearlyInterpolatedFunction]) -> np.ndarry:
         pass
+
+    @abstractmethod
+    def type(self) -> str:
+        pass

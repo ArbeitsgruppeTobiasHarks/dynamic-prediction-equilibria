@@ -11,6 +11,9 @@ from utilities.interpolate import LinearlyInterpolatedFunction
 
 
 class SingleEdgeDistributor(Distributor):
+    def type(self) -> str:
+        return "Single-Edge Distributor"
+
     def distribute(
             self,
             flow: PartialDynamicFlow,
