@@ -6,11 +6,24 @@ import numpy as np
 from core.flow_builder import FlowBuilder
 from core.ide_predictor import IDEPredictor
 from core.linear_predictor import LinearPredictor
+from core.waterfilling_distributor import WaterfillingDistributor
 from core.single_edge_distributor import SingleEdgeDistributor
 from test.sample_network import build_sample_network
 
 
 class TestFlowBuilder(unittest.TestCase):
+    """
+    Interesting observations:
+
+    If we take SingleEdgeDistributor together with LinearPredictor (with .005 precision),
+    the resulting flow is weirdly glitching away from the expected IDE equilbrium.
+    With .0025 precision, the WaterfillingDistribution behaves the same.
+
+    With .003 precision, results are different again for SingleEdgeDistributor...
+
+    LinearPredictor without any regularization seems quite unstable.
+    """
+
     def test_ide_flow_builder(self):
         network = build_sample_network()
         predictor = IDEPredictor(network)
