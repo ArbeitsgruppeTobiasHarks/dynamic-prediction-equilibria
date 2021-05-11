@@ -12,6 +12,11 @@ class LinearlyInterpolatedFunction:
     values: List[float]
     domain: Tuple[float, float] = (float('-inf'), float('inf'))
 
+    def __post_init__(self):
+        assert len(self.values) == len(self.times)
+        assert all(float('-inf') < self.values[i] < float('inf') for i in range(len(self.times)))
+        assert all(self.domain[0] <= self.times[i] <= self.domain[1] for i in range(len(self.times)))
+
     def __call__(self, at: float) -> float:
         return self.eval(at)
 
