@@ -41,16 +41,7 @@ def time_refinement(graph: DirectedGraph, sink: Node, costs: List[LinearlyInterp
         #  Then get for all edges iw: max t s.t. T_{i,w}^{-1} ( t) <= t'  (i.e. t = T_{i,w}(t') )
         #  and then take the minimum as bound.
 
-        index = None
-        for index_j in range(len(g[i].times)):
-            if g[i].values[index_j] > g_k_of_tau_k:
-                index = index_j - 1
-                break
-        if index is None:
-            t_prime = float('inf')
-        else:
-            t_prime = g[i].inverse(g_k_of_tau_k, index)
-
+        t_prime = g[i].max_t_below_bound(g_k_of_tau_k)
         if t_prime == float('inf'):
             tau[i] = float('inf')
         else:

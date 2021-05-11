@@ -183,11 +183,29 @@ class LinearlyInterpolatedFunction:
         return LinearlyInterpolatedFunction(times, values, new_domain)
 
     def is_monotone(self):
-        return all(self.values[i] < self.values[i + 1] for i in range(len(self.values) - 1))
+        return all(self.values[i] <= self.values[i + 1] for i in range(len(self.values) - 1))
 
     def image(self) -> Tuple[float, float]:
         assert self.is_monotone(), "Only implemented for monotone functions"
         return self(self.domain[0]), self(self.domain[1])
+
+    def max_t_below_bound(self, bound: float):
+        """
+        Returns max t s.t. self(t) <= bound
+        """
+        assert self.is_monotone(), "Only implemented for monotone functions"
+        index = None
+        for index_j in range(len(self.times)):
+            if self.values[index_j] > bound:
+                index = index_j - 1
+                break
+        if index is not None:
+            return self.inverse(bound, index)
+        else:
+            if self(self.domain[1]) <= bound:
+                return self.domain[1]
+            else:
+                return self.inverse(bound, len(self.times) - 1)
 
 
 identity = LinearlyInterpolatedFunction([0., 1.], [0., 1.])
