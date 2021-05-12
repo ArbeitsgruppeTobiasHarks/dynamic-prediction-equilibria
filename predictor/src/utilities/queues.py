@@ -2,6 +2,7 @@ import heapq
 from dataclasses import dataclass
 from typing import Optional, List, TypeVar, Generic
 
+from core.machine_precision import eps
 
 T = TypeVar('T')
 
@@ -36,8 +37,8 @@ class PriorityQueue(Generic[T]):
         # Todo: The performance of this operation can be improved.
         for i in range(len(self._data)):
             if self._data[i][2] == item:
-                assert key <= self._data[i][0]
-                self._data[i] = (key, self._data[i][1], item)
+                assert key <= self._data[i][0] + eps
+                self._data[i] = (min(self._data[i][0], key), self._data[i][1], item)
         heapq.heapify(self._data)
 
     def min_time(self) -> float:

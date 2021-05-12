@@ -7,10 +7,9 @@ import numpy as np
 from core.distributor import Distributor
 from core.dynamic_flow import PartialDynamicFlow
 from core.graph import Node
+from core.machine_precision import eps
 from core.waterfilling_procedure import waterfilling_procedure
 from utilities.interpolate import LinearlyInterpolatedFunction
-
-eps = 1e-9
 
 
 class WaterfillingDistributor(Distributor):
@@ -47,27 +46,27 @@ class WaterfillingDistributor(Distributor):
                 new_inflow[active_edges[0].id] = inflow
                 continue
 
-            a_w = []
+            a = []
             for e in active_edges:
-                composition = labels[e.node_to].compose(identity.plus(costs[e.id]))
+                composition = labels[e.node_to].compose(identity.plus(costs[e.id]).ensure_monotone())
                 assert composition.domain[0] == phi and composition.times[0] == phi
-                a_w.append(composition.gradient(0))
-            beta_i = [
-                a_w[index] - 1 if flow.queues[-1][e.id] > 0 else a_w[index] for index, e in enumerate(active_edges)
+                a.append(composition.gradient(0))
+            beta = [
+                a[index] - 1 if flow.queues[-1][e.id] > 0 else a[index] for index, e in enumerate(active_edges)
             ]
-            alpha_i = [capacity[e.id] for e in active_edges]
-            gamma_i = [0 if flow.queues[-1][e.id] > 0 else capacity[e.id] for e in active_edges]
-            h_i = [
-                LinearlyInterpolatedFunction([0, gamma_i[index], gamma_i[index] + 1],
-                                             [beta_i[index], beta_i[index], beta_i[index] + 1. / capacity[e.id]],
+            alpha = [capacity[e.id] for e in active_edges]
+            gamma = [0 if flow.queues[-1][e.id] > 0 else capacity[e.id] for e in active_edges]
+            h = [
+                LinearlyInterpolatedFunction([0, gamma[index], gamma[index] + 1],
+                                             [beta[index], beta[index], beta[index] + 1. / capacity[e.id]],
                                              (0, float('inf')))
-                if gamma_i[index] > 0 else
-                LinearlyInterpolatedFunction([gamma_i[index], gamma_i[index] + 1],
-                                             [beta_i[index], beta_i[index] + 1. / capacity[e.id]],
+                if gamma[index] > 0 else
+                LinearlyInterpolatedFunction([gamma[index], gamma[index] + 1],
+                                             [beta[index], beta[index] + 1. / capacity[e.id]],
                                              (0, float('inf')))
                 for index, e in enumerate(active_edges)
             ]
-            z = waterfilling_procedure(inflow, h_i, alpha_i, beta_i)
+            z = waterfilling_procedure(inflow, h, alpha, beta)
             for ind, e in enumerate(active_edges):
                 new_inflow[e.id] = z[ind]
         return new_inflow

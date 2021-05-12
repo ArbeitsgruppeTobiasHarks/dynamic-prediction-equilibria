@@ -47,9 +47,10 @@ def time_refinement(graph: DirectedGraph, sink: Node, costs: List[LinearlyInterp
         else:
             tau[i] = t_prime + min([costs[e.id](t_prime) for e in i.outgoing_edges], default=float('inf'))
 
-        for e in i.incoming_edges:  # Different to algorithm from paper
+        for e in i.incoming_edges:  # Difference to paper: Incoming instead of outgoing edges
             j: Node = e.node_from
-            bound_for_g_j = g[i].compose(identity.plus(costs[e.id]))  # Different to algorithm from paper
+            # Difference to paper: Other computation of bound
+            bound_for_g_j = g[i].compose(identity.plus(costs[e.id]).ensure_monotone())
             g[j] = g[j].minimum(bound_for_g_j) if j in g.keys() else bound_for_g_j
             new_val = g[j](tau[j])
             queue.decrease_key(j, new_val)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
+from core.machine_precision import eps
 from utilities.arrays import elem_rank
 
 
@@ -111,9 +112,10 @@ class LinearlyInterpolatedFunction:
 
             while g_ind < len(g.times) and g.times[g_ind] <= f_after:
                 next_time = max(f(f.domain[0]), g.times[g_ind])
-                inverse = f.inverse(next_time, f_ind)
-                if len(times) == 0 or inverse > times[-1]:
-                    times.append(inverse)
+                if f.gradient(f_ind) != 0:
+                    inverse = f.inverse(next_time, f_ind)
+                    if len(times) == 0 or inverse > times[-1]:
+                        times.append(inverse)
                 g_ind += 1
             if f_ind + 1 < len(f.times):
                 if len(times) == 0 or f.times[f_ind + 1] > times[-1]:
@@ -125,7 +127,7 @@ class LinearlyInterpolatedFunction:
 
     def minimum(self, otherf: LinearlyInterpolatedFunction) -> LinearlyInterpolatedFunction:
         # Calculate the pointwise minimum of self and otherf.
-        # TODO: This procedure is by not perfect yet.
+        # TODO: This procedure is not perfect yet.
         new_domain = (max(self.domain[0], otherf.domain[0]), min(self.domain[1], otherf.domain[1]))
         assert new_domain[0] < new_domain[1], "Intersection of function domains is empty."
         assert new_domain[0] in self.times or new_domain[0] in otherf.times, \
@@ -216,6 +218,17 @@ class LinearlyInterpolatedFunction:
                 return self.domain[1]
             else:
                 return self.inverse(bound, len(self.times) - 1)
+
+    def ensure_monotone(self) -> LinearlyInterpolatedFunction:
+        """
+        This function makes sure that an almost monotone function becomes actually monotone.
+        It only fixes values where the monotonicity is broken most likely due to rounding errors.
+        """
+        new_values = self.values.copy()
+        for i in range(len(new_values) - 1):
+            assert new_values[i] <= new_values[i + 1] + eps
+            new_values[i + 1] = max(new_values[i], new_values[i + 1])
+        return LinearlyInterpolatedFunction(self.times, new_values, self.domain)
 
 
 identity = LinearlyInterpolatedFunction([0., 1.], [0., 1.])
