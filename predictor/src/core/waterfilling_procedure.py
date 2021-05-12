@@ -46,7 +46,6 @@ def waterfilling_procedure(inflow: float,
         z = np.zeros(len(beta))
         assert len(max_z_r) == r
         b_prime = inflow - sum(max_z_r)
-        assert r > 1
         for i in range(r):
             z[inv_perm[i]] = max_z_r[i] + alpha[inv_perm[i]] / sum(alpha[inv_perm[j]] for j in range(r)) * b_prime
         assert abs(sum(z) - inflow) < .005
