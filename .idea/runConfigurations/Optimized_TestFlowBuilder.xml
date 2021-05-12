@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Optimized TestFlowBuilder" type="tests" factoryName="Unittests">
+    <module name="predictor" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONOPTIMIZE" value="TRUE" />
+    </envs>
+    <option name="SDK_HOME" value="$USER_HOME$/.local/share/virtualenvs/predicted-dynamic-flows-d1fmh7US/bin/python" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/predictor/src/test" />
+    <option name="IS_MODULE_SDK" value="true" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="_new_pattern" value="&quot;&quot;" />
+    <option name="_new_additionalArguments" value="&quot;&quot;" />
+    <option name="_new_target" value="&quot;test_flow_builder.TestFlowBuilder.test_ide_flow_builder&quot;" />
+    <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+    <method v="2" />
+  </configuration>
+</component>
