@@ -156,13 +156,14 @@ class LinearlyInterpolatedFunction:
             else:
                 curr_other_val = f[other](next_time)
                 curr_min_val = f[fct].values[ind[fct]]
-            if curr_other_val < curr_min_val:
+            if curr_other_val < curr_min_val - eps:
                 # The minimum function has changed!
                 # Find the intersecting time with x=next_time:
                 # t = x + (g(x) - f(x)) / (grad_f - grad_g)
                 grad_min = f[curr_min].gradient(ind[curr_min] - 1)
                 grad_other = f[other].gradient(ind[other] - 1)
                 difference = grad_min - grad_other
+                assert difference > eps
                 t = next_time + (curr_other_val - curr_min_val) / difference
                 if len(times) == 0 or t > times[-1]:
                     times.append(t)
