@@ -14,30 +14,19 @@ class RegularizedLinearPredictor(Predictor):
         return "Regularized Linear Predictor"
 
     def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
-        """
-        This should return int_{phi-delta}^{phi} q_e(t) dt / delta
-        """
-
         horizon = 2.
         delta = 1.
         phi = times[-1]
         m = len(self.network.graph.edges)
 
         rnk = elem_rank(times, phi - delta)
-        integral = np.zeros(m)
-        # First interval might be only partial...
         if phi - delta > 0:
-            gradient = (old_queues[rnk + 1] - old_queues[rnk]) / (times[rnk + 1] - times[rnk])
-            delta_time = times[rnk + 1] - (phi - delta)
-            integral += delta_time * gradient
-        rnk += 1
-        while rnk < len(times) - 1:
-            gradient = (old_queues[rnk + 1] - old_queues[rnk]) / (times[rnk + 1] - times[rnk])
-            delta_time = times[rnk + 1] - times[rnk]
-            integral += delta_time * gradient
-            rnk += 1
-
-        new_queues = old_queues[-1] + horizon * integral / delta
+            queue_at_phi_minus_delta = old_queues[rnk] \
+                                       + (phi - delta - times[rnk]) * \
+                                       (old_queues[rnk + 1] - old_queues[rnk]) / (times[rnk + 1] - times[rnk])
+        else:
+            queue_at_phi_minus_delta = np.zeros(m)
+        new_queues = old_queues[-1] + horizon * (old_queues[-1] - queue_at_phi_minus_delta) / delta
 
         return PredictionResult(
             [times[-1], times[-1] + horizon, times[-1] + horizon + 1],
