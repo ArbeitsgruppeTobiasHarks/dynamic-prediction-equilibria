@@ -21,10 +21,10 @@ class PartialDynamicFlow:
     queues: List[np.ndarray]  # queue[k][e] is the queue length at e at time times[k]
     change_events: PriorityQueue[OutflowChangeEvent]  # A priority queue with times where some edge outflow changes
 
-    __network: Network
+    _network: Network
 
     def __init__(self, network: Network):
-        self.__network = network
+        self._network = network
         self.times = [0.]
         self.inflow = []
         self.queues = [np.zeros(len(network.graph.edges))]
@@ -39,9 +39,9 @@ class PartialDynamicFlow:
         :returns The length of the actual extension
         """
         phi = self.times[-1]
-        m = len(self.__network.graph.edges)
-        capacity = self.__network.capacity
-        travel_time = self.__network.travel_time
+        m = len(self._network.graph.edges)
+        capacity = self._network.capacity
+        travel_time = self._network.travel_time
 
         # determine how long we can extend without changing any edge outflow
         queue_depletion_events: List[QueueDepletionEvent] = []
@@ -90,8 +90,8 @@ class PartialDynamicFlow:
 
     def verify_balance(self, new_inflow: np.ndarray, verify_balance: Dict[int, float]):
         for (node_id, balance) in verify_balance:
-            assert node_id in self.__network.graph.nodes.keys(), f"Could not find node#{node_id}"
-            node = self.__network.graph.nodes[node_id]
+            assert node_id in self._network.graph.nodes.keys(), f"Could not find node#{node_id}"
+            node = self._network.graph.nodes[node_id]
             node_inflow = sum(self.curr_outflow[e.id] for e in node.incoming_edges)
             node_outflow = sum(new_inflow[e.id] for e in node.outgoing_edges)
             assert balance == node_inflow - node_outflow, f"Balance for node#{node_id} does not match"
