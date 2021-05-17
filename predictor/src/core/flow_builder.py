@@ -39,6 +39,7 @@ class FlowBuilder:
             prediction = self.predictor.predict(flow.times, flow.queues)
             pred_times = prediction.times
             pred_queues = np.asarray(prediction.queues)
+            assert np.min(pred_queues) >= 0.
             pred_costs = [travel_time[e] + pred_queues[:, e] / capacity[e] for e in range(m)]
 
             costs = [

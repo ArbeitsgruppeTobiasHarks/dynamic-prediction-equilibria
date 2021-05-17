@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import List
+
 import numpy as np
 
 from core.graph import DirectedGraph, Node
@@ -10,13 +12,14 @@ class Network:
     capacity: np.ndarray[float]
     travel_time: np.ndarray[float]
     sink: Node
+    commodities: List[Node]
 
     def __init__(self):
         self.graph = DirectedGraph()
         self.capacity = np.array([])
         self.travel_time = np.array([])
 
-    def add_edge(self, node_from: int, node_to: int, travel_time: int, capacity: float):
+    def add_edge(self, node_from: int, node_to: int, travel_time: float, capacity: float):
         self.graph.add_edge(node_from, node_to)
         self.travel_time = np.append(self.travel_time, travel_time)
         self.capacity = np.append(self.capacity, capacity)

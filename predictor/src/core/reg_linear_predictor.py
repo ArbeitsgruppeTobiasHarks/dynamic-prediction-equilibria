@@ -26,7 +26,10 @@ class RegularizedLinearPredictor(Predictor):
                                        (old_queues[rnk + 1] - old_queues[rnk]) / (times[rnk + 1] - times[rnk])
         else:
             queue_at_phi_minus_delta = np.zeros(m)
-        new_queues = old_queues[-1] + horizon * (old_queues[-1] - queue_at_phi_minus_delta) / delta
+        new_queues = np.maximum(
+            np.zeros(len(self.network.graph.edges)),
+            old_queues[-1] + horizon * (old_queues[-1] - queue_at_phi_minus_delta) / delta
+        )
 
         return PredictionResult(
             [times[-1], times[-1] + horizon, times[-1] + horizon + 1],
