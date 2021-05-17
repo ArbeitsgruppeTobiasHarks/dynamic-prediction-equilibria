@@ -13,7 +13,8 @@ class TestMultiComPartialDynamicFlow(unittest.TestCase):
         Test whether the queues are calculated correctly.
         """
         network = build_sample_network()
-        network.commodities = [network.sink]
+        network.add_commodity(0, 2, 3.)
+
         m = len(network.graph.edges)
         n = 1
         flow = MultiComPartialDynamicFlow(network)

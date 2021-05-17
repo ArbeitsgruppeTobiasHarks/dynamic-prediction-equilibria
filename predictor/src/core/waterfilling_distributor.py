@@ -19,7 +19,8 @@ class WaterfillingDistributor(Distributor):
     def distribute(
             self,
             phi: float,
-            curr_outflow: np.ndarray,
+            node_inflow: Dict[Node, float],
+            sink: Node,
             past_queues: List[np.ndarray],
             labels: Dict[Node, LinearlyInterpolatedFunction],
             costs: List[LinearlyInterpolatedFunction]
@@ -30,12 +31,8 @@ class WaterfillingDistributor(Distributor):
         identity = LinearlyInterpolatedFunction([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
         for i in self.network.graph.nodes.keys():
             v = self.network.graph.nodes[i]
-            if v == self.network.sink:
+            if v == sink:
                 continue
-            inflow = sum(curr_outflow[e.id] for e in v.incoming_edges)
-            # Todo: Remove this in favor of a network attribute
-            if v.id == 0:
-                inflow += 3
 
             active_edges = []
             for e in v.outgoing_edges:
@@ -44,7 +41,7 @@ class WaterfillingDistributor(Distributor):
                     active_edges.append(e)
             assert len(active_edges) > 0, "No active edges have been found."
             if len(active_edges) == 1:
-                new_inflow[active_edges[0].id] = inflow
+                new_inflow[active_edges[0].id] = node_inflow[v]
                 continue
 
             a = []
@@ -67,7 +64,7 @@ class WaterfillingDistributor(Distributor):
                                              (0, float('inf')))
                 for index, e in enumerate(active_edges)
             ]
-            z = waterfilling_procedure(inflow, h, alpha, beta)
+            z = waterfilling_procedure(node_inflow[v], h, alpha, beta)
             for ind, e in enumerate(active_edges):
                 new_inflow[e.id] = z[ind]
         return new_inflow

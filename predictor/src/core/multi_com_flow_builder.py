@@ -38,27 +38,31 @@ class MultiComFlowBuilder:
         m = len(self.network.graph.edges)
         travel_time = self.network.travel_time
         capacity = self.network.capacity
-        last_prediction_time = float('-inf')
         while phi < float('inf'):
 
             prediction = self.predictor.predict(flow.times, flow.queues)
-            pred_times = prediction.times
             pred_queues = np.asarray(prediction.queues)
             pred_costs = [travel_time[e] + pred_queues[:, e] / capacity[e] for e in range(m)]
 
             costs = [
-                LinearlyInterpolatedFunction(pred_times, pred_costs[e], (phi, float('inf')))
+                LinearlyInterpolatedFunction(prediction.times, pred_costs[e], (phi, float('inf')))
                 for e in range(m)
             ]
 
             new_inflow = np.zeros((n, m))
-            for i, sink in enumerate(self.network.commodities):
 
+            for i, commodity in enumerate(self.network.commodities):
                 # Calculate dynamic shortest paths
-                labels = time_refinement(self.network.graph, sink, costs, phi)
+                labels = time_refinement(self.network.graph, commodity.sink, costs, phi)
 
+                node_inflow = {
+                    v: sum(flow.curr_outflow[i, e.id] for e in v.incoming_edges)
+                    for v in self.network.graph.nodes.values()
+                }
+                node_inflow[commodity.source] += commodity.demand
                 # Determine a good flow-split on active outgoing edges
-                new_inflow[i, :] = self.distributor.distribute(phi, flow.curr_outflow[i, :], flow.queues, labels, costs)
+                new_inflow[i, :] = self.distributor.distribute(phi, node_inflow, commodity.sink, flow.queues, labels,
+                                                               costs)
 
             flow.extend(new_inflow, self.max_extension_length, self.stop_at_queue_changes)
             phi = flow.times[-1]

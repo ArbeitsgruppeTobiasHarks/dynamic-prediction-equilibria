@@ -19,7 +19,8 @@ class Distributor(ABC):
     @abstractmethod
     def distribute(self,
                    phi: float,
-                   inflow: Dict[Node, float],
+                   node_inflow: Dict[Node, float],
+                   sink: Node,
                    past_queues: List[np.ndarray],
                    labels: Dict[Node, LinearlyInterpolatedFunction],
                    costs: List[LinearlyInterpolatedFunction]) -> np.ndarray:

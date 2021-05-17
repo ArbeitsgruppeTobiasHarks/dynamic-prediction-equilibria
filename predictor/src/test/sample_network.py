@@ -22,7 +22,6 @@ def build_sample_network() -> Network:
     network.add_edge(1, 3, 1, 2)
     network.add_edge(3, 0, 1, 1)
     network.add_edge(3, 2, 1, 1)
-    network.set_sink(2)
 
     return network
 

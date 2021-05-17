@@ -28,10 +28,12 @@ class TestMultiComFlowBuilder(unittest.TestCase):
 
     def test_multi_com_flow_builder(self):
         network = build_sample_network()
-        network.commodities = [network.sink, network.sink]
+        network.add_commodity(0, 2, 2.)
+        network.add_commodity(3, 2, 1)
+
         predictor = RegularizedLinearPredictor(network)
-        distributor = SingleEdgeDistributor(network)
-        max_extension_length = 0.125
+        distributor = WaterfillingDistributor(network)
+        max_extension_length = 1.
         horizon = 35
         flow_builder = MultiComFlowBuilder(
             network,

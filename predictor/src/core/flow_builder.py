@@ -24,6 +24,7 @@ class FlowBuilder:
                  max_extension_length: float,
                  stop_at_queue_changes: Optional[bool] = False):
         self.network = network
+        assert len(self.network.commodities) == 1
         self.predictor = predictor
         self.max_extension_length = max_extension_length
         self.distributor = distributor
@@ -33,6 +34,9 @@ class FlowBuilder:
         flow = PartialDynamicFlow(self.network)
         phi = flow.times[-1]
         m = len(self.network.graph.edges)
+        source = self.network.commodities[0].source
+        sink = self.network.commodities[0].sink
+        demand = self.network.commodities[0].demand
         travel_time = self.network.travel_time
         capacity = self.network.capacity
         while phi < float('inf'):
@@ -48,10 +52,15 @@ class FlowBuilder:
             ]
 
             # Calculate dynamic shortest paths
-            labels = time_refinement(self.network.graph, self.network.sink, costs, phi)
+            labels = time_refinement(self.network.graph, sink, costs, phi)
 
+            node_inflow = {
+                v: sum(flow.curr_outflow[e.id] for e in v.incoming_edges)
+                for v in self.network.graph.nodes.values()
+            }
+            node_inflow[source] += demand
             # Determine a good flow-split on active outgoing edges
-            new_inflow = self.distributor.distribute(phi, flow.curr_outflow, flow.queues, labels, costs)
+            new_inflow = self.distributor.distribute(phi, node_inflow, sink, flow.queues, labels, costs)
 
             flow.extend(new_inflow, self.max_extension_length, self.stop_at_queue_changes)
             phi = flow.times[-1]

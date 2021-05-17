@@ -11,6 +11,8 @@ from utilities.interpolate import LinearlyInterpolatedFunction
 class TestTimeRefinement(unittest.TestCase):
     def test_time_refinement(self):
         network = build_sample_network()
+        network.add_commodity(0, 2, 3.)
+
         weights = [
             LinearlyInterpolatedFunction([0., 1.], [1., 1.]),
             LinearlyInterpolatedFunction([0., 1., 5.], [1., 1., 30.]),
@@ -18,7 +20,7 @@ class TestTimeRefinement(unittest.TestCase):
             LinearlyInterpolatedFunction([0., 1.], [1., 1.]),
             LinearlyInterpolatedFunction([0., 1.], [1., 1.])
         ]
-        g = time_refinement(network.graph, network.sink, weights, 0)
+        g = time_refinement(network.graph, network.commodities[0].sink, weights, 0)
         plot_many(g)
 
 
