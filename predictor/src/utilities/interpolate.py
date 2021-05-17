@@ -181,8 +181,8 @@ class LinearlyInterpolatedFunction:
                 curr_other_val = f[other](times[-1])
                 difference = grad_min - grad_other
                 t = times[-1] + (curr_other_val - curr_min_val) / difference
-                if t <= new_domain[1]:
-                    # Min function has changed once again. We need another two points to adjust the gradient.
+                if times[-1] < t <= new_domain[1]:
+                    # Min function will change once again. We need another two points to adjust the gradient.
                     times.append(t)
                     if t < new_domain[1]:
                         times.append(t + 1 if new_domain[1] == float('inf') else new_domain[1])

@@ -83,6 +83,12 @@ class TestLinearlyInterpolatedFunction(unittest.TestCase):
         min = f1.minimum(f2)
         plot_many([f1, f2, min])
 
+    def test_another_min(self):
+        f = LinearlyInterpolatedFunction(times=[0.4, 1.4, 2.4, 3.4], values=[3.8, 5.2, 6.6, 7.6], domain=(0.4, float('inf')))
+        g = LinearlyInterpolatedFunction(times=[0.4, 0.8285714285714285, 1.4, 1.5428571428571427, 2.4, 3.4], values=[3.8, 4.4, 5.2, 5.4, 6.600000000000002, 7.600000000000003], domain=(0.4, float('inf')))
+        min = f.minimum(g)
+
+
     def test_max_before_bound(self):
         f = LinearlyInterpolatedFunction([0, 2.0, 3.0], [1.0, 1.0, 1.5], (0, float('inf')))
         self.assertEqual(f.max_t_below_bound(0., default=0.), 0.)
