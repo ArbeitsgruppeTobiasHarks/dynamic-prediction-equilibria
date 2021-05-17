@@ -16,16 +16,17 @@ class SingleEdgeDistributor(Distributor):
 
     def distribute(
             self,
-            flow: PartialDynamicFlow,
+            phi: float,
+            curr_outflow: np.ndarray,
+            past_queues: List[np.ndarray],
             labels: Dict[Node, LinearlyInterpolatedFunction],
             costs: List[LinearlyInterpolatedFunction]
     ) -> np.ndarry:
         m = len(self.network.graph.edges)
-        phi = flow.times[-1]
         new_inflow = np.zeros(m)
         for index in self.network.graph.nodes:
             v = self.network.graph.nodes[index]
-            inflow = sum(flow.curr_outflow[e.id] for e in v.incoming_edges)
+            inflow = sum(curr_outflow[e.id] for e in v.incoming_edges)
             # Todo: Remove this in favor of a network attribute
             if v.id == 0:
                 inflow += 3

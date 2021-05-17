@@ -50,7 +50,7 @@ class FlowBuilder:
             labels = time_refinement(self.network.graph, self.network.sink, costs, phi)
 
             # Determine a good flow-split on active outgoing edges
-            new_inflow = self.distributor.distribute(flow, labels, costs)
+            new_inflow = self.distributor.distribute(phi, flow.curr_outflow, flow.queues, labels, costs)
 
             flow.extend(new_inflow, self.max_extension_length, self.stop_at_queue_changes)
             phi = flow.times[-1]

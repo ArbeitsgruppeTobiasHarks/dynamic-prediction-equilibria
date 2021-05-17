@@ -18,12 +18,13 @@ class WaterfillingDistributor(Distributor):
 
     def distribute(
             self,
-            flow: PartialDynamicFlow,
+            phi: float,
+            curr_outflow: np.ndarray,
+            past_queues: List[np.ndarray],
             labels: Dict[Node, LinearlyInterpolatedFunction],
             costs: List[LinearlyInterpolatedFunction]
     ) -> np.ndarry:
         m = len(self.network.graph.edges)
-        phi = flow.times[-1]
         capacity = self.network.capacity
         new_inflow = np.zeros(m)
         identity = LinearlyInterpolatedFunction([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
@@ -31,7 +32,7 @@ class WaterfillingDistributor(Distributor):
             v = self.network.graph.nodes[i]
             if v == self.network.sink:
                 continue
-            inflow = sum(flow.curr_outflow[e.id] for e in v.incoming_edges)
+            inflow = sum(curr_outflow[e.id] for e in v.incoming_edges)
             # Todo: Remove this in favor of a network attribute
             if v.id == 0:
                 inflow += 3
@@ -52,10 +53,10 @@ class WaterfillingDistributor(Distributor):
                 assert composition.domain[0] == phi and composition.times[0] == phi
                 a.append(composition.gradient(0))
             beta = [
-                a[index] - 1 if flow.queues[-1][e.id] > 0 else a[index] for index, e in enumerate(active_edges)
+                a[index] - 1 if past_queues[-1][e.id] > 0 else a[index] for index, e in enumerate(active_edges)
             ]
             alpha = [capacity[e.id] for e in active_edges]
-            gamma = [0 if flow.queues[-1][e.id] > 0 else capacity[e.id] for e in active_edges]
+            gamma = [0 if past_queues[-1][e.id] > 0 else capacity[e.id] for e in active_edges]
             h = [
                 LinearlyInterpolatedFunction([0, gamma[index], gamma[index] + 1],
                                              [beta[index], beta[index], beta[index] + 1. / capacity[e.id]],

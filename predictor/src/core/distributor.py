@@ -5,7 +5,6 @@ from typing import List, Dict
 
 import numpy as np
 
-from core.dynamic_flow import PartialDynamicFlow
 from core.graph import Node
 from core.network import Network
 from utilities.interpolate import LinearlyInterpolatedFunction
@@ -19,9 +18,11 @@ class Distributor(ABC):
 
     @abstractmethod
     def distribute(self,
-                   flow: PartialDynamicFlow,
+                   phi: float,
+                   inflow: Dict[Node, float],
+                   past_queues: List[np.ndarray],
                    labels: Dict[Node, LinearlyInterpolatedFunction],
-                   costs: List[LinearlyInterpolatedFunction]) -> np.ndarry:
+                   costs: List[LinearlyInterpolatedFunction]) -> np.ndarray:
         pass
 
     @abstractmethod
