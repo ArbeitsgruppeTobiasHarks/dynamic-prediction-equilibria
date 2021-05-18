@@ -5,7 +5,6 @@ from typing import Dict, List
 import numpy as np
 
 from core.distributor import Distributor
-from core.dynamic_flow import PartialDynamicFlow
 from core.graph import Node
 from core.machine_precision import eps
 from core.waterfilling_procedure import waterfilling_procedure
@@ -29,8 +28,7 @@ class WaterfillingDistributor(Distributor):
         capacity = self.network.capacity
         new_inflow = np.zeros(m)
         identity = LinearlyInterpolatedFunction([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
-        for i in self.network.graph.nodes.keys():
-            v = self.network.graph.nodes[i]
+        for v in node_inflow.keys():
             if v == sink:
                 continue
 
