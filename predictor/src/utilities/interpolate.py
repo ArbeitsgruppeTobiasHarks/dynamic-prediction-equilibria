@@ -248,5 +248,32 @@ class LinearlyInterpolatedFunction:
             new_values[i + 1] = max(new_values[i], new_values[i + 1])
         return LinearlyInterpolatedFunction(self.times, new_values, self.domain)
 
+    def smaller_equals(self, other: LinearlyInterpolatedFunction) -> bool:
+        """
+        Returns whether self is smaller or equal to other everywhere.
+        """
+        assert self.domain == other.domain
+        assert self.times[0] == self.domain[0] == other.times[0] and self.domain[1] == float('inf')
+        f = self
+        g = other
+
+        ind_f, ind_g = 0, 0
+        if f.values[0] > g.values[0] + eps:
+            return False
+
+        while ind_f < len(f.times) - 1 or ind_g < len(g.times) - 1:
+            next_time_f = f.times[ind_f + 1] if ind_f < len(f.times) - 1 else float('inf')
+            next_time_g = g.times[ind_g + 1] if ind_g < len(g.times) - 1 else float('inf')
+
+            next_time = min(next_time_f, next_time_g)
+            if f._eval_with_rank(next_time, ind_f) > g._eval_with_rank(next_time, ind_g) + eps:
+                return False
+            if next_time_f == next_time:
+                ind_f += 1
+            if next_time_g == next_time:
+                ind_g += 1
+
+        return f.gradient(len(f.times) - 1) <= g.gradient(len(g.times) - 1) + eps
+
 
 identity = LinearlyInterpolatedFunction([0., 1.], [0., 1.])
