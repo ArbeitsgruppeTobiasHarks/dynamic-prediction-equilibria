@@ -106,6 +106,19 @@ class MultiComPartialDynamicFlow:
 
         return new_phi
 
+    def to_file(self, path: str):
+        np.save(
+            path + "queues.npy",
+            np.asarray(self.queues)
+        )
+        np.save(
+            path + "inflows.npy",
+            np.asarray(self.inflow)
+        )
+        np.save(
+            path + "times.npy",
+            np.asarray(self.times)
+        )
 
 
 class OutflowChangeEvent:
