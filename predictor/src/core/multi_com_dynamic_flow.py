@@ -7,7 +7,7 @@ import numpy as np
 
 from core.machine_precision import eps as machine_eps
 from core.network import Network
-from utilities.queues import PriorityQueue, PriorityItem
+from utilities.queues import PriorityQueue
 
 
 class MultiComPartialDynamicFlow:
@@ -64,7 +64,7 @@ class MultiComPartialDynamicFlow:
                 new_outflow = np.zeros((n, 1)) if accum_outflow == 0 else \
                     accum_outflow * new_inflow[:, e] / accum_edge_inflow
                 event = OutflowChangeEvent(e, phi + self.queues[-1][e] / capacity[e] + travel_time[e], new_outflow)
-                self.change_events.push(PriorityItem(event.time, event))
+                self.change_events.push(event, event.time)
 
         # Remove fake change_events
         while len(self.change_events) > 0:
@@ -76,7 +76,7 @@ class MultiComPartialDynamicFlow:
 
         first_change_time = min(
             min((event.change_time for event in queue_depletion_events), default=float('inf')),
-            self.change_events.min_time()
+            self.change_events.min_key()
         )
 
         # Finally: The actual extension length
@@ -90,12 +90,12 @@ class MultiComPartialDynamicFlow:
         new_phi = phi + eps
         for depl_ev in queue_depletion_events:
             if depl_ev.depletion_time <= new_phi:
-                self.change_events.push(PriorityItem(
-                    depl_ev.change_time,
+                self.change_events.push(
                     OutflowChangeEvent(depl_ev.edge, depl_ev.change_time, depl_ev.new_outflow),
-                ))
+                    depl_ev.change_time
+                )
 
-        while self.change_events.min_time() <= new_phi + machine_eps:
+        while self.change_events.min_key() <= new_phi + machine_eps:
             event = self.change_events.pop()
             self.curr_outflow[:, event.edge] = event.new_outflow.ravel()
 
@@ -107,11 +107,16 @@ class MultiComPartialDynamicFlow:
         return new_phi
 
 
-@dataclass
+
 class OutflowChangeEvent:
     edge: int
     time: float
     new_outflow: np.ndarray
+
+    def __init__(self, edge: int, time: float, new_outflow: np.ndarray):
+        self.edge = edge
+        self.time = time
+        self.new_outflow = new_outflow
 
 
 @dataclass

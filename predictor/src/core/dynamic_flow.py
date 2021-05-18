@@ -6,7 +6,7 @@ from typing import List, Dict
 import numpy as np
 
 from core.network import Network
-from utilities.queues import PriorityQueue, PriorityItem
+from utilities.queues import PriorityQueue
 
 
 class PartialDynamicFlow:
@@ -54,11 +54,11 @@ class PartialDynamicFlow:
                     ))
             elif self.queues[-1][e] == 0 and new_inflow[e] != (0 if phi == 0 else self.inflow[-1][e]):
                 event = OutflowChangeEvent(e, phi + travel_time[e], new_outflow=min(capacity[e], new_inflow[e]))
-                self.change_events.push(PriorityItem(event.time, event))
+                self.change_events.push(event, event.time)
 
         first_change_time = min(
             min((event.change_time for event in queue_depletion_events), default=float('inf')),
-            self.change_events.min_time()
+            self.change_events.min_key()
         )
 
         # Finally: The actual extension length
@@ -72,12 +72,12 @@ class PartialDynamicFlow:
         new_phi = phi + eps
         for depl_ev in queue_depletion_events:
             if depl_ev.depletion_time <= new_phi:
-                self.change_events.push(PriorityItem(
-                    depl_ev.change_time,
-                    OutflowChangeEvent(depl_ev.edge, depl_ev.change_time, new_inflow[depl_ev.edge])
-                ))
+                self.change_events.push(
+                    OutflowChangeEvent(depl_ev.edge, depl_ev.change_time, new_inflow[depl_ev.edge]),
+                    depl_ev.change_time
+                )
 
-        while self.change_events.min_time() <= new_phi:
+        while self.change_events.min_key() <= new_phi:
             event = self.change_events.pop()
             self.curr_outflow[event.edge] = event.new_outflow
 
@@ -97,11 +97,15 @@ class PartialDynamicFlow:
             assert balance == node_inflow - node_outflow, f"Balance for node#{node_id} does not match"
 
 
-@dataclass
 class OutflowChangeEvent:
     edge: int
     time: float
     new_outflow: float
+
+    def __init__(self, edge: int, time: float, new_outflow: float):
+        self.edge = edge
+        self.time = time
+        self.new_outflow = new_outflow
 
 
 @dataclass

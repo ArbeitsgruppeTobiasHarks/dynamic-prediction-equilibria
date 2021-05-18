@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import List, Dict
+from typing import List, Dict, Set
 
 from core.graph import DirectedGraph, Node
 from utilities.interpolate import LinearlyInterpolatedFunction
-from utilities.queues import PriorityQueue, PriorityItem
+from utilities.queues import PriorityQueue
 
 """
 An adjusted version of the Time Refinement Algorithm from the Paper
@@ -22,16 +22,16 @@ def time_refinement(graph: DirectedGraph, sink: Node, costs: List[LinearlyInterp
     tau: Dict[Node, float] = {v: phi for v in nodes}
 
     queue: PriorityQueue[Node] = PriorityQueue([
-        PriorityItem(phi if v == sink else float('inf'), v) for v in nodes
+        (v, phi if v == sink else float('inf')) for v in reachable_nodes
     ])
 
-    nodes_left = len(nodes)
+    edge_arrival_times = [identity.plus(cost).ensure_monotone() for cost in costs]
 
     while len(queue) >= 2 and nodes_left > 0:
         i = queue.pop()
         if tau[i] == phi:
             nodes_left -= 1
-        g_k_of_tau_k = queue.min_time()
+        g_k_of_tau_k = queue.min_key()
         #  We probably need to adjust the bound g_k_of_tau_k + delta from the paper:
         #  delta = min([costs[e.id](g_k_of_tau_k) for e in i.outgoing_edges], default=float('inf'))
 
@@ -50,12 +50,11 @@ def time_refinement(graph: DirectedGraph, sink: Node, costs: List[LinearlyInterp
         for e in i.incoming_edges:  # Difference to paper: Incoming instead of outgoing edges
             j: Node = e.node_from
             # Difference to paper: Other computation of bound
-            bound_for_g_j = g[i].compose(identity.plus(costs[e.id]).ensure_monotone())
+            bound_for_g_j = g[i].compose(edge_arrival_times[e.id])
             g[j] = g[j].minimum(bound_for_g_j) if j in g.keys() else bound_for_g_j
             new_val = g[j](tau[j])
             queue.decrease_key(j, new_val)
 
         if tau[i] < float('inf'):
-            queue.push(PriorityItem(g[i](tau[i]), i))
-
+            queue.push(i, g[i](tau[i]))
     return g
