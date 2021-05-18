@@ -1,19 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from functools import lru_cache
 from typing import List, Tuple, Optional
 
 from core.machine_precision import eps
 from utilities.arrays import elem_rank
 
 
-@dataclass
 class LinearlyInterpolatedFunction:
     times: List[float]
     values: List[float]
     domain: Tuple[float, float] = (float('-inf'), float('inf'))
 
-    def __post_init__(self):
+    def __init__(self, times: List[float], values: List[float],
+                 domain: Tuple[float, float] = (float('-inf'), float('inf'))):
+        self.times = times
+        self.values = values
+        self.domain = domain
         assert len(self.values) == len(self.times)
         assert all(float('-inf') < self.values[i] < float('inf') for i in range(len(self.times)))
         assert all(self.domain[0] <= self.times[i] <= self.domain[1] for i in range(len(self.times)))
@@ -24,6 +27,15 @@ class LinearlyInterpolatedFunction:
     def eval(self, at: float) -> float:
         assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         rnk = elem_rank(self.times, at)
+        return self._eval_with_rank(at, rnk)
+
+    def _eval_with_rank(self, at: float, rnk: int):
+        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
+        assert -1 <= rnk <= len(self.times)
+        assert rnk != -1 or at <= self.times[0]
+        assert rnk != len(self.times) - 1 or at > self.times[-1]
+        assert not (-1 < rnk < len(self.times) - 1) or (self.times[rnk] < at <= self.times[rnk + 1])
+
         if rnk == -1:
             first_grad = self.gradient(rnk)
             if at == float('-inf') and first_grad == 0:
@@ -38,6 +50,7 @@ class LinearlyInterpolatedFunction:
                 return self.values[-1] + (at - self.times[-1]) * last_grad
         return self.values[rnk] + (at - self.times[rnk]) * self.gradient(rnk)
 
+    @lru_cache
     def gradient(self, i: int) -> float:
         """
             Returns the gradient between times[i] (or domain[0] if i == -1)
@@ -94,6 +107,7 @@ class LinearlyInterpolatedFunction:
         lmbda = (x - self.values[i + 1]) / (self.values[i] - self.values[i + 1])
         return lmbda * self.times[i] + (1 - lmbda) * self.times[i + 1]
 
+    @lru_cache
     def compose(self, f: LinearlyInterpolatedFunction) -> LinearlyInterpolatedFunction:
         g = self
         # We calculate g ⚬ f
@@ -102,27 +116,30 @@ class LinearlyInterpolatedFunction:
             "The domains do not match for composition!"
 
         times = []
+        values = []
+        f_image = f.image()
 
         f_ind = -1  # Start of analyzed interval
-        g_ind = max(0, elem_rank(g.times, f(f.domain[0])))  # Start of interval
+        g_ind = max(0, elem_rank(g.times, f_image[0]))  # Start of interval
         assert g_ind == len(g.times) - 1 or f.domain[0] <= g.times[g_ind + 1]
 
         while f_ind < len(f.times):
-            f_after = f.values[f_ind + 1] if f_ind < len(f.times) - 1 else f(f.domain[1])
+            f_after = f.values[f_ind + 1] if f_ind < len(f.times) - 1 else f_image[1]
 
             while g_ind < len(g.times) and g.times[g_ind] <= f_after:
-                next_time = max(f(f.domain[0]), g.times[g_ind])
+                next_time = max(f_image[0], g.times[g_ind])
                 if f.gradient(f_ind) != 0:
                     inverse = f.inverse(next_time, f_ind)
                     if len(times) == 0 or inverse > times[-1]:
                         times.append(inverse)
+                        values.append(g(next_time))
                 g_ind += 1
             if f_ind + 1 < len(f.times):
                 if len(times) == 0 or f.times[f_ind + 1] > times[-1]:
                     times.append(f.times[f_ind + 1])
+                    values.append(g(f.values[f_ind + 1]))
             f_ind += 1
 
-        values: List[float] = [g(f(phi)) for phi in times]
         return LinearlyInterpolatedFunction(times, values, f.domain)
 
     def minimum(self, otherf: LinearlyInterpolatedFunction) -> LinearlyInterpolatedFunction:
@@ -176,7 +193,7 @@ class LinearlyInterpolatedFunction:
         if times[-1] < new_domain[1]:
             grad_min = f[curr_min].gradient(ind[curr_min] - 1)
             grad_other = f[other].gradient(ind[other] - 1)
-            if grad_min > grad_other:
+            if grad_min > grad_other + eps:
                 curr_min_val = f[curr_min](times[-1])
                 curr_other_val = f[other](times[-1])
                 difference = grad_min - grad_other
