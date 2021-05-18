@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Set
 
 
 class Edge:
@@ -46,3 +46,15 @@ class DirectedGraph:
         self.edges.append(edge)
         self.nodes[node_from].outgoing_edges.append(edge)
         self.nodes[node_to].incoming_edges.append(edge)
+
+    def get_nodes_reaching(self, node: Node) -> Set[Node]:
+        assert node in self.nodes.values()
+        nodes_found: Set[Node] = {node}
+        queue = [node]
+        while queue:
+            v = queue.pop()
+            for e in v.incoming_edges:
+                if e.node_from not in nodes_found:
+                    nodes_found.add(e.node_from)
+                    queue.append(e.node_from)
+        return nodes_found
