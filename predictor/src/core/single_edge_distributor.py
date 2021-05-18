@@ -20,7 +20,7 @@ class SingleEdgeDistributor(Distributor):
                          labels: Dict[Node, float], costs: np.ndarray) -> np.ndarray:
         m = len(self.network.graph.edges)
         new_inflow = np.zeros(m)
-        for v in labels.keys():
+        for v in node_inflow.keys():
             if v == sink:
                 continue
             found_active_edge = False
@@ -47,7 +47,7 @@ class SingleEdgeDistributor(Distributor):
     ) -> np.ndarry:
         m = len(self.network.graph.edges)
         new_inflow = np.zeros(m)
-        for v in labels.keys():
+        for v in node_inflow.keys():
             found_active_edge = False
             for e in v.outgoing_edges:
                 w = e.node_to
