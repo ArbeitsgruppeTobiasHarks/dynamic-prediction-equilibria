@@ -15,6 +15,13 @@ class WaterfillingDistributor(Distributor):
     def type(self) -> str:
         return "Waterfilling Distributor"
 
+    def distribute_const(self, phi: float, node_inflow: Dict[Node, float], sink: Node, past_queues: List[np.ndarray],
+                         labels: Dict[Node, float], costs: np.ndarray) -> np.ndarray:
+        raise NotImplementedError()
+
+    def supports_const(self) -> bool:
+        return False
+
     def distribute(
             self,
             phi: float,

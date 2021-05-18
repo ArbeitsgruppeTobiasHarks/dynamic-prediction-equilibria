@@ -27,5 +27,19 @@ class Distributor(ABC):
         pass
 
     @abstractmethod
+    def distribute_const(self,
+                         phi: float,
+                         node_inflow: Dict[Node, float],
+                         sink: Node,
+                         past_queues: List[np.ndarray],
+                         labels: Dict[Node, float],
+                         costs: np.ndarray) -> np.ndarray:
+        pass
+
+    @abstractmethod
     def type(self) -> str:
+        pass
+
+    @abstractmethod
+    def supports_const(self) -> bool:
         pass
