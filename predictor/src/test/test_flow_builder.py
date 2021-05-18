@@ -3,11 +3,8 @@ import unittest
 import matplotlib.pyplot as plt
 import numpy as np
 
+from core.constant_predictor import ConstantPredictor
 from core.flow_builder import FlowBuilder
-from core.ide_predictor import IDEPredictor
-from core.linear_predictor import LinearPredictor
-from core.reg_linear_predictor import RegularizedLinearPredictor
-from core.waterfilling_distributor import WaterfillingDistributor
 from core.single_edge_distributor import SingleEdgeDistributor
 from test.sample_network import build_sample_network
 
@@ -29,7 +26,7 @@ class TestFlowBuilder(unittest.TestCase):
         network = build_sample_network()
         network.add_commodity(0, 2, 3.8)
 
-        predictor = IDEPredictor(network)
+        predictor = ConstantPredictor(network)
         distributor = SingleEdgeDistributor(network)
         max_extension_length = 1.
         horizon = 35

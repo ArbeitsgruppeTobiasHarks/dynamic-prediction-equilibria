@@ -7,7 +7,7 @@ import numpy as np
 from core.predictor import Predictor, PredictionResult
 
 
-class IDEPredictor(Predictor):
+class ConstantPredictor(Predictor):
 
     def type(self) -> str:
         return "Constant Predictor"
