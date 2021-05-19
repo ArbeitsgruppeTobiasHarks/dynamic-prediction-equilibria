@@ -9,6 +9,7 @@ from core.constant_predictor import ConstantPredictor
 from core.dijkstra import dijkstra
 from core.distributor import Distributor
 from core.graph import Node
+from core.machine_precision import eps
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
@@ -19,16 +20,16 @@ class MultiComFlowBuilder:
     network: Network
     predictor: Predictor
     distributor: Distributor
-    max_extension_length: float
+    reroute_interval: Optional[float]
 
     def __init__(self, network: Network,
                  predictor: Predictor,
                  distributor: Distributor,
-                 max_extension_length: float,
+                 reroute_interval: Optional[float],  # None means rerouting every time some outflow changes
                  stop_at_queue_changes: Optional[bool] = False):
         self.network = network
         self.predictor = predictor
-        self.max_extension_length = max_extension_length
+        self.reroute_interval = reroute_interval
         self.distributor = distributor
         self.stop_at_queue_changes = stop_at_queue_changes
 
@@ -47,21 +48,44 @@ class MultiComFlowBuilder:
         ]
         assert all(c.source in reaching_nodes[i] for i, c in enumerate(self.network.commodities))
 
+        next_reroute_time = phi
+        costs = []
+        labels = {}
+        const_labels = {}
+        const_costs = {}
+
         while phi < float('inf'):
+            if self.reroute_interval is None or phi >= next_reroute_time - eps:
+                # PREDICT NEW QUEUES
+                prediction = self.predictor.predict(flow.times, flow.queues)
+                pred_queues = np.asarray(prediction.queues)
+                pred_costs = [travel_time[e] + pred_queues[:, e] / capacity[e] for e in range(m)]
 
-            prediction = self.predictor.predict(flow.times, flow.queues)
-            pred_queues = np.asarray(prediction.queues)
-            pred_costs = [travel_time[e] + pred_queues[:, e] / capacity[e] for e in range(m)]
+                costs = [
+                    LinearlyInterpolatedFunction(prediction.times, pred_costs[e], (phi, float('inf')))
+                    for e in range(m)
+                ]
+                if isinstance(self.predictor, ConstantPredictor):
+                    const_costs = travel_time + pred_queues[0, :] / capacity
 
-            costs = [
-                LinearlyInterpolatedFunction(prediction.times, pred_costs[e], (phi, float('inf')))
-                for e in range(m)
-            ]
+                # CALCULATE NEW SHORTEST PATHS
+                for i, commodity in enumerate(self.network.commodities):
+                    if isinstance(self.predictor, ConstantPredictor):
+                        const_labels[i] = dijkstra(commodity.sink, const_costs)
+                        if self.distributor.supports_const():
+                            continue
 
+                        labels[i] = {
+                            v: LinearlyInterpolatedFunction([phi, phi + 1], [label, label], (phi, float('inf')))
+                            for v, label in const_labels[i].items()
+                        }
+                    else:
+                        labels[i] = bellman_ford(commodity.sink, costs, phi)
+                next_reroute_time += self.reroute_interval
+
+            # DETERMINE OUTFLOW SPLIT
             new_inflow = np.zeros((n, m))
-
             for i, commodity in enumerate(self.network.commodities):
-
                 node_inflow: Dict[Node, float] = {
                     v: sum(flow.curr_outflow[i, e.id] for e in v.incoming_edges)
                     for v in reaching_nodes[i]
@@ -73,28 +97,17 @@ class MultiComFlowBuilder:
                     v: inflow for v, inflow in node_inflow.items() if inflow > 0
                 }
 
-                if isinstance(self.predictor, ConstantPredictor):
-                    const_costs = travel_time + pred_queues[0, :] / capacity
-                    const_labels = dijkstra(commodity.sink, const_costs)
-                    if self.distributor.supports_const():
-                        new_inflow[i, :] = self.distributor.distribute_const(
-                            phi, node_inflow, commodity.sink, flow.queues, const_labels, const_costs
-                        )
-                        continue
-
-                    labels = {
-                        v: LinearlyInterpolatedFunction([phi, phi + 1], [label, label], (phi, float('inf')))
-                        for v, label in const_labels.items()
-                    }
+                if self.distributor.supports_const():
+                    new_inflow[i, :] = self.distributor.distribute_const(
+                        phi, node_inflow, commodity.sink, flow.queues, const_labels[i], const_costs
+                    )
                 else:
-                    # Calculate dynamic shortest paths
-                    labels = bellman_ford(commodity.sink, costs, phi)
+                    new_inflow[i, :] = self.distributor.distribute(
+                        phi, node_inflow, commodity.sink, flow.queues, labels[i], costs
+                    )
 
-                # Determine a good flow-split on active outgoing edges
-                new_inflow[i, :] = self.distributor.distribute(phi, node_inflow, commodity.sink, flow.queues, labels,
-                                                               costs)
-
-            flow.extend(new_inflow, self.max_extension_length, self.stop_at_queue_changes)
+            max_ext_length = next_reroute_time - phi
+            flow.extend(new_inflow, max_ext_length, self.stop_at_queue_changes)
             phi = flow.times[-1]
 
             yield flow
