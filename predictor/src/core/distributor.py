@@ -43,3 +43,10 @@ class Distributor(ABC):
     @abstractmethod
     def supports_const(self) -> bool:
         pass
+
+    @abstractmethod
+    def distribute_const_fcts(
+            self, phi: float, node_inflow: Dict[Node, float], sink: Node,
+            past_queues: List[LinearlyInterpolatedFunction], labels: Dict[Node, float], costs: np.ndarray
+    ) -> Dict[int, float]:
+        pass
