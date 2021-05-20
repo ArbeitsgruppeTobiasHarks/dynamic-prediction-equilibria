@@ -12,7 +12,7 @@ def arg_min(list: Iterable, key=lambda x: x):
     return min_item
 
 
-def elem_rank(arr: List[float], x: float):
+def elem_rank(arr: List[float], x: float) -> int:
     """
     Assume arr to be strictly increasing.
     Returns the rank of the element x in arr:
@@ -28,5 +28,25 @@ def elem_rank(arr: List[float], x: float):
         if x <= arr[mid]:
             high = mid
         else:
+            low = mid + 1
+    return high - 1
+
+
+def elem_lrank(arr: List[float], x: float) -> int:
+    """
+    Assume arr to be strictly increasing.
+    Returns the lower rank of the element x in arr:
+    The lower rank is the minimal number i in -1, ..., len(arr)-1,
+    such that arr[i] <= x < arr[i+1] (with the interpretation arr[-1] = -inf and arr[len(arr)] = inf)
+    """
+    if x < arr[0]:
+        return -1
+    low = 0
+    high = len(arr)
+    while high > low:
+        mid = (high + low) // 2
+        if x < arr[mid]:
+            high = mid
+        else:  # arr[mid] <= x
             low = mid + 1
     return high - 1
