@@ -25,7 +25,6 @@ class TestMultiComFlowBuilder(unittest.TestCase):
     def test_multi_com_flow_builder(self):
         network = build_sample_network()
         network.add_commodity(0, 2, 2.)
-        network.add_commodity(3, 2, 1)
 
         predictor = RegularizedLinearPredictor(network)
         distributor = WaterfillingDistributor(network)
@@ -39,7 +38,7 @@ class TestMultiComFlowBuilder(unittest.TestCase):
         )
         generator = flow_builder.build_flow()
         flow = None
-        while flow is None or flow.times[-1] < horizon:
+        while flow is None or flow.phi < horizon:
             flow = next(generator)
         queues = np.asarray(flow.queues)
         for e in range(len(network.graph.edges)):
