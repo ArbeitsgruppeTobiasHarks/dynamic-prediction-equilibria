@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict, Set, Tuple
 
 import numpy as np
 
 from core.machine_precision import eps as machine_eps
 from core.network import Network
+from utilities.interpolate import LinearlyInterpolatedFunction
 from utilities.queues import PriorityQueue
+from utilities.right_constant import RightConstantFunction
 
 
 class MultiComPartialDynamicFlow:
@@ -16,11 +18,13 @@ class MultiComPartialDynamicFlow:
     """
 
     # We use List for fast extensions
-    times: List[float]
-    inflow: List[np.ndarray]  # inflow[k][i,e] is the constant value of fᵢₑ⁺ on [times[k], times[k+1])
-    curr_outflow: np.ndarray  # outflow[i,e] is the constant value of fᵢₑ⁻ starting from times[-1]
-    queues: List[np.ndarray]  # queue[k][e] is the queue length at e at time times[k]
-    change_events: PriorityQueue[OutflowChangeEvent]  # A priority queue with times where some edge outflow changes
+    phi: float
+    inflow: List[List[RightConstantFunction]]  # inflow[e][i] is the function fᵢₑ⁺
+    outflow: List[List[RightConstantFunction]]  # outflow[e][i] is the function fᵢₑ⁻
+    queues: List[LinearlyInterpolatedFunction]  # queue[e] is the queue length at e
+    outflow_changes: PriorityQueue[Tuple[int, float]]  # A priority queue with times where some edge outflow changes
+    queue_depletions: PriorityQueue[int]  # A priority queue with times where queues deplete
+    depletion_dict: Dict[int, float]  # Maps an edge with ongoing depletion_to outflow change time and new_outflow
 
     _network: Network
 
@@ -28,97 +32,88 @@ class MultiComPartialDynamicFlow:
         self._network = network
         n = len(network.commodities)
         m = len(network.graph.edges)
-        self.times = [0.]
-        self.inflow = []
-        self.queues = [np.zeros(len(network.graph.edges))]
-        self.curr_outflow = np.zeros((n, m))
-        self.change_events = PriorityQueue()
+        self.phi = 0.
+        self.inflow = [[RightConstantFunction([self.phi - 1], [0.]) for i in range(n)] for e in range(m)]
+        self.queues = [LinearlyInterpolatedFunction([self.phi - 1, self.phi], [0., 0.]) for e in range(m)]
+        self.outflow = [[RightConstantFunction([self.phi - 1], [0.]) for i in range(n)] for e in range(m)]
+        self.outflow_changes = PriorityQueue()
+        self.queue_depletions = PriorityQueue()
+        self.depletion_dict = {}
 
-    def extend(self, new_inflow: np.ndarray, max_extension_length: float, stop_at_queue_changes: bool) -> float:
+    def extend(self, new_inflow: Dict[int, np.ndarray], max_extension_length: float) -> Set[int]:
         """
         Extends the flow with constant inflows new_inflow until some edge outflow changes.
+        Edge inflows not in new_inflow are extended with their previous values.
         The user can also specify a maximum extension length using max_extension_length.
-        If verify_balance is given, it checks if the extension satisfies the balances given.
-        :returns The length of the actual extension
+        :returns set of edges where the outflow has changed
         """
-        phi = self.times[-1]
+        phi = self.phi
         n = len(self._network.commodities)
-        m = len(self._network.graph.edges)
         capacity = self._network.capacity
         travel_time = self._network.travel_time
+        queue_updates_when_eps_known = []
 
-        # determine how long we can extend without changing any edge outflow
-        queue_depletion_events: List[QueueDepletionEvent] = []
-        accum_inflow = np.sum(new_inflow, axis=0)
-        for e in range(m):
-            accum_edge_inflow = accum_inflow[e]
-            if self.queues[-1][e] > 0:
+        for e in new_inflow.keys():
+
+            accum_edge_inflow = sum(new_inflow[e])
+            cur_queue = self.queues[e](phi)
+
+            # UPDATE QUEUE_DEPLETIONS
+            if cur_queue > 0:
                 if accum_edge_inflow < capacity[e]:
-                    depletion_time = phi + self.queues[-1][e] / (capacity[e] - accum_edge_inflow)
-                    queue_depletion_events.append(QueueDepletionEvent(
-                        edge=e, change_time=depletion_time + travel_time[e], depletion_time=depletion_time,
-                        new_outflow=new_inflow[:, e]
-                    ))
-            if not np.array_equal(new_inflow[:, e], np.zeros(n) if phi == 0 else self.inflow[-1][:, e]):
+                    depletion_time = phi + cur_queue / (capacity[e] - accum_edge_inflow)
+                    if self.queue_depletions.has(e):
+                        self.queue_depletions.update(e, depletion_time)
+                        self.depletion_dict[e] = depletion_time + travel_time[e]
+                    else:
+                        self.queue_depletions.push(e, depletion_time)
+                        self.depletion_dict[e] = depletion_time + travel_time[e]
+                elif self.queue_depletions.has(e):
+                    self.queue_depletions.remove(e)
+                    self.depletion_dict.pop(e)
+
+            # UPDATE OUTFLOW, OUTFLOW CHANGE_EVENTS AND QUEUES
+            if any(new_inflow[e][i] != self.inflow[e][i].values[-1] for i in range(n)):
                 accum_outflow = min(capacity[e], accum_edge_inflow)
-                new_outflow = np.zeros((n, 1)) if accum_outflow == 0 else \
-                    accum_outflow * new_inflow[:, e] / accum_edge_inflow
-                event = OutflowChangeEvent(e, phi + self.queues[-1][e] / capacity[e] + travel_time[e], new_outflow)
-                self.change_events.push(event, event.time)
+                change_time = phi + cur_queue / capacity[e] + travel_time[e]
+                new_outflow = np.zeros(n) if accum_outflow == 0 else accum_outflow * new_inflow[e] / accum_edge_inflow
+                for i in range(n):
+                    self.outflow[e][i].extend(change_time, new_outflow[i])
+                self.outflow_changes.push((e, change_time), change_time)
+                self.queues[e].extend(phi, cur_queue)
+                queue_updates_when_eps_known.append((e, cur_queue, accum_edge_inflow - capacity[e]))
 
-        # Remove fake change_events
-        while len(self.change_events) > 0:
-            next_event = self.change_events.next()
-            if np.array_equal(next_event.new_outflow, self.curr_outflow[:, next_event.edge]):
-                self.change_events.pop()
-            else:
-                break
+            # EXTEND INFLOW
+            for i in range(n):
+                self.inflow[e][i].extend(phi, new_inflow[e][i])
 
-        first_change_time = min(
-            min((event.change_time for event in queue_depletion_events), default=float('inf')),
-            self.change_events.min_key()
-        )
-
+        first_change_time = self.outflow_changes.min_key()
         # Finally: The actual extension length
         eps = min(
             first_change_time - phi,
-            max_extension_length,
-            min((event.depletion_time for event in queue_depletion_events), default=float('inf'))
-            if stop_at_queue_changes else
-            float('inf')
+            max_extension_length
         )
         new_phi = phi + eps
-        for depl_ev in queue_depletion_events:
-            if depl_ev.depletion_time <= new_phi:
-                self.change_events.push(
-                    OutflowChangeEvent(depl_ev.edge, depl_ev.change_time, depl_ev.new_outflow),
-                    depl_ev.change_time
-                )
 
-        while self.change_events.min_key() <= new_phi + machine_eps:
-            event = self.change_events.pop()
-            self.curr_outflow[:, event.edge] = event.new_outflow.ravel()
+        # REFLECT QUEUE CHANGES DUE TO DEPLETIONS
+        while self.queue_depletions.min_key() <= new_phi + machine_eps:
+            depletion_time = self.queue_depletions.min_key()
+            e = self.queue_depletions.pop()
+            self.depletion_dict.pop(e)
+            self.queues[e].extend(depletion_time, 0.)
+            self.queues[e].extend(max(new_phi, depletion_time + 2 * machine_eps), 0.)
 
-        self.inflow.append(new_inflow)
-        # qₑ(θ + ε) = max{ 0, qₑ(θ) + ε(fₑ⁺ - νₑ) }
-        self.queues.append(np.maximum(0, self.queues[-1] + eps * (accum_inflow - capacity)))
-        self.times.append(new_phi)
+        # REFLECT QUEUE CHANGES DUE TO INFLOW CHANGE
+        for (e, cur_queue, slope) in queue_updates_when_eps_known:
+            self.queues[e].extend(new_phi, max(0, cur_queue + eps * slope))
 
-        return new_phi
+        changed_edges: Set[int] = set()
+        while self.outflow_changes.min_key() <= new_phi + machine_eps:
+            (e, _) = self.outflow_changes.pop()
+            changed_edges.add(e)
 
-    def to_file(self, path: str):
-        np.save(
-            path + "queues.npy",
-            np.asarray(self.queues)
-        )
-        np.save(
-            path + "inflows.npy",
-            np.asarray(self.inflow)
-        )
-        np.save(
-            path + "times.npy",
-            np.asarray(self.times)
-        )
+        self.phi = new_phi
+        return changed_edges
 
 
 class OutflowChangeEvent:
