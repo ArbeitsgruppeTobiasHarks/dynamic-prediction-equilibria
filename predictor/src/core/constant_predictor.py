@@ -5,6 +5,7 @@ from typing import List
 import numpy as np
 
 from core.predictor import Predictor, PredictionResult
+from utilities.interpolate import LinearlyInterpolatedFunction
 
 
 class ConstantPredictor(Predictor):
@@ -16,4 +17,12 @@ class ConstantPredictor(Predictor):
         return PredictionResult(
             [times[-1], times[-1] + 1],
             [old_queues[-1], old_queues[-1]]
+        )
+
+    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
+        queues = np.array([queue(phi) for queue in old_queues])
+
+        return PredictionResult(
+            [phi, phi + 1],
+            [queues, queues]
         )

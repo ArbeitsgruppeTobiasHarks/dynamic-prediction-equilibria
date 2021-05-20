@@ -6,6 +6,7 @@ from typing import List
 import numpy as np
 
 from core.network import Network
+from utilities.interpolate import LinearlyInterpolatedFunction
 
 
 class Predictor(ABC):
@@ -16,6 +17,10 @@ class Predictor(ABC):
 
     @abstractmethod
     def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
+        pass
+
+    @abstractmethod
+    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
         pass
 
     @abstractmethod
