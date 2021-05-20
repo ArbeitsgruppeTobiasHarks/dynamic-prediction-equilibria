@@ -107,3 +107,43 @@ class PriorityQueue(Generic[T]):
 
     def __len__(self) -> int:
         return self._data.__len__()
+
+    def has(self, item: T) -> bool:
+        return item in self._index_dict.keys()
+
+    def update(self, item: T, new_key: float):
+        assert self.has(item)
+        index = self._index_dict[item]
+        if new_key <= self._data[index][0]:
+            return self.decrease_key(item, new_key)
+        else:
+            self._data[index] = (new_key, self._data[index][1], item)
+            self._siftup(index)
+
+    def increase_key(self, item: T, new_key: float):
+        assert self.has(item)
+        pos = self._index_dict[item]
+        new_entry = (new_key, self._data[pos][1], item)
+        assert new_entry >= self._data[pos]
+
+        left_child = 2 * pos + 1  # leftmost child position
+        right_child = 2 * pos + 2
+        while left_child < len(self):
+            smallest = left_child
+            if right_child < len(self) and self._data[right_child] < self._data[left_child]:
+                smallest = right_child
+            if new_entry >= self._data[smallest]:
+                return
+            self._data[pos] = self._data[smallest]
+            self._index_dict[self._data[smallest][2]] = pos
+            pos = smallest
+            left_child = 2 * pos + 1  # leftmost child position
+            right_child = 2 * pos + 2
+
+    def remove(self, item: T):
+        assert self.has(item)
+        pos: int = self._index_dict[item]
+        self._data[pos] = (float('-inf'), -1, item)
+        self._siftdown(0, pos)
+        assert self._data[0][2] == item
+        self.pop()
