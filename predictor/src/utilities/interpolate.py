@@ -275,5 +275,20 @@ class LinearlyInterpolatedFunction:
 
         return f.gradient(len(f.times) - 1) <= g.gradient(len(g.times) - 1) + eps
 
+    def extend(self, time: float, value: float):
+        assert time >= self.times[-1] - eps
+        if time <= self.times[-1]:
+            #  Simply replace the last value
+            self.values[-1] = value
+        else:
+            self.times.append(time)
+            self.values.append(value)
+
+    def equals(self, other):
+        if not isinstance(other, LinearlyInterpolatedFunction):
+            return False
+        return self.values == other.values and self.times == other.times and self.domain == other.domain
+
 
 identity = LinearlyInterpolatedFunction([0., 1.], [0., 1.])
+zero = LinearlyInterpolatedFunction([-1, 0.], [0., 0.])
