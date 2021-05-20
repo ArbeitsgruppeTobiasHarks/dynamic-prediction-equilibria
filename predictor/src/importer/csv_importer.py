@@ -54,17 +54,14 @@ if __name__ == '__main__':
 
     predictor = ConstantPredictor(network)
     distributor = SingleEdgeDistributor(network)
-    max_extension_length = 1
-    horizon = 20
+    reroute_interval = 10
+    horizon = 200
 
-    flow_builder = MultiComFlowBuilder(network, predictor, distributor, reroute_interval=0.1)
+    flow_builder = MultiComFlowBuilder(network, predictor, distributor, reroute_interval)
     generator = flow_builder.build_flow()
     flow = next(generator)
-    phi = flow.times[-1]
-    while phi < horizon:
+    while flow.phi < horizon:
         flow = next(generator)
-        phi = flow.times[-1]
-        print(f"phi={phi}")
+        print(f"phi={flow.phi}")
 
-    flow.to_file("./")
-    print(f"Successfully built flow up to time {phi}!")
+    print(f"Successfully built flow up to time {flow.phi}!")
