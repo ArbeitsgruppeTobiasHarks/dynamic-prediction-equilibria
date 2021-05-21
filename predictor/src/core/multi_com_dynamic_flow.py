@@ -40,6 +40,17 @@ class MultiComPartialDynamicFlow:
         self.queue_depletions = PriorityQueue()
         self.depletion_dict = {}
 
+    def __getstate__(self):
+        """Return state values to be pickled."""
+        state = self.__dict__.copy()
+        # Don't pickle _network b.c. of recursive structure
+        del state["_network"]
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        print("Please reset network on flow before accessing its functions")
+
     def extend(self, new_inflow: Dict[int, np.ndarray], max_extension_length: float) -> Set[int]:
         """
         Extends the flow with constant inflows new_inflow until some edge outflow changes.

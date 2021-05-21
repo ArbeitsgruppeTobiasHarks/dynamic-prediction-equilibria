@@ -50,7 +50,7 @@ class RightConstantFunction:
         if start_time <= self.times[-1]:
             #  Simply replace the last value
             self.values[-1] = value
-        else:
+        elif self.values[-1] != value:
             self.times.append(start_time)
             self.values.append(value)
 
