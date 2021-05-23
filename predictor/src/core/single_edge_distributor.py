@@ -6,6 +6,7 @@ import numpy as np
 
 from core.distributor import Distributor
 from core.graph import Node
+from core.machine_precision import eps
 from utilities.interpolate import LinearlyInterpolatedFunction
 
 
@@ -15,6 +16,9 @@ class SingleEdgeDistributor(Distributor):
 
     def supports_const(self) -> bool:
         return True
+
+    def needs_queues(self) -> bool:
+        return False
 
     def distribute_const(
             self, phi: float, node_inflow: Dict[Node, float], sink: Node,
@@ -56,7 +60,7 @@ class SingleEdgeDistributor(Distributor):
                 w = e.node_to
                 if w not in labels.keys():
                     continue
-                is_active = labels[w](phi + costs[e.id](phi)) <= labels[v](phi)
+                is_active = labels[w](phi + costs[e.id](phi)) <= labels[v](phi) + eps
                 if is_active and not found_active_edge:
                     new_inflow[e.id] = node_inflow[v]
                     found_active_edge = True

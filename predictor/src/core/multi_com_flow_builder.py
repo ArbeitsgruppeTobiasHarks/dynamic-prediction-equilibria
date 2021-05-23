@@ -91,7 +91,7 @@ class MultiComFlowBuilder:
 
             # DETERMINE OUTFLOW SPLIT
             if self.distributor.needs_queues():
-                queues = np.asarray([ queue(flow.phi) for queue in flow.queues ])
+                queues = np.asarray([queue(flow.phi) for queue in flow.queues])
 
             inflow_per_comm: List[Dict[int, float]] = []
             for i, commodity in enumerate(self.network.commodities):
