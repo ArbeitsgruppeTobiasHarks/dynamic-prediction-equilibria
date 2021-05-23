@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -15,7 +15,7 @@ class WaterfillingDistributor(Distributor):
     def type(self) -> str:
         return "Waterfilling Distributor"
 
-    def distribute_const(self, phi: float, node_inflow: Dict[Node, float], sink: Node, past_queues: List[np.ndarray],
+    def distribute_const(self, phi: float, node_inflow: Dict[Node, float], sink: Node, queues: Optional[np.ndarray],
                          labels: Dict[Node, float], costs: np.ndarray) -> np.ndarray:
         raise NotImplementedError()
 
@@ -27,10 +27,11 @@ class WaterfillingDistributor(Distributor):
             phi: float,
             node_inflow: Dict[Node, float],
             sink: Node,
-            past_queues: List[np.ndarray],
+            queues: Optional[np.ndarray],
             labels: Dict[Node, LinearlyInterpolatedFunction],
             costs: List[LinearlyInterpolatedFunction]
-    ) -> np.ndarry:
+    ) -> np.ndarray:
+        assert queues is not None
         m = len(self.network.graph.edges)
         capacity = self.network.capacity
         new_inflow = np.zeros(m)
@@ -55,10 +56,10 @@ class WaterfillingDistributor(Distributor):
                 assert composition.domain[0] == phi and composition.times[0] == phi
                 a.append(composition.gradient(0))
             beta = [
-                a[index] - 1 if past_queues[-1][e.id] > 0 else a[index] for index, e in enumerate(active_edges)
+                a[index] - 1 if queues[e.id] > 0 else a[index] for index, e in enumerate(active_edges)
             ]
             alpha = [capacity[e.id] for e in active_edges]
-            gamma = [0 if past_queues[-1][e.id] > 0 else capacity[e.id] for e in active_edges]
+            gamma = [0 if queues[e.id] > 0 else capacity[e.id] for e in active_edges]
             h = [
                 LinearlyInterpolatedFunction([0, gamma[index], gamma[index] + 1],
                                              [beta[index], beta[index], beta[index] + 1. / capacity[e.id]],

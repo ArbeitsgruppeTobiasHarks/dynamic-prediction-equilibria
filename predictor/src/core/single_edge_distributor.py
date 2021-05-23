@@ -16,31 +16,10 @@ class SingleEdgeDistributor(Distributor):
     def supports_const(self) -> bool:
         return True
 
-    def distribute_const(self, phi: float, node_inflow: Dict[Node, float], sink: Node, past_queues: List[np.ndarray],
-                         labels: Dict[Node, float], costs: np.ndarray) -> np.ndarray:
-        m = len(self.network.graph.edges)
-        new_inflow = np.zeros(m)
-        for v in node_inflow.keys():
-            if v == sink:
-                continue
-            found_active_edge = False
-            for e in v.outgoing_edges:
-                w = e.node_to
-                if w not in labels.keys():
-                    continue
-                is_active = costs[e.id] + labels[w] <= labels[v]
-                if is_active:
-                    new_inflow[e.id] = node_inflow[v]
-                    found_active_edge = True
-                    break
-            assert found_active_edge
-        return new_inflow
-
-    def distribute_const_fcts(
+    def distribute_const(
             self, phi: float, node_inflow: Dict[Node, float], sink: Node,
             past_queues: List[LinearlyInterpolatedFunction], labels: Dict[Node, float], costs: np.ndarray
     ) -> Dict[int, float]:
-        m = len(self.network.graph.edges)
         new_inflow: Dict[int, float] = {}
         for v in node_inflow.keys():
             if v == sink:
@@ -64,22 +43,24 @@ class SingleEdgeDistributor(Distributor):
             phi: float,
             node_inflow: Dict[Node, float],
             sink: Node,
-            past_queues: List[np.ndarray],
+            queues: np.ndarray,
             labels: Dict[Node, LinearlyInterpolatedFunction],
             costs: List[LinearlyInterpolatedFunction]
-    ) -> np.ndarry:
-        m = len(self.network.graph.edges)
-        new_inflow = np.zeros(m)
+    ) -> Dict[int, float]:
+        new_inflow: Dict[int, float] = {}
         for v in node_inflow.keys():
+            if v == sink:
+                continue
             found_active_edge = False
             for e in v.outgoing_edges:
                 w = e.node_to
                 if w not in labels.keys():
                     continue
                 is_active = labels[w](phi + costs[e.id](phi)) <= labels[v](phi)
-                if is_active:
+                if is_active and not found_active_edge:
                     new_inflow[e.id] = node_inflow[v]
                     found_active_edge = True
-                    break
-            assert v == sink or found_active_edge
+                else:
+                    new_inflow[e.id] = 0.
+            assert found_active_edge
         return new_inflow

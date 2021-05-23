@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import numpy as np
 
@@ -21,19 +21,9 @@ class Distributor(ABC):
                    phi: float,
                    node_inflow: Dict[Node, float],
                    sink: Node,
-                   past_queues: List[np.ndarray],
+                   queues: Optional[np.ndarray],
                    labels: Dict[Node, LinearlyInterpolatedFunction],
-                   costs: List[LinearlyInterpolatedFunction]) -> np.ndarray:
-        pass
-
-    @abstractmethod
-    def distribute_const(self,
-                         phi: float,
-                         node_inflow: Dict[Node, float],
-                         sink: Node,
-                         past_queues: List[np.ndarray],
-                         labels: Dict[Node, float],
-                         costs: np.ndarray) -> np.ndarray:
+                   costs: List[LinearlyInterpolatedFunction]) -> Dict[int, float]:
         pass
 
     @abstractmethod
@@ -45,8 +35,11 @@ class Distributor(ABC):
         pass
 
     @abstractmethod
-    def distribute_const_fcts(
-            self, phi: float, node_inflow: Dict[Node, float], sink: Node,
-            past_queues: List[LinearlyInterpolatedFunction], labels: Dict[Node, float], costs: np.ndarray
-    ) -> Dict[int, float]:
+    def distribute_const(self,
+                         phi: float,
+                         node_inflow: Dict[Node, float],
+                         sink: Node,
+                         queues: Optional[np.ndarray],
+                         labels: Dict[Node, float],
+                         costs: np.ndarray) -> Dict[int, float]:
         pass
