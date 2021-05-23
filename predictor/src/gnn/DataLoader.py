@@ -1,9 +1,10 @@
 import os
 import pickle
 import random
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import torch
+from torch import Tensor
 from torch.utils.data.dataset import T_co, Dataset
 
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
@@ -11,32 +12,25 @@ from core.network import Network
 
 
 class QueueDataset(Dataset):
-    _queue_dirs: List[str]
+    _queues: List[Tuple[Tensor, Tensor]]
     _flow: Optional[MultiComPartialDynamicFlow]
 
     def __init__(self, folder_path: str, past_timesteps: int, future_timesteps: int, network: Network):
-        self._queue_dirs = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
-        assert len(self._queue_dirs) > 0
-        self.start = 0
-        self.end = len(self._queue_dirs)
-        self.past_timesteps = past_timesteps
-        self.future_timesteps = future_timesteps
-
-        # Make everything ready for graph creation
-        self._capacity = torch.from_numpy(network.capacity).float()
-        self._travel_time = torch.from_numpy(network.travel_time).float()
-
-        new_edges = [(e1.id, e2.id) for e1 in network.graph.edges for e2 in e1.node_to.outgoing_edges]
-        self._u = torch.tensor([e[0] for e in new_edges])
-        self._v = torch.tensor([e[1] for e in new_edges])
+        queue_dirs = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
+        self._queues = []
+        assert len(queue_dirs) > 0
+        print("Reading in dataset...")
+        for directory in queue_dirs:
+            past_queues = torch.load(os.path.join(directory, "past_queues.pt"))
+            future_queues = torch.load(os.path.join(directory, "future_queues.pt"))
+            self._queues.append((past_queues, future_queues))
+        print("Done reading dataset.")
 
     def __getitem__(self, index) -> T_co:
-        past_queues = torch.load(os.path.join(self._queue_dirs[index], "past_queues.pt"))
-        future_queues = torch.load(os.path.join(self._queue_dirs[index], "future_queues.pt"))
-        return (past_queues, future_queues)
+        return self._queues[index][0].to('cuda'), self._queues[index][1].to('cuda')
 
     def __len__(self):
-        return len(self._queue_dirs)
+        return len(self._queues)
 
 
 def generate_queues(past_timesteps: int, future_timesteps: int):

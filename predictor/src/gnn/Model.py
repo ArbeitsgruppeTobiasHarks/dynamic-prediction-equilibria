@@ -13,7 +13,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         assert conv_layers >= 2
         first_layer_dim = 2 + past_queue_steps
-        middle_layer_dim = first_layer_dim * future_queue_steps
+        middle_layer_dim = first_layer_dim * future_queue_steps * 60
         self.layers = nn.ModuleList([
             GraphConv(first_layer_dim, middle_layer_dim, activation=th.tanh)
         ])
@@ -29,23 +29,24 @@ class Model(nn.Module):
 
 
 if __name__ == '__main__':
-    network_path = '/home/michael/Nextcloud2/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_small.arcs'
+    network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_small.arcs'
     network = network_from_csv(network_path)
 
-
     new_edges = [(e1.id, e2.id) for e1 in network.graph.edges for e2 in e1.node_to.outgoing_edges]
-    u = th.tensor([e[0] for e in new_edges])
-    v = th.tensor([e[1] for e in new_edges])
-    graph = dgl.graph((u, v)).add_self_loop()
+    u = th.tensor([e[0] for e in new_edges]).to('cuda')
+    v = th.tensor([e[1] for e in new_edges]).to('cuda')
+    graph = dgl.graph((u, v)).add_self_loop().to('cuda')
 
     past_timesteps, future_timesteps = 5, 5
-    queue_dataset = QueueDataset("../../out/generated_queues/5,5", past_timesteps, future_timesteps, network)
+    queue_folder_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/generated_queues/5,5/'
+    queue_dataset = QueueDataset(queue_folder_path, past_timesteps, future_timesteps, network)
 
-    capacity = th.from_numpy(network.capacity).float()
-    travel_time = th.from_numpy(network.travel_time).float()
+    capacity = th.from_numpy(network.capacity).float().to('cuda')
+    travel_time = th.from_numpy(network.travel_time).float().to('cuda')
 
     conv_layers = 20
-    model = Model(past_timesteps, future_timesteps, conv_layers)
+    model = Model(past_timesteps, future_timesteps, conv_layers).to('cuda')
+
 
     def collate(samples):
         th.stack([sample[0] for sample in samples])
@@ -53,9 +54,10 @@ if __name__ == '__main__':
         label = th.stack([sample[1] for sample in samples], dim=1)
         return input, label
 
-    data_loader = DataLoader(queue_dataset, batch_size=20, shuffle=True, collate_fn=collate)
 
-    optimizer = th.optim.SGD(model.parameters(), lr=0.01)
+    data_loader = DataLoader(queue_dataset, batch_size=1, shuffle=True, collate_fn=collate)
+
+    optimizer = th.optim.SGD(model.parameters(), lr=0.001)
     loss_fct = nn.L1Loss()
 
     epoch_losses = []
@@ -66,11 +68,18 @@ if __name__ == '__main__':
             print(f".. batch {k}, start computing")
             prediction = model(graph, input)
             loss = loss_fct(prediction, label)
-            print(f".. batch {k}, loss {loss:.4f}")
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            print(f".. batch {k}, loss {loss:.4f}")
             epoch_loss += loss.detach().item()
-        print('Epoch {}, loss {:.4f}'.format(epoch, epoch_loss))
+
         epoch_loss /= (k + 1)
+        print('Epoch {}, loss {:.4f}'.format(epoch, epoch_loss))
+        th.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': epoch_loss
+        }, f"./checkpoint.{epoch}.{epoch_loss:.2f}")
         epoch_losses.append(epoch_loss)

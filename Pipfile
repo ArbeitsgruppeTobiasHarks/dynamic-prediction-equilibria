@@ -8,6 +8,8 @@ matsim-tools = "*"
 click = "*"
 pylint = "*"
 matplotlib = "*"
+dgl = "*"
+torch = "*"
 
 [dev-packages]
 
