@@ -13,6 +13,7 @@ class Commodity:
     source: Node
     sink: Node
     demand: float
+    predictor: int
 
 
 class Network:
@@ -32,13 +33,11 @@ class Network:
         self.travel_time = np.append(self.travel_time, travel_time)
         self.capacity = np.append(self.capacity, capacity)
 
-    def add_commodity(self, source: int, sink: int, demand: float):
+    def add_commodity(self, source: int, sink: int, demand: float, predictor_id: int):
         nodes = self.graph.nodes
         assert source in nodes.keys(), f"No node with id#{sink} in the graph!"
         assert sink in nodes.keys(), f"No node with id#{sink} in the graph!"
-        self.commodities.append(
-            Commodity(nodes[source], nodes[sink], demand)
-        )
+        self.commodities.append(Commodity(nodes[source], nodes[sink], demand, predictor_id))
 
     def _remove_edge(self, edge: Edge):
         edge.node_to.incoming_edges.remove(edge)

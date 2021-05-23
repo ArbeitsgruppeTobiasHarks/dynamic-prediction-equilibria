@@ -35,6 +35,10 @@ class Distributor(ABC):
         pass
 
     @abstractmethod
+    def needs_queues(self) -> bool:
+        pass
+
+    @abstractmethod
     def distribute_const(self,
                          phi: float,
                          node_inflow: Dict[Node, float],

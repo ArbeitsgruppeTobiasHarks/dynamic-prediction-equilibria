@@ -22,6 +22,9 @@ class WaterfillingDistributor(Distributor):
     def supports_const(self) -> bool:
         return False
 
+    def needs_queues(self) -> bool:
+        return True
+
     def distribute(
             self,
             phi: float,
@@ -30,11 +33,11 @@ class WaterfillingDistributor(Distributor):
             queues: Optional[np.ndarray],
             labels: Dict[Node, LinearlyInterpolatedFunction],
             costs: List[LinearlyInterpolatedFunction]
-    ) -> np.ndarray:
+    ) -> Dict[int, float]:
         assert queues is not None
         m = len(self.network.graph.edges)
         capacity = self.network.capacity
-        new_inflow = np.zeros(m)
+        new_inflow = {}
         identity = LinearlyInterpolatedFunction([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
         for v in node_inflow.keys():
             if v == sink:
@@ -45,6 +48,8 @@ class WaterfillingDistributor(Distributor):
                 is_active = labels[e.node_to](phi + costs[e.id](phi)) <= labels[v](phi) + eps
                 if is_active:
                     active_edges.append(e)
+                else:
+                    new_inflow[e.id] = 0.
             assert len(active_edges) > 0, "No active edges have been found."
             if len(active_edges) == 1:
                 new_inflow[active_edges[0].id] = node_inflow[v]

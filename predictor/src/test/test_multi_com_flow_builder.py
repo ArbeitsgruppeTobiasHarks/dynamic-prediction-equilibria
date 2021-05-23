@@ -24,26 +24,25 @@ class TestMultiComFlowBuilder(unittest.TestCase):
 
     def test_multi_com_flow_builder(self):
         network = build_sample_network()
-        network.add_commodity(0, 2, 2.)
+        predictors = [RegularizedLinearPredictor(network)]
+        network.add_commodity(0, 2, 3., 0)
 
-        predictor = RegularizedLinearPredictor(network)
         distributor = WaterfillingDistributor(network)
-        max_extension_length = 1.
+        reroute_interval = 0.5
         horizon = 35
         flow_builder = MultiComFlowBuilder(
             network,
-            predictor,
+            predictors,
             distributor,
-            max_extension_length
+            reroute_interval
         )
         generator = flow_builder.build_flow()
         flow = None
         while flow is None or flow.phi < horizon:
             flow = next(generator)
-        queues = np.asarray(flow.queues)
         for e in range(len(network.graph.edges)):
-            plt.plot(flow.times[:], queues[:, e], label=str(e))
+            plt.plot(flow.queues[e].times, flow.queues[e].values, label=str(e))
         plt.legend()
         plt.grid(which='both')
-        plt.title(f"{predictor.type()}, {distributor.type()}, α={max_extension_length}")
+        plt.title(f"{predictors[0].type()}, {distributor.type()}, α={reroute_interval}")
         plt.show()

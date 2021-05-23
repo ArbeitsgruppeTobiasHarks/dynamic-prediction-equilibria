@@ -90,7 +90,8 @@ class MultiComPartialDynamicFlow:
                 new_outflow = np.zeros(n) if accum_outflow == 0 else accum_outflow * new_inflow[e] / accum_edge_inflow
                 for i in range(n):
                     self.outflow[e][i].extend(change_time, new_outflow[i])
-                self.outflow_changes.push((e, change_time), change_time)
+                if not self.outflow_changes.has((e, change_time)):
+                    self.outflow_changes.push((e, change_time), change_time)
                 self.queues[e].extend(phi, cur_queue)
                 queue_updates_when_eps_known.append((e, cur_queue, accum_edge_inflow - capacity[e]))
 
@@ -112,7 +113,7 @@ class MultiComPartialDynamicFlow:
             e = self.queue_depletions.pop()
             self.depletion_dict.pop(e)
             self.queues[e].extend(depletion_time, 0.)
-            self.queues[e].extend(max(new_phi, depletion_time + 2 * machine_eps), 0.)
+            self.queues[e].extend(new_phi, 0.)
 
         # REFLECT QUEUE CHANGES DUE TO INFLOW CHANGE
         for (e, cur_queue, slope) in queue_updates_when_eps_known:

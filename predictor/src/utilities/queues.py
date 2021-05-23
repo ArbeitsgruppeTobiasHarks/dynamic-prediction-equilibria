@@ -26,6 +26,7 @@ class PriorityQueue(Generic[T]):
             self._index_dict = {}
 
     def push(self, item: T, key: float):
+        assert item not in self._index_dict.keys()
         new_entry = (key, self._index, item)
         self._data.append(new_entry)
         self._index_dict[item] = len(self._data) - 1
