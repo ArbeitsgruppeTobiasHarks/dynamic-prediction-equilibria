@@ -68,6 +68,7 @@ class MultiComPartialDynamicFlow:
 
             accum_edge_inflow = sum(new_inflow[e])
             cur_queue = self.queues[e](phi)
+            assert(cur_queue >= 0)
 
             # UPDATE QUEUE_DEPLETIONS
             if cur_queue > 0:
@@ -108,7 +109,7 @@ class MultiComPartialDynamicFlow:
         new_phi = phi + eps
 
         # REFLECT QUEUE CHANGES DUE TO DEPLETIONS
-        while self.queue_depletions.min_key() <= new_phi + machine_eps:
+        while self.queue_depletions.min_key() < new_phi:
             depletion_time = self.queue_depletions.min_key()
             e = self.queue_depletions.pop()
             self.depletion_dict.pop(e)
