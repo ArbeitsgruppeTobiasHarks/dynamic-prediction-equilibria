@@ -50,3 +50,34 @@ def elem_lrank(arr: List[float], x: float) -> int:
         else:  # arr[mid] <= x
             low = mid + 1
     return high - 1
+
+
+def merge_sorted(arr1: List[float], arr2: List[float]) -> List[float]:
+    """
+    Merge two sorted arrays into a sorted array without duplicates
+    """
+    merged = []
+
+    ind1 = 0
+    ind2 = 0
+    while ind1 < len(arr1) and ind2 < len(arr2):
+        if arr1[ind1] < arr2[ind2]:
+            if len(merged) == 0 or merged[-1] < arr1[ind1]:
+                merged.append(arr1[ind1])
+            ind1 += 1
+        else:
+            if len(merged) == 0 or merged[-1] < arr2[ind2]:
+                merged.append(arr2[ind2])
+            ind2 += 1
+
+    while ind1 < len(arr1):
+        if len(merged) == 0 or merged[-1] < arr1[ind1]:
+            merged.append(arr1[ind1])
+        ind1 += 1
+    while ind2 < len(arr2):
+        if len(merged) == 0 or merged[-1] < arr2[ind2]:
+            merged.append(arr2[ind2])
+        ind2 += 1
+
+    return merged
+
