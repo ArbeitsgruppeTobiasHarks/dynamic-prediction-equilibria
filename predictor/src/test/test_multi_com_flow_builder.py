@@ -3,6 +3,7 @@ import unittest
 import matplotlib.pyplot as plt
 import numpy as np
 
+from core.linear_predictor import LinearPredictor
 from core.multi_com_flow_builder import MultiComFlowBuilder
 from core.reg_linear_predictor import RegularizedLinearPredictor
 from core.single_edge_distributor import SingleEdgeDistributor
@@ -25,12 +26,12 @@ class TestMultiComFlowBuilder(unittest.TestCase):
 
     def test_multi_com_flow_builder(self):
         network = build_sample_network()
-        predictors = [RegularizedLinearPredictor(network)]
+        predictors = [RegularizedLinearPredictor(network, horizon=2., delta=1.)]
         network.add_commodity(0, 2, 3., 0)
 
         distributor = WaterfillingDistributor(network)
         reroute_interval = 0.005
-        horizon = 35
+        horizon = 100
         flow_builder = MultiComFlowBuilder(
             network,
             predictors,

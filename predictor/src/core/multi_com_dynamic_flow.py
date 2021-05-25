@@ -33,9 +33,11 @@ class MultiComPartialDynamicFlow:
         n = len(network.commodities)
         m = len(network.graph.edges)
         self.phi = 0.
-        self.inflow = [[RightConstantFunction([self.phi - 1], [0.]) for i in range(n)] for e in range(m)]
+        self.inflow = [[RightConstantFunction([self.phi], [0.], (self.phi, float('inf'))) for i in range(n)] for e in
+                       range(m)]
         self.queues = [LinearlyInterpolatedFunction([self.phi - 1, self.phi], [0., 0.]) for e in range(m)]
-        self.outflow = [[RightConstantFunction([self.phi - 1], [0.]) for i in range(n)] for e in range(m)]
+        self.outflow = [[RightConstantFunction([self.phi], [0.], (self.phi, float('inf'))) for i in range(n)] for e in
+                        range(m)]
         self.outflow_changes = PriorityQueue()
         self.queue_depletions = PriorityQueue()
         self.depletion_dict = {}
@@ -68,7 +70,7 @@ class MultiComPartialDynamicFlow:
 
             accum_edge_inflow = sum(new_inflow[e])
             cur_queue = self.queues[e](phi)
-            assert(cur_queue >= 0)
+            assert cur_queue >= 0
 
             # UPDATE QUEUE_DEPLETIONS
             if cur_queue > 0:

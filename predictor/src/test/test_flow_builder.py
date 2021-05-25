@@ -24,7 +24,7 @@ class TestFlowBuilder(unittest.TestCase):
 
     def test_flow_builder(self):
         network = build_sample_network()
-        network.add_commodity(0, 2, 3.8)
+        network.add_commodity(0, 2, 3.8, 0)
 
         predictor = ConstantPredictor(network)
         distributor = SingleEdgeDistributor(network)
