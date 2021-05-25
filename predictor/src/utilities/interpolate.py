@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import List, Tuple, Optional
 
 from core.machine_precision import eps
-from utilities.arrays import elem_rank, elem_lrank
+from utilities.arrays import elem_rank, elem_lrank, merge_sorted
 
 
 class LinearlyInterpolatedFunction:
@@ -74,19 +74,22 @@ class LinearlyInterpolatedFunction:
         )
         assert new_domain[0] < new_domain[1], "Intersection of function domains is empty."
 
-        my_ind = max(0, elem_rank(self.times, new_domain[0]))
-        other_ind = max(0, elem_rank(other.times, new_domain[0]))
-        times = [min(self.times[my_ind], other.times[other_ind])]
-        last_time = min(new_domain[1], max(self.times[-1], other.times[-1]))
-        while times[-1] < last_time:
-            if my_ind < len(self.times) and self.times[my_ind] <= new_domain[1]:
-                if self.times[my_ind] > times[-1]:
-                    times.append(self.times[my_ind])
-                my_ind += 1
-            elif other_ind < len(other.times) and other.times[other_ind] <= new_domain[1]:
-                if other.times[other_ind] > times[-1]:
-                    times.append(other.times[other_ind])
-                other_ind += 1
+        merged = merge_sorted(self.times, other.times)
+        times = merged
+        if times[0] < new_domain[0]:
+            # cut times below new_domain[0]
+            rnk = elem_rank(times, new_domain[0])  # => rnk >= 0
+            if times[rnk + 1] == new_domain[0]:
+                times = times[rnk + 1:]
+            else:
+                times = [new_domain[0]] + times[rnk + 1:]
+        if times[-1] > new_domain[1]:
+            # cut times above new_domain[1]
+            rnk = elem_rank(times, new_domain[1])  # => rnk <= len(times) - 1
+            if times[rnk + 1] == new_domain[1]:
+                times = times[:rnk + 2]
+            else:
+                times = times[:rnk + 1] + [new_domain[1]]
         values: List[float] = [self(phi) + other(phi) for phi in times]
         return LinearlyInterpolatedFunction(times, values, new_domain)
 

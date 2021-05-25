@@ -71,6 +71,14 @@ class TestLinearlyInterpolatedFunction(unittest.TestCase):
         sum1 = f1.plus(f2)
         plot(sum1)
 
+    def test_sum_with_domains(self):
+        f1 = LinearlyInterpolatedFunction([0, 1, 2], [0., 1., 4.], (-0.5, float('inf')))
+        f2 = LinearlyInterpolatedFunction([-1, 4], [-1, 10], (float('-inf'), 10.))
+
+        sum1 = f1.plus(f2)
+        self.assertListEqual(sum1.times, [-0.5, 0., 1., 2., 4.])
+        plot(sum1)
+
     def test_min(self):
         f1 = LinearlyInterpolatedFunction([0, 1, 2], [0., 0., 0.], (0, float('inf')))
         f2 = LinearlyInterpolatedFunction([0, 1, 2], [1., -1., 1.], (0, float('inf')))
