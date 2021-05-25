@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import List, Tuple, Optional
 
 from core.machine_precision import eps
-from utilities.arrays import elem_rank
+from utilities.arrays import elem_rank, elem_lrank
 
 
 class LinearlyInterpolatedFunction:
@@ -288,6 +288,26 @@ class LinearlyInterpolatedFunction:
         if not isinstance(other, LinearlyInterpolatedFunction):
             return False
         return self.values == other.values and self.times == other.times and self.domain == other.domain
+
+    def integrate(self, start: float, end: float):
+        assert self.domain[0] <= start < end <= self.domain[1]
+        assert min(self.values) >= 0
+        # For two time steps, we integrate by adding (max + min) / 2 * delta_t
+
+        value = 0.
+        rnk = elem_lrank(self.times, start)
+
+        if rnk == len(self.times) - 1:
+            return (self(start) + self(end)) / 2 * (end - start)
+
+        value += (self.values[rnk + 1] + self(start)) / 2 * (self.times[rnk + 1] - start)
+        rnk += 1
+        while rnk < len(self.times) - 1 and self.times[rnk + 1] >= end:
+            value += (self.values[rnk + 1] + self.values[rnk]) / 2 * (self.times[rnk + 1] - self.times[rnk])
+            rnk += 1
+
+        value += (self(end) + self.values[rnk]) / 2 * (end - self.times[rnk])
+        return value
 
 
 identity = LinearlyInterpolatedFunction([0., 1.], [0., 1.])
