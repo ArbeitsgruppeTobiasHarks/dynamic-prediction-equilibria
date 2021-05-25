@@ -2,10 +2,11 @@ from matplotlib import pyplot as plt
 
 from core.constant_predictor import ConstantPredictor
 from core.linear_predictor import LinearPredictor
+from core.linear_regression_predictor import LinearRegressionPredictor
 from core.multi_com_flow_builder import MultiComFlowBuilder
 from core.network import Network, Commodity
 from core.reg_linear_predictor import RegularizedLinearPredictor
-from core.single_edge_distributor import SingleEdgeDistributor
+from core.uniform_distributor import UniformDistributor
 from core.zero_predictor import ZeroPredictor
 from test.sample_network import build_sample_network
 from utilities.right_constant import RightConstantFunction
@@ -17,6 +18,7 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
     predictors = [
         ConstantPredictor(network),
         ZeroPredictor(network),
+        LinearRegressionPredictor(network),
         LinearPredictor(network, prediction_horizon),
         RegularizedLinearPredictor(network, prediction_horizon, delta=5.),
     ]
@@ -28,7 +30,7 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
         network.commodities.append(Commodity(commodity.source, commodity.sink, commodity.demand / len(predictors), i))
 
     demand_per_comm = commodity.demand / len(predictors)
-    distributor = SingleEdgeDistributor(network)
+    distributor = UniformDistributor(network)
     flow_builder = MultiComFlowBuilder(network, predictors, distributor, reroute_interval)
 
     generator = flow_builder.build_flow()
@@ -49,11 +51,11 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
 
 if __name__ == '__main__':
 
-    y = [[], [], [], []]
+    y = [[], [], [], [], []]
     for demand in range(1, 20, 1):
         network = build_sample_network()
         network.add_commodity(0, 2, demand, 0)
-        times = evaluate_single_run(network, 0, 100, 0.05)
+        times = evaluate_single_run(network, 0, 100, 0.1)
         for i, time in enumerate(times):
             y[i].append(time)
 
@@ -61,6 +63,7 @@ if __name__ == '__main__':
         plt.plot(range(1, 20, 1), y[i], label=[
             "Constant Predictor",
             "Zero Predictor",
+            "Linear Regression Predictor",
             "Linear Predictor",
             "Regularized Linear Predictor"
         ][i])
