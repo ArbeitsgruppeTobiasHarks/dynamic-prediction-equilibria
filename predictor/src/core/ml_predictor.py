@@ -5,6 +5,7 @@ from typing import List
 import dgl
 import numpy as np
 import torch
+from dgl._deprecate.graph import DGLGraph
 
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
@@ -13,6 +14,13 @@ from utilities.interpolate import LinearlyInterpolatedFunction
 
 
 class MLPredictor(Predictor):
+    _past_timesteps: int
+    _future_timesteps: int
+    _step_size: float
+    _model: Model
+    _capacity: torch.Tensor
+    _travel_time: torch.Tensor
+    _dgl_graph: DGLGraph
 
     def __init__(self, network: Network, model_checkpoint_path: str):
         super().__init__(network)
