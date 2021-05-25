@@ -61,6 +61,8 @@ class RightConstantFunction:
         return self.values == other.values and self.times == other.times and self.domain == other.domain
 
     def __radd__(self, other):
+        if other == 0:
+            return self
         if not isinstance(other, RightConstantFunction):
             raise TypeError("Can only add a RightConstantFunction.")
         assert self.domain == other.domain
@@ -68,6 +70,9 @@ class RightConstantFunction:
         new_times = merge_sorted(self.times, other.times)
         new_values = [self(t) + other(t) for t in new_times]
         return RightConstantFunction(new_times, new_values, self.domain)
+
+    def __add__(self, other):
+        return self.__radd__(other)
 
     def integral(self) -> LinearlyInterpolatedFunction:
         assert self.times[0] == self.domain[0] and self.domain[1] >= self.times[-1] + 1
