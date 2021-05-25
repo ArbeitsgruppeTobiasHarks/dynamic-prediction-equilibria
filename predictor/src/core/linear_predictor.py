@@ -40,7 +40,7 @@ class LinearPredictor(Predictor):
     def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
         queues = np.array([queue(phi) for queue in old_queues])
         gradients = np.array([queue.gradient(elem_rank(queue.times, phi)) for queue in old_queues])
-        new_queues = queues + self.horizon * gradients
+        new_queues = np.maximum(queues + self.horizon * gradients, np.zeros(len(old_queues)))
 
         return PredictionResult(
             [phi, phi + self.horizon, phi + self.horizon + 1],
