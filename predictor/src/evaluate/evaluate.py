@@ -35,7 +35,6 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
     flow = next(generator)
     while flow.phi < horizon:
         flow = next(generator)
-        print(f"Generated until phi={flow.phi}.")
 
     travel_times = []
 
@@ -49,8 +48,22 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
 
 
 if __name__ == '__main__':
-    network = build_sample_network()
-    network.add_commodity(0, 2, 3., 0)
 
-    times = evaluate_single_run(network, 0, 100, 0.05)
-    plt.plot(range(len(times)), times)
+    y = [[], [], [], []]
+    for demand in range(1, 20, 1):
+        network = build_sample_network()
+        network.add_commodity(0, 2, demand, 0)
+        times = evaluate_single_run(network, 0, 100, 0.05)
+        for i, time in enumerate(times):
+            y[i].append(time)
+
+    for i in range(len(y)):
+        plt.plot(range(1, 20, 1), y[i], label=[
+            "Constant Predictor",
+            "Zero Predictor",
+            "Linear Predictor",
+            "Regularized Linear Predictor"
+        ][i])
+    plt.legend()
+    plt.grid(which='both')
+    plt.show()
