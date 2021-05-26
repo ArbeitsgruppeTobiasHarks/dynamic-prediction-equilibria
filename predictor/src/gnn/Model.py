@@ -34,16 +34,10 @@ class Model(nn.Module):
 class DenseLayerModel(nn.Module):
     def __init__(self, in_features: int, num_edges: int, out_features: int):
         super(DenseLayerModel, self).__init__()
-        hidden_features = 10
-        self.first = nn.Linear(in_features * num_edges, hidden_features * num_edges)
-        self.second = nn.Linear(hidden_features * num_edges, hidden_features * num_edges)
-        self.last = nn.Linear(hidden_features * num_edges, out_features * num_edges)
+        self.first = nn.Linear(in_features * num_edges, out_features * num_edges)
 
     def forward(self, input):
-        return self.last(
-            torch.relu(self.second(
-                torch.relu(self.first(input))
-            )))
+        return self.first(input)
 
 
 if __name__ == '__main__':
@@ -57,8 +51,8 @@ if __name__ == '__main__':
 
     past_timesteps, future_timesteps = 5, 1
     conv_layers = 6
-    queue_folder_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/generated_queues/5,5/'
-    queue_dataset = QueueDataset(queue_folder_path, past_timesteps, future_timesteps, network)
+    queue_folder_path = '../../out/generated_queues/5,5/'
+    queue_dataset = QueueDataset(queue_folder_path, past_timesteps, future_timesteps, network, False)
 
     mask = queue_dataset.test_mask.cpu().numpy()
     np.savetxt('/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/generated_queues/5,5/mask.txt', mask,
@@ -69,15 +63,14 @@ if __name__ == '__main__':
     num_edges = torch.count_nonzero(queue_dataset.test_mask).item()
 
     # model = Model(past_timesteps, future_timesteps, conv_layers).to('cuda')
-    model = DenseLayerModel(past_timesteps + 2, num_edges, future_timesteps) \
-        .to('cuda')
+    model = DenseLayerModel(past_timesteps, num_edges, future_timesteps).to('cuda')
 
     capacity = torch.from_numpy(network.capacity).float().to('cuda')[queue_dataset.test_mask]
     travel_time = torch.from_numpy(network.travel_time).float().to('cuda')[queue_dataset.test_mask]
 
 
     def collate(samples):
-        input = torch.stack([torch.column_stack([capacity, travel_time, sample[0]]) for sample in samples], dim=1)
+        input = torch.stack([sample[0] for sample in samples], dim=1)
         label = torch.stack([sample[1] for sample in samples], dim=1)
         return input, label
 
