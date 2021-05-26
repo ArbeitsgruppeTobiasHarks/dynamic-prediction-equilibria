@@ -1,3 +1,8 @@
+import datetime
+
+import pickle
+
+import os
 from matplotlib import pyplot as plt
 
 from core.constant_predictor import ConstantPredictor
@@ -46,6 +51,20 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
         avg_travel_time = horizon / 2 - \
                           accum_net_outflow.integrate(0., horizon) / (horizon * demand_per_comm)
         travel_times.append(avg_travel_time)
+
+    save_dict = {
+        "flow": flow,
+        "commodities": network.commodities,
+        "prediction_horizon": prediction_horizon,
+        "horizon": horizon,
+        "selected_commodity": split_commodity,
+        "avg_travel_times": travel_times
+    }
+
+    now = datetime.datetime.now()
+    os.makedirs("../../out/evaluation", exist_ok=True)
+    with open(f"../../out/evaluation/{str(now)}.pickle", "wb") as file:
+        pickle.dump(save_dict, file)
     return travel_times
 
 
