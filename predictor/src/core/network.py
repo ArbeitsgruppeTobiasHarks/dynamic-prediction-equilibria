@@ -48,9 +48,9 @@ class Network:
         for i in range(edge.id, len(self.graph.edges)):
             self.graph.edges[i].id = i
 
-    def remove_useless_nodes(self):
+    def compress_lonely_nodes(self):
         """
-        A node is useless, if it is no source or sink and if it has a single incoming and a single outgoing edge.
+        A node is lonely, if it is no source or sink and if it has a single incoming and a single outgoing edge.
         This function removes these useless nodes to speed up computation
         """
         remove_nodes = []
@@ -68,3 +68,25 @@ class Network:
                 remove_nodes.append(v)
         for v in remove_nodes:
             self.graph.nodes.pop(v.id)
+
+    def remove_unnecessary_nodes(self):
+        """
+        This functions checks whether a node is necessary for any commodity.
+        A node v is necessary for a commodity, if there is a path from its source to its sink passing through v.
+        """
+        important_nodes = set()
+        for commodity in self.commodities:
+            reaching_t = self.graph.get_nodes_reaching(commodity.sink)
+            reachable_from_s = self.graph.get_nodes_reachable(commodity.source)
+            important_nodes = important_nodes.union(reaching_t.intersection(reachable_from_s))
+
+        remove_nodes = set(self.graph.nodes.values()).difference(important_nodes)
+
+        print(f"\rRemoving {len(remove_nodes)} unnecessary nodes.", end="\r")
+        for v in remove_nodes:
+            for edge in v.outgoing_edges:
+                self._remove_edge(edge)
+            for edge in v.incoming_edges:
+                self._remove_edge(edge)
+            self.graph.nodes.pop(v.id)
+        print(f"\rRemoved {len(remove_nodes)} unnecessary nodes.")
