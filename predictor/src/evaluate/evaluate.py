@@ -4,6 +4,7 @@ import pickle
 
 import os
 from matplotlib import pyplot as plt
+import time
 
 from core.constant_predictor import ConstantPredictor
 from core.linear_predictor import LinearPredictor
@@ -13,7 +14,7 @@ from core.network import Network, Commodity
 from core.reg_linear_predictor import RegularizedLinearPredictor
 from core.uniform_distributor import UniformDistributor
 from core.zero_predictor import ZeroPredictor
-from test.sample_network import build_sample_network
+from importer.csv_importer import network_from_csv, add_demands_to_network
 from utilities.right_constant import RightConstantFunction
 
 
@@ -39,10 +40,18 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
     flow_builder = MultiComFlowBuilder(network, predictors, distributor, reroute_interval)
 
     generator = flow_builder.build_flow()
+    start_time = time.time()
+    print("\r Flow built until phi=0.", end="\r")
     flow = next(generator)
+    milestone = reroute_interval
     while flow.phi < horizon:
         flow = next(generator)
-
+        if flow.phi >= milestone:
+            elapsed = time.time() - start_time
+            remaining_time = (horizon - flow.phi) * elapsed / flow.phi
+            print(f"\r Flow built until phi={flow.phi}. Est. remaining time={remaining_time}", end="\r")
+            milestone += reroute_interval
+    print()
     travel_times = []
 
     for i in new_commodities:
@@ -71,21 +80,29 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
 if __name__ == '__main__':
 
     y = [[], [], [], [], []]
-    for demand in range(1, 20, 1):
-        network = build_sample_network()
-        network.add_commodity(0, 2, demand, 0)
-        times = evaluate_single_run(network, 0, 100, 0.1)
+    selected_commodity = 0
+    while True:
+        network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_small.arcs'
+        network = network_from_csv(network_path)
+        demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo.demands'
+        add_demands_to_network(network, demands_path, True, suppress_ignored=True)
+        network.remove_unnecessary_nodes()
+        if selected_commodity >= len(network.commodities):
+            break
+        times = evaluate_single_run(network, selected_commodity, 300, 5)
         for i, time in enumerate(times):
             y[i].append(time)
+        selected_commodity += 1
 
-    for i in range(len(y)):
-        plt.plot(range(1, 20, 1), y[i], label=[
-            "Constant Predictor",
-            "Zero Predictor",
-            "Linear Regression Predictor",
-            "Linear Predictor",
-            "Regularized Linear Predictor"
-        ][i])
-    plt.legend()
-    plt.grid(which='both')
-    plt.show()
+        for i in range(len(y)):
+            plt.plot(range(len(y)), y[i], label=[
+                "Constant Predictor",
+                "Zero Predictor",
+                "Linear Regression Predictor",
+                "Linear Predictor",
+                "Regularized Linear Predictor"
+            ][i])
+        plt.title("Avg travel time when splitting commodity x uniformly")
+        plt.legend()
+        plt.grid(which='both')
+        plt.show()
