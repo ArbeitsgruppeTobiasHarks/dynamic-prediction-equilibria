@@ -20,6 +20,7 @@ class LinearlyInterpolatedFunction:
         assert len(self.values) == len(self.times)
         assert all(float('-inf') < self.values[i] < float('inf') for i in range(len(self.times)))
         assert all(self.domain[0] <= self.times[i] <= self.domain[1] for i in range(len(self.times)))
+        assert all(self.times[i] < self.times[i+1] + eps for i in range(len(self.times) - 1))
 
     def __call__(self, at: float) -> float:
         return self.eval(at)
@@ -28,6 +29,21 @@ class LinearlyInterpolatedFunction:
         assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         rnk = elem_rank(self.times, at)
         return self._eval_with_rank(at, rnk)
+
+    def simplify(self) -> LinearlyInterpolatedFunction:
+        """
+        This removes unnecessary timesteps
+        """
+        new_times = [self.times[0]]
+        new_values = [self.values[0]]
+        for i in range(0, len(self.times) - 2):
+            # Add i+1, if it's necessary.
+            if abs(self.gradient(i) - self.gradient(i+1)) >= 1000*eps:
+                new_times.append(self.times[i+1])
+                new_values.append(self.values[i+1])
+        new_times.append(self.times[-1])
+        new_values.append(self.values[-1])
+        return LinearlyInterpolatedFunction(new_times, new_values, self.domain)
 
     def _eval_with_rank(self, at: float, rnk: int):
         assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
@@ -133,12 +149,12 @@ class LinearlyInterpolatedFunction:
                 next_time = max(f_image[0], g.times[g_ind])
                 if f.gradient(f_ind) != 0:
                     inverse = f.inverse(next_time, f_ind)
-                    if len(times) == 0 or inverse > times[-1]:
+                    if len(times) == 0 or inverse > times[-1] + eps:
                         times.append(inverse)
                         values.append(g(next_time))
                 g_ind += 1
             if f_ind + 1 < len(f.times):
-                if len(times) == 0 or f.times[f_ind + 1] > times[-1]:
+                if len(times) == 0 or f.times[f_ind + 1] > times[-1] + eps:
                     times.append(f.times[f_ind + 1])
                     values.append(g(f.values[f_ind + 1]))
             f_ind += 1
@@ -183,13 +199,13 @@ class LinearlyInterpolatedFunction:
                 grad_min = f[curr_min].gradient(ind[curr_min] - 1)
                 grad_other = f[other].gradient(ind[other] - 1)
                 difference = grad_min - grad_other
-                assert difference > eps
-                t = next_time + (curr_other_val - curr_min_val) / difference
-                if len(times) == 0 or t > times[-1]:
-                    times.append(t)
+                if difference > eps:
+                    t = next_time + (curr_other_val - curr_min_val) / difference
+                    if len(times) == 0 or t > times[-1] + eps:
+                        times.append(t)
                 curr_min = fct
                 other = 1 - fct
-            if fct == curr_min and (len(times) == 0 or next_time > times[-1]):
+            if fct == curr_min and (len(times) == 0 or next_time > times[-1] + eps):
                 times.append(next_time)
             ind[fct] += 1
 
@@ -201,10 +217,10 @@ class LinearlyInterpolatedFunction:
                 curr_other_val = f[other](times[-1])
                 difference = grad_min - grad_other
                 t = times[-1] + (curr_other_val - curr_min_val) / difference
-                if times[-1] < t <= new_domain[1]:
+                if times[-1] + eps < t <= new_domain[1]:
                     # Min function will change once again. We need another two points to adjust the gradient.
                     times.append(t)
-                    if t < new_domain[1]:
+                    if t + eps < new_domain[1]:
                         times.append(t + 1 if new_domain[1] == float('inf') else new_domain[1])
 
         values = [min(self(t), otherf(t)) for t in times]
@@ -240,14 +256,14 @@ class LinearlyInterpolatedFunction:
             else:
                 return self.inverse(bound, len(self.times) - 1)
 
-    def ensure_monotone(self) -> LinearlyInterpolatedFunction:
+    def ensure_monotone(self, assert_monotone: bool) -> LinearlyInterpolatedFunction:
         """
         This function makes sure that an almost monotone function becomes actually monotone.
         It only fixes values where the monotonicity is broken most likely due to rounding errors.
         """
         new_values = self.values.copy()
         for i in range(len(new_values) - 1):
-            assert new_values[i] <= new_values[i + 1] + eps
+            assert not assert_monotone or new_values[i] <= new_values[i + 1] + eps
             new_values[i + 1] = max(new_values[i], new_values[i + 1])
         return LinearlyInterpolatedFunction(self.times, new_values, self.domain)
 
@@ -280,7 +296,7 @@ class LinearlyInterpolatedFunction:
 
     def extend(self, time: float, value: float):
         assert time >= self.times[-1] - eps
-        if time <= self.times[-1]:
+        if time <= self.times[-1] + eps:
             #  Simply replace the last value
             self.values[-1] = value
         else:

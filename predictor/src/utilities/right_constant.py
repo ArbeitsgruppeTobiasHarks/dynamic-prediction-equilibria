@@ -48,7 +48,7 @@ class RightConstantFunction:
 
     def extend(self, start_time: float, value: float):
         assert start_time >= self.times[-1] - eps
-        if start_time <= self.times[-1]:
+        if start_time <= self.times[-1] + eps:
             #  Simply replace the last value
             self.values[-1] = value
         elif self.values[-1] != value:

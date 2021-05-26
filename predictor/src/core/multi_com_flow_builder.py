@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Generator, Optional, Dict, List
 
 import numpy as np
+from functools import reduce
 
 from core.bellman_ford import bellman_ford
 from core.constant_predictor import ConstantPredictor
@@ -44,6 +45,12 @@ class MultiComFlowBuilder:
         reaching_nodes = [
             self.network.graph.get_nodes_reaching(commodity.sink) for commodity in self.network.commodities
         ]
+        reachable_nodes = [
+            self.network.graph.get_reachable_nodes(commodity.source) for commodity in self.network.commodities
+        ]
+        important_nodes = [
+            reaching_nodes[i].intersection(reachable_nodes[i]) for i in range(len(self.network.commodities))
+        ]
         assert all(c.source in reaching_nodes[i] for i, c in enumerate(self.network.commodities))
 
         next_reroute_time = flow.phi
@@ -54,6 +61,7 @@ class MultiComFlowBuilder:
         handle_nodes = set(self.network.graph.nodes.values())
         queues = None
 
+        yield flow
         while flow.phi < float('inf'):
             if self.reroute_interval is None or flow.phi >= next_reroute_time - eps:
                 # PREDICT NEW QUEUES
@@ -85,7 +93,9 @@ class MultiComFlowBuilder:
                             for v, label in const_labels[i].items()
                         }
                     else:
-                        labels[i] = bellman_ford(commodity.sink, costs[commodity.predictor], flow.phi)
+                        labels[i] = bellman_ford(
+                            commodity.sink, costs[commodity.predictor], important_nodes[i], flow.phi
+                        )
                 next_reroute_time += self.reroute_interval
                 handle_nodes = set(self.network.graph.nodes.values())
 
@@ -97,7 +107,7 @@ class MultiComFlowBuilder:
             for i, commodity in enumerate(self.network.commodities):
                 node_inflow: Dict[Node, float] = {
                     v: sum(flow.outflow[e.id][i](flow.phi) for e in v.incoming_edges)
-                    for v in reaching_nodes[i].intersection(handle_nodes)
+                    for v in important_nodes[i].intersection(handle_nodes)
                 }
                 if commodity.source in handle_nodes:
                     node_inflow[commodity.source] += commodity.demand
@@ -112,11 +122,14 @@ class MultiComFlowBuilder:
                     new_inflow_i = self.distributor.distribute(flow.phi, node_inflow, commodity.sink, queues, labels[i],
                                                                costs[commodity.predictor])
                     inflow_per_comm.append(new_inflow_i)
-
+            all_keys = reduce(lambda acc, item: acc.union(item.keys()), inflow_per_comm, set())
             new_inflow = {
                 e: np.asarray([
-                    inflow_per_comm[i][e] if e in inflow_per_comm[i].keys() else 0. for i in range(n)
-                ]) for e in inflow_per_comm[0].keys()
+                    inflow_per_comm[i][e]
+                    if e in inflow_per_comm[i].keys() else
+                    flow.inflow[e][i].values[-1]
+                    for i in range(n)
+                ]) for e in all_keys
             }
 
             max_ext_length = next_reroute_time - flow.phi
