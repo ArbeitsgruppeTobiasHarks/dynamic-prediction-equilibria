@@ -24,7 +24,8 @@ def network_from_csv(path: str) -> Network:
     return network
 
 
-def add_demands_to_network(network: Network, demands_path: str, use_default_demands: bool):
+def add_demands_to_network(network: Network, demands_path: str, use_default_demands: bool,
+                           suppress_ignored: bool = False):
     if not use_default_demands:
         with open("./seed.txt", "r") as file:
             seed = int(file.read())
@@ -37,7 +38,8 @@ def add_demands_to_network(network: Network, demands_path: str, use_default_dema
         source = network.graph.nodes[row[0]]
         sink = network.graph.nodes[row[1]]
         if source not in network.graph.get_nodes_reaching(sink):
-            print(f"Did not add the commodity of row {i}! The source #{source} can not reach the sink #{sink}!")
+            if not suppress_ignored:
+                print(f"Did not add the commodity of row {i}! The source #{source} can not reach the sink #{sink}!")
         else:
             demand = row[2] if use_default_demands else random.randint(20, 100)
             network.add_commodity(row[0], row[1], demand, 0)
