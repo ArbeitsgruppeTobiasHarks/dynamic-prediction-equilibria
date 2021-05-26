@@ -77,7 +77,7 @@ class Network:
         important_nodes = set()
         for commodity in self.commodities:
             reaching_t = self.graph.get_nodes_reaching(commodity.sink)
-            reachable_from_s = self.graph.get_nodes_reachable(commodity.source)
+            reachable_from_s = self.graph.get_reachable_nodes(commodity.source)
             important_nodes = important_nodes.union(reaching_t.intersection(reachable_from_s))
 
         remove_nodes = set(self.graph.nodes.values()).difference(important_nodes)

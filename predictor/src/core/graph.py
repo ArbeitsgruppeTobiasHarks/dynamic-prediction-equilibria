@@ -58,3 +58,17 @@ class DirectedGraph:
                     nodes_found.add(e.node_from)
                     queue.append(e.node_from)
         return nodes_found
+
+    def get_reachable_nodes(self, source: Node) -> Set[Node]:
+        """
+        Returns all nodes that are reachable from source
+        """
+        nodes_found: Set[Node] = {source}
+        queue = [source]
+        while queue:
+            v = queue.pop()
+            for e in v.outgoing_edges:
+                if e.node_to not in nodes_found:
+                    nodes_found.add(e.node_to)
+                    queue.append(e.node_to)
+        return nodes_found
