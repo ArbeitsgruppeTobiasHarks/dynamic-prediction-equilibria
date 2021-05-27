@@ -5,6 +5,7 @@ from typing import Dict
 import numpy as np
 
 from core.graph import Node
+from core.machine_precision import eps
 from utilities.queues import PriorityQueue
 
 
@@ -24,8 +25,11 @@ def dijkstra(
             if v not in dist.keys():
                 dist[v] = relaxation
                 queue.push(v, dist[v])
-            elif dist[v] > relaxation:
+            elif relaxation < dist[v] - eps:
                 dist[v] = relaxation
-                queue.decrease_key(v, relaxation)
+                if queue.has(v):
+                    queue.decrease_key(v, relaxation)
+                else:
+                    queue.push(v, relaxation)
 
     return dist
