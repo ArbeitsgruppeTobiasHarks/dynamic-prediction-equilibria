@@ -7,7 +7,7 @@ from functools import reduce
 
 from core.bellman_ford import bellman_ford
 from core.constant_predictor import ConstantPredictor
-from core.dijkstra import dijkstra
+from core.dijkstra import dijkstra, realizing_dijkstra
 from core.distributor import Distributor
 from core.graph import Node
 from core.linear_regression_predictor import LinearRegressionPredictor
@@ -16,7 +16,6 @@ from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
 from utilities.interpolate import LinearlyInterpolatedFunction
-from utilities.queues import PriorityQueue
 
 
 class MultiComFlowBuilder:
@@ -166,30 +165,7 @@ class MultiComFlowBuilder:
 
             if s not in self._active_outgoing.keys():
                 # Do Time-Dependent dijkstra from s to t to find active outgoing edges of s
-                arrival_times: Dict[Node, float] = {s: phi}
-                queue: PriorityQueue[Node] = PriorityQueue([(s, phi)])
-                realised_cost = {}
-                stop_after = float('inf')
-                while len(queue) > 0:
-                    arrival_time = queue.min_key()
-                    v = queue.pop()
-                    if v == sink:
-                        stop_after = arrival_time
-                    if arrival_time > stop_after:
-                        break
-
-                    for e in v.outgoing_edges:
-                        w = e.node_to
-                        if w not in interesting_nodes:
-                            continue
-                        realised_cost[e] = costs[e.id](arrival_time)
-                        relaxation = arrival_times[v] + realised_cost[e]
-                        if w not in arrival_times.keys():
-                            arrival_times[w] = relaxation
-                            queue.push(w, relaxation)
-                        elif relaxation < arrival_times[w]:
-                            arrival_times[w] = relaxation
-                            queue.decrease_key(w, relaxation)
+                arrival_times, realised_cost = realizing_dijkstra(phi, s, sink, interesting_nodes, costs)
 
                 # Dijkstra done. Now searching all active edges leading to t.
                 active_edges = []
