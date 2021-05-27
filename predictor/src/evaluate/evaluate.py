@@ -66,15 +66,7 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
             milestone += reroute_interval
             last_milestone_time = new_milestone_time
     print()
-    travel_times = []
-
-    for i in new_commodities:
-        net_outflow: RightConstantFunction = sum(flow.outflow[e.id][i] for e in commodity.sink.incoming_edges)
-        accum_net_outflow = net_outflow.integral()
-        avg_travel_time = horizon / 2 - \
-                          accum_net_outflow.integrate(0., horizon) / (horizon * demand_per_comm)
-        travel_times.append(avg_travel_time)
-
+    travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities]
     save_dict = {
         "flow": flow,
         "prediction_horizon": prediction_horizon,
