@@ -21,8 +21,8 @@ class RegularizedLinearPredictor(Predictor):
 
     def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
         phi_minus_delta = phi - self.delta
-        queue_at_phi_minus_delta = np.asarray([queue(phi_minus_delta) for queue in old_queues])
-        queue_at_phi = np.asarray([queue(phi) for queue in old_queues])
+        queue_at_phi_minus_delta = np.asarray([max(0., queue(phi_minus_delta)) for queue in old_queues])
+        queue_at_phi = np.asarray([max(0., queue(phi)) for queue in old_queues])
 
         new_queues = np.maximum(
             np.zeros(len(self.network.graph.edges)),

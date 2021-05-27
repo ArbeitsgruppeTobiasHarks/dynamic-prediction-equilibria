@@ -20,7 +20,7 @@ class ConstantPredictor(Predictor):
         )
 
     def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
-        queues = np.array([queue(phi) for queue in old_queues])
+        queues = np.array([max(0., queue(phi)) for queue in old_queues])
 
         return PredictionResult(
             [phi, phi + 1],
