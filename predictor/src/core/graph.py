@@ -13,6 +13,9 @@ class Edge:
         self.node_to = node_to
         self.id = id
 
+    def __str__(self):
+        return str(self.id)
+
 
 class Node:
     id: int
