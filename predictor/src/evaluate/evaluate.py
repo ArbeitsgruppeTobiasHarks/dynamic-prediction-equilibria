@@ -89,39 +89,46 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
 def main():
     plot = False
     y = [[], [], [], [], []]
+    #selected_commodity = -1
     while True:
-        # network = build_sample_network()
-        # network.add_commodity(0, 2, 3, 0)
-        # network.add_commodity(3, 2, 1, 0)
-        network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_small.arcs'
-        network = network_from_csv(network_path)
-        demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo.demands'
-        add_demands_to_network(network, demands_path, True, suppress_ignored=True)
-        network.remove_unnecessary_nodes()
-        with open("./next_commodity.txt", "r") as file:
-            selected_commodity = int(file.read())
-        with open("./next_commodity.txt", "w") as file:
-            file.write(str(selected_commodity + 1))
+        try:
+            #network = build_sample_network()
+            #network.add_commodity(0, 2, 15, 0)
+            #network.add_commodity(3, 2, 1, 0)
+            #selected_commodity += 1
+            network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_small.arcs'
+            network = network_from_csv(network_path)
+            demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo.demands'
+            add_demands_to_network(network, demands_path, True, suppress_ignored=True)
+            network.remove_unnecessary_nodes()
+            with open("./next_commodity.txt", "r") as file:
+                selected_commodity = int(file.read())
+            with open("./next_commodity.txt", "w") as file:
+                file.write(str(selected_commodity + 1))
+            if selected_commodity >= len(network.commodities):
+                break
+            times = evaluate_single_run(network, selected_commodity, 400, 5)
+            for i, value in enumerate(times):
+                y[i].append(value)
 
-        if selected_commodity >= len(network.commodities):
-            break
-        times = evaluate_single_run(network, selected_commodity, 400, 5)
-        for i, value in enumerate(times):
-            y[i].append(value)
-
-        if plot:
-            for i in range(len(y)):
-                plt.plot(range(len(y[0])), y[i], label=[
-                    "Constant Predictor",
-                    "Zero Predictor",
-                    "Linear Regression Predictor",
-                    "Linear Predictor",
-                    "Regularized Linear Predictor"
-                ][i])
-            plt.title("Avg travel time when splitting commodity x uniformly")
-            plt.legend()
-            plt.grid(which='both')
-            plt.show()
+            if plot:
+                for i in range(len(y)):
+                    plt.plot(range(len(y[0])), y[i], label=[
+                        "Constant Predictor",
+                        "Zero Predictor",
+                        "Linear Regression Predictor",
+                        "Linear Predictor",
+                        "Regularized Linear Predictor"
+                    ][i])
+                plt.title("Avg travel time when splitting commodity x uniformly")
+                plt.legend()
+                plt.grid(which='both')
+                plt.show()
+            else:
+                print("The following average travel times were computed:")
+                print(y)
+        except Exception as e:
+            print(e)
 
 
 if __name__ == '__main__':
