@@ -57,6 +57,10 @@ class UniformDistributor(Distributor):
         for v in node_inflow.keys():
             if v == sink:
                 continue
+            if node_inflow[v] == 0:
+                for e in v.outgoing_edges:
+                    new_inflow[e.id] = 0.
+                continue
 
             active_edges = []
             for e in v.outgoing_edges:
