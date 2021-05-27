@@ -1,6 +1,6 @@
 import datetime
 
-import pickle
+import json
 
 import os
 from matplotlib import pyplot as plt
@@ -19,7 +19,7 @@ from test.sample_network import build_sample_network
 from utilities.right_constant import RightConstantFunction
 
 
-def evaluate_single_run(network: Network, original_commidity: int, split_commodity: int, horizon: float, reroute_interval: float,
+def evaluate_single_run(network: Network, original_commodity: int, split_commodity: int, horizon: float, reroute_interval: float,
                         suppress_log: bool = False):
     prediction_horizon = 0.05 * horizon
 
@@ -49,7 +49,7 @@ def evaluate_single_run(network: Network, original_commidity: int, split_commodi
             datetime.timedelta(seconds=round(start_time))
     ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
     if not suppress_log:
-        print(f"Flow#{original_commidity} built until phi={flow.phi}; Started At={start_date_time}")
+        print(f"Flow#{original_commodity} built until phi={flow.phi}; Started At={start_date_time}")
     milestone = reroute_interval
     while flow.phi < horizon:
         flow = next(generator)
@@ -62,7 +62,7 @@ def evaluate_single_run(network: Network, original_commidity: int, split_commodi
                     datetime.timedelta(seconds=round(new_milestone_time + remaining_time))
             ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
             if not suppress_log:
-                print(f"Flow#{original_commidity} built until phi={flow.phi:.1f}; " +
+                print(f"Flow#{original_commodity} built until phi={flow.phi:.1f}; " +
                       f"Time Elapsed={datetime.timedelta(seconds=round(elapsed))}; " +
                       f"Estimated Remaining Time={datetime.timedelta(seconds=round(remaining_time))}; " +
                       f"Finished at {finish_time}; " +
@@ -74,17 +74,17 @@ def evaluate_single_run(network: Network, original_commidity: int, split_commodi
     save_dict = {
         "prediction_horizon": prediction_horizon,
         "horizon": horizon,
-        "original_commodity": original_commidity,
+        "original_commodity": original_commodity,
         "avg_travel_times": travel_times
     }
 
-    print("The following average travel times were computed for flow#{original_commodity}:")
+    print(f"The following average travel times were computed for flow#{original_commodity}:")
     print(travel_times)
 
     now = datetime.datetime.now()
     os.makedirs("../../out/evaluation", exist_ok=True)
-    with open(f"../../out/evaluation/{original_commidity}.{str(now)}.pickle", "wb") as file:
-        pickle.dump(save_dict, file)
+    with open(f"../../out/evaluation/{original_commodity}.{str(now)}.json", "w") as file:
+        json.dump(save_dict, file)
     return travel_times
 
 
@@ -137,13 +137,13 @@ def eval_sample():
         print(f"Calculated for demand={demand}. times={times}")
         demand += step_size
     print(avg_times)
-    with open("./avg_times_sample.pickle", "wb") as file:
-        pickle.dump(avg_times, file)
+    with open("./avg_times_sample.json", "w") as file:
+        json.dump(avg_times, file)
 
 
 def sample_from_file_to_tikz():
-    with open("./avg_times_sample.pickle", "rb") as file:
-        avg_times = pickle.load(file)
+    with open("./avg_times_sample.json", "r") as file:
+        avg_times = json.load(file)
     for values in avg_times:
         tikz = ""
         for i, y in enumerate(values):
