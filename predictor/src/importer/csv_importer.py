@@ -42,6 +42,7 @@ def add_demands_to_network(network: Network, demands_path: str, use_default_dema
                 print(f"Did not add the commodity of row {i}! The source #{source} can not reach the sink #{sink}!")
         else:
             if use_default_demands:
+                # after upscaling: between 20 and 100
                 demand = 20 + (row[2] - 10) / 20. * 80. if upscale else row[2]
             else:
                 demand = random.randint(20, 100)
