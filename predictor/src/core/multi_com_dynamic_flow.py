@@ -140,6 +140,8 @@ class MultiComPartialDynamicFlow:
 
     def avg_travel_time(self, i: int, horizon: float) -> float:
         commodity = self._network.commodities[i]
+        if commodity.demand == 0:
+            return 0.
         net_outflow: RightConstantFunction = sum(self.outflow[e.id][i] for e in commodity.sink.incoming_edges)
         accum_net_outflow = net_outflow.integral()
         avg_travel_time = horizon / 2 - accum_net_outflow.integrate(0., horizon) / (horizon * commodity.demand)
