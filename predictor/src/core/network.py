@@ -90,3 +90,26 @@ class Network:
                 self._remove_edge(edge)
             self.graph.nodes.pop(v.id)
         print(f"\rRemoved {len(remove_nodes)} unnecessary nodes.")
+
+    def remove_unnecessary_commodities(self, selected_commodity: int) -> int:
+        """
+        Remove all commodities that cannot interfere with commodity i.
+        """
+        selected_comm = self.commodities[selected_commodity]
+        important_nodes = [
+            self.graph.get_reachable_nodes(i.source).intersection(
+                self.graph.get_nodes_reaching(i.sink)
+            )
+            for i in self.commodities
+        ]
+        remove_commodities = []
+        for i, comm in enumerate(self.commodities):
+            if len(important_nodes[i].intersection(important_nodes[selected_commodity])) == 0:
+                remove_commodities.append(comm)
+
+        print(f"\rRemoving {len(remove_commodities)} non-interfering commodities.", end="\r")
+        for comm in remove_commodities:
+            self.commodities.remove(comm)
+        print(f"Removed {len(remove_commodities)} non-interfering commodities.")
+
+        return self.commodities.index(selected_comm)
