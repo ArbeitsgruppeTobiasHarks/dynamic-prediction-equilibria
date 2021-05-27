@@ -70,7 +70,8 @@ class MultiComPartialDynamicFlow:
 
             accum_edge_inflow = sum(new_inflow[e])
             cur_queue = self.queues[e](phi)
-            assert cur_queue >= 0
+            #assert cur_queue >= 0
+            cur_queue = max(0., cur_queue)
 
             # UPDATE QUEUE_DEPLETIONS
             if cur_queue > 0:
@@ -111,16 +112,23 @@ class MultiComPartialDynamicFlow:
         new_phi = phi + eps
 
         # REFLECT QUEUE CHANGES DUE TO DEPLETIONS
-        while self.queue_depletions.min_key() < new_phi:
+        add_again = []
+        while self.queue_depletions.min_key() <= new_phi + machine_eps:
             depletion_time = self.queue_depletions.min_key()
             e = self.queue_depletions.pop()
-            self.depletion_dict.pop(e)
-            self.queues[e].extend(depletion_time, 0.)
-            self.queues[e].extend(new_phi, 0.)
+            if self.queues[e].times[-1] <= depletion_time + machine_eps:
+                self.queues[e].extend(depletion_time, 0.)
+            if depletion_time <= new_phi - machine_eps:
+                self.queues[e].extend(new_phi, 0.)
+                self.depletion_dict.pop(e)
+            else:
+                add_again.append((e, depletion_time))
+        for e, depletion_time in add_again:
+            self.queue_depletions.push(e, depletion_time)
 
         # REFLECT QUEUE CHANGES DUE TO INFLOW CHANGE
         for (e, cur_queue, slope) in queue_updates_when_eps_known:
-            self.queues[e].extend(new_phi, max(0, cur_queue + eps * slope))
+            self.queues[e].extend(new_phi, max(0., cur_queue + eps * slope))
 
         changed_edges: Set[int] = set()
         while self.outflow_changes.min_key() <= new_phi + machine_eps:
