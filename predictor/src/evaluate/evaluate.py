@@ -131,16 +131,30 @@ def eval_sample():
     max_demand = 30.
     demand = 0.
     step_size = 0.25
+    avg_times = [[], [], [], [], []]
     while demand < max_demand:
         network = build_sample_network()
         network.add_commodity(0, 2, demand, 0)
         times = evaluate_single_run(network, 0, 100, 0.25, suppress_log=True)
+        for i, val in enumerate(times):
+            avg_times[i].append(val)
         print(f"Calculated for demand={demand}. times={times}")
         demand += step_size
+    print(avg_times)
+    with open("./avg_times_sample.pickle", "wb") as file:
+        pickle.dump(avg_times, file)
 
+
+def sample_from_file_to_tikz():
+    with open("./avg_times_sample.pickle", "rb") as file:
+        avg_times = pickle.load(file)
+    for values in avg_times:
+        tikz = ""
+        for i, y in enumerate(values):
+            x = i * 0.25
+            tikz += f"({x}, {y})"
+
+        print(tikz)
 
 if __name__ == '__main__':
-    network = build_sample_network()
-    network.add_commodity(0, 2, 1.75, 0)
-    times = evaluate_single_run(network, 0, 100, 0.25, suppress_log=True)
-    eval_sample()
+    eval_tokyo()
