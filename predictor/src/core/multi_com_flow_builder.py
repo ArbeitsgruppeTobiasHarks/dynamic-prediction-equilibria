@@ -103,6 +103,7 @@ class MultiComFlowBuilder:
                         )
                 next_reroute_time += self.reroute_interval
                 handle_nodes = set(self.network.graph.nodes.values())
+                self._active_outgoing = {}
 
             # DETERMINE OUTFLOW SPLIT
             if self.distributor.needs_queues():
@@ -155,57 +156,62 @@ class MultiComFlowBuilder:
                            costs: List[LinearlyInterpolatedFunction]) -> Dict[int, float]:
         new_inflow = {}
         for s in node_inflow.keys():
+            if s == sink:
+                continue
+
             if node_inflow[s] < eps:
                 for e in s.outgoing_edges:
                     new_inflow[e.id] = 0.
                 continue
 
-            # Do Time-Dependent dijkstra from s to t to find active outgoing edges of s
+            if s not in self._active_outgoing.keys():
+                # Do Time-Dependent dijkstra from s to t to find active outgoing edges of s
+                arrival_times: Dict[Node, float] = {s: phi}
+                queue: PriorityQueue[Node] = PriorityQueue([(s, phi)])
+                realised_cost = {}
+                stop_after = float('inf')
+                while len(queue) > 0:
+                    arrival_time = queue.min_key()
+                    v = queue.pop()
+                    if v == sink:
+                        stop_after = arrival_time
+                    if arrival_time > stop_after:
+                        break
 
-            arrival_times: Dict[Node, float] = {s: phi}
-            queue: PriorityQueue[Node] = PriorityQueue([(s, phi)])
-            realised_cost = {}
-            stop_after = float('inf')
-            while len(queue) > 0:
-                arrival_time = queue.min_key()
-                v = queue.pop()
-                if v == sink:
-                    stop_after = arrival_time
-                if arrival_time > stop_after:
-                    break
+                    for e in v.outgoing_edges:
+                        w = e.node_to
+                        if w not in interesting_nodes:
+                            continue
+                        realised_cost[e] = costs[e.id](arrival_time)
+                        relaxation = arrival_times[v] + realised_cost[e]
+                        if w not in arrival_times.keys():
+                            arrival_times[w] = relaxation
+                            queue.push(w, relaxation)
+                        elif relaxation < arrival_times[w]:
+                            arrival_times[w] = relaxation
+                            queue.decrease_key(w, relaxation)
 
-                for e in v.outgoing_edges:
-                    w = e.node_to
-                    if w not in interesting_nodes:
-                        continue
-                    realised_cost[e] = costs[e.id](arrival_time)
-                    relaxation = arrival_times[v] + realised_cost[e]
-                    if w not in arrival_times.keys():
-                        arrival_times[w] = relaxation
-                        queue.push(w, relaxation)
-                    elif relaxation < arrival_times[w]:
-                        arrival_times[w] = relaxation
-                        queue.decrease_key(w, relaxation)
+                # Dijkstra done. Now searching all active edges leading to t.
+                active_edges = []
+                touched_nodes = {sink}
+                queue: List[Node] = [sink]
+                while queue:
+                    w = queue.pop()
+                    for e in w.incoming_edges:
+                        if e not in realised_cost.keys():
+                            continue
+                        v: Node = e.node_from
+                        if arrival_times[v] + realised_cost[e] <= arrival_times[w] + eps:
+                            if v == s:
+                                active_edges.append(e)
+                            if v not in touched_nodes:
+                                touched_nodes.add(v)
+                                queue.append(v)
 
-            # Dijkstra done. Now searching all active edges leading to t.
-            active_edges = []
-            touched_nodes = {sink}
-            queue: List[Node] = [sink]
-            while queue:
-                w = queue.pop()
-                for e in w.incoming_edges:
-                    if e not in realised_cost.keys():
-                        continue
-                    v: Node = e.node_from
-                    if arrival_times[v] + realised_cost[e] <= arrival_times[w] + eps:
-                        if v == s:
-                            active_edges.append(e)
-                        if v not in touched_nodes:
-                            touched_nodes.add(v)
-                            queue.append(v)
+                assert len(active_edges) > 0
+                self._active_outgoing[s] = active_edges
 
-            assert len(active_edges) > 0
-
+            active_edges = self._active_outgoing[s]
             distribution = node_inflow[s] / len(active_edges)
             for e in active_edges:
                 new_inflow[e.id] = distribution
