@@ -43,7 +43,7 @@ class MultiComFlowBuilder:
         m = len(self.network.graph.edges)
         travel_time = self.network.travel_time
         capacity = self.network.capacity
-        self._active_edges = [{}] * n
+        self._active_edges = [{} for i in range(n)]
 
         # Preprocessing...
         # For each commodity find the nodes that reach the sink
@@ -70,7 +70,7 @@ class MultiComFlowBuilder:
         while flow.phi < float('inf'):
             if self.reroute_interval is None or flow.phi >= next_reroute_time - eps:
                 # PREDICT NEW QUEUES
-                self._active_edges = [{}] * n
+                self._active_edges = [{} for i in range(n)]
                 predictions = [predictor.predict_from_fcts(flow.queues, flow.phi) for predictor in self.predictors]
                 pred_queues_list = [np.asarray(prediction.queues) for prediction in predictions]
                 pred_costs = [[travel_time[e] + pred_queues[:, e] / capacity[e] for e in range(m)]
@@ -222,7 +222,10 @@ class MultiComFlowBuilder:
 
             active_edges = self._active_edges[i][s]
             distribution = node_inflow[s] / len(active_edges)
-            for e in active_edges:
-                new_inflow[e.id] = distribution
+            for e in s.outgoing_edges:
+                if e in active_edges:
+                    new_inflow[e.id] = distribution
+                else:
+                    new_inflow[e.id] = 0.
 
         return new_inflow
