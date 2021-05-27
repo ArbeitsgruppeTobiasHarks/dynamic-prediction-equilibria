@@ -15,6 +15,7 @@ from core.machine_precision import eps
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
+from core.zero_predictor import ZeroPredictor
 from utilities.interpolate import LinearlyInterpolatedFunction
 
 
@@ -69,6 +70,7 @@ class MultiComFlowBuilder:
         while flow.phi < float('inf'):
             if self.reroute_interval is None or flow.phi >= next_reroute_time - eps:
                 # PREDICT NEW QUEUES
+                self._active_edges = [{}] * n
                 predictions = [predictor.predict_from_fcts(flow.queues, flow.phi) for predictor in self.predictors]
                 pred_queues_list = [np.asarray(prediction.queues) for prediction in predictions]
                 pred_costs = [[travel_time[e] + pred_queues[:, e] / capacity[e] for e in range(m)]
@@ -80,8 +82,31 @@ class MultiComFlowBuilder:
                     ]
                     for k in range(len(self.predictors))]
 
-                const_costs = None
+                const_costs = {}
+                for k, predictor in enumerate(self.predictors):
+                    if isinstance(predictor, ConstantPredictor) or isinstance(predictor, ZeroPredictor):
+                        const_costs[k] = travel_time + pred_queues_list[k][0, :] / capacity
+
                 # CALCULATE NEW SHORTEST PATHS
+                """
+                PRECALCULATE FOR CONSTANT PREDICTORS
+                """
+                for i, commodity in enumerate(self.network.commodities):
+                    if isinstance(self.predictors[commodity.predictor], ConstantPredictor) \
+                            or isinstance(self.predictors[commodity.predictor], ZeroPredictor):
+                        const_labels = dijkstra(commodity.sink, const_costs[commodity.predictor])
+                        for v in important_nodes[i]:
+                            if v == commodity.sink:
+                                continue
+                            active_edges = []
+                            for e in v.outgoing_edges:
+                                w = e.node_to
+                                if w not in const_labels.keys():
+                                    continue
+                                if const_costs[commodity.predictor][e.id] + const_labels[w] <= const_labels[v] + eps:
+                                    active_edges.append(e)
+                            assert len(active_edges) > 0
+                            self._active_edges[i][v] = active_edges
                 # for i, commodity in enumerate(self.network.commodities):
                 #     if isinstance(self.predictors[commodity.predictor], ConstantPredictor):
                 #         # Handle constant predictor separately for better performance
@@ -106,7 +131,6 @@ class MultiComFlowBuilder:
 
                 next_reroute_time += self.reroute_interval
                 handle_nodes = set(self.network.graph.nodes.values())
-                self._active_edges = [{}] * n
 
             # DETERMINE OUTFLOW SPLIT
             # if self.distributor.needs_queues():
@@ -124,6 +148,7 @@ class MultiComFlowBuilder:
                 new_inflow_i = self.distribute(i, next_reroute_time - self.reroute_interval, node_inflow,
                                                commodity.sink,
                                                important_nodes[i], costs[commodity.predictor])
+                inflow_per_comm.append(new_inflow_i)
 
                 # if isinstance(self.predictors[commodity.predictor], ConstantPredictor) and \
                 #         self.distributor.supports_const():
