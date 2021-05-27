@@ -19,7 +19,8 @@ from test.sample_network import build_sample_network
 from utilities.right_constant import RightConstantFunction
 
 
-def evaluate_single_run(network: Network, split_commodity: int, horizon: float, reroute_interval: float):
+def evaluate_single_run(network: Network, split_commodity: int, horizon: float, reroute_interval: float,
+                        suppress_log: bool = False):
     prediction_horizon = 0.05 * horizon
 
     predictors = [
@@ -47,7 +48,8 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
             datetime.datetime(1970, 1, 1) +
             datetime.timedelta(seconds=round(start_time))
     ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
-    print(f"Flow built until phi={flow.phi}; Started At={start_date_time}")
+    if not suppress_log:
+        print(f"Flow built until phi={flow.phi}; Started At={start_date_time}")
     milestone = reroute_interval
     while flow.phi < horizon:
         flow = next(generator)
@@ -59,10 +61,11 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
                     datetime.datetime(1970, 1, 1) +
                     datetime.timedelta(seconds=round(new_milestone_time + remaining_time))
             ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
-            print(f"Flow built until phi={flow.phi:.1f}; "+
-                  f"Time Elapsed={datetime.timedelta(seconds=round(elapsed))}; " +
-                  f"Estimated Remaining Time={datetime.timedelta(seconds=round(remaining_time))}; " +
-                  f"Finished at {finish_time}")
+            if not suppress_log:
+                print(f"Flow built until phi={flow.phi:.1f}; " +
+                      f"Time Elapsed={datetime.timedelta(seconds=round(elapsed))}; " +
+                      f"Estimated Remaining Time={datetime.timedelta(seconds=round(remaining_time))}; " +
+                      f"Finished at {finish_time}")
             milestone += reroute_interval
             last_milestone_time = new_milestone_time
     print()
@@ -82,15 +85,15 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
     return travel_times
 
 
-def main():
+def eval_tokyo():
     plot = False
     y = [[], [], [], [], []]
-    #selected_commodity = -1
+    # selected_commodity = -1
     while True:
-        #network = build_sample_network()
-        #network.add_commodity(0, 2, 15, 0)
-        #network.add_commodity(3, 2, 1, 0)
-        #selected_commodity += 1
+        # network = build_sample_network()
+        # network.add_commodity(0, 2, 15, 0)
+        # network.add_commodity(3, 2, 1, 0)
+        # selected_commodity += 1
         network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_small.arcs'
         network = network_from_csv(network_path)
         demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo.demands'
@@ -124,5 +127,20 @@ def main():
             print(y)
 
 
+def eval_sample():
+    max_demand = 30.
+    demand = 0.
+    step_size = 0.25
+    while demand < max_demand:
+        network = build_sample_network()
+        network.add_commodity(0, 2, demand, 0)
+        times = evaluate_single_run(network, 0, 100, 0.25, suppress_log=True)
+        print(f"Calculated for demand={demand}. times={times}")
+        demand += step_size
+
+
 if __name__ == '__main__':
-    main()
+    network = build_sample_network()
+    network.add_commodity(0, 2, 1.75, 0)
+    times = evaluate_single_run(network, 0, 100, 0.25, suppress_log=True)
+    eval_sample()
