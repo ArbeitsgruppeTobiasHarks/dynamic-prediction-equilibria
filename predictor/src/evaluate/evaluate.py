@@ -19,7 +19,7 @@ from test.sample_network import build_sample_network
 from utilities.right_constant import RightConstantFunction
 
 
-def evaluate_single_run(network: Network, split_commodity: int, horizon: float, reroute_interval: float,
+def evaluate_single_run(network: Network, original_commidity: int, split_commodity: int, horizon: float, reroute_interval: float,
                         suppress_log: bool = False):
     prediction_horizon = 0.05 * horizon
 
@@ -49,7 +49,7 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
             datetime.timedelta(seconds=round(start_time))
     ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
     if not suppress_log:
-        print(f"Flow built until phi={flow.phi}; Started At={start_date_time}")
+        print(f"Flow#{original_commidity} built until phi={flow.phi}; Started At={start_date_time}")
     milestone = reroute_interval
     while flow.phi < horizon:
         flow = next(generator)
@@ -62,25 +62,28 @@ def evaluate_single_run(network: Network, split_commodity: int, horizon: float, 
                     datetime.timedelta(seconds=round(new_milestone_time + remaining_time))
             ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
             if not suppress_log:
-                print(f"Flow built until phi={flow.phi:.1f}; " +
+                print(f"Flow#{original_commidity} built until phi={flow.phi:.1f}; " +
                       f"Time Elapsed={datetime.timedelta(seconds=round(elapsed))}; " +
                       f"Estimated Remaining Time={datetime.timedelta(seconds=round(remaining_time))}; " +
-                      f"Finished at {finish_time}")
+                      f"Finished at {finish_time}; " +
+                      f"TravelTimes={[flow.avg_travel_time(i, flow.phi) for i in new_commodities]}")
             milestone += reroute_interval
             last_milestone_time = new_milestone_time
     print()
     travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities]
     save_dict = {
-        "flow": flow,
         "prediction_horizon": prediction_horizon,
         "horizon": horizon,
-        "selected_commodity": split_commodity,
+        "original_commodity": original_commidity,
         "avg_travel_times": travel_times
     }
 
+    print("The following average travel times were computed for flow#{original_commodity}:")
+    print(travel_times)
+
     now = datetime.datetime.now()
     os.makedirs("../../out/evaluation", exist_ok=True)
-    with open(f"../../out/evaluation/{split_commodity}.{str(now)}.pickle", "wb") as file:
+    with open(f"../../out/evaluation/{original_commidity}.{str(now)}.pickle", "wb") as file:
         pickle.dump(save_dict, file)
     return travel_times
 
@@ -89,19 +92,19 @@ def eval_tokyo():
     plot = False
     y = [[], [], [], [], []]
     while True:
-        network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_small.arcs'
+        network_path = '/home/michael/Nextcloud2/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_small.arcs'
         network = network_from_csv(network_path)
-        demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo.demands'
+        demands_path = '/home/michael/Nextcloud2/Universität/2021-SS/softwareproject/data/from-kostas/tokyo.demands'
         add_demands_to_network(network, demands_path, True, suppress_ignored=True)
         network.remove_unnecessary_nodes()
         with open("./next_commodity.txt", "r") as file:
-            selected_commodity = int(file.read())
+            original_commodity = int(file.read())
         with open("./next_commodity.txt", "w") as file:
-            file.write(str(selected_commodity + 1))
-        if selected_commodity >= len(network.commodities):
+            file.write(str(original_commodity + 1))
+        if original_commodity >= len(network.commodities):
             break
-        selected_commodity = network.remove_unnecessary_commodities(selected_commodity)
-        times = evaluate_single_run(network, selected_commodity, 400, 5)
+        selected_commodity = network.remove_unnecessary_commodities(original_commodity)
+        times = evaluate_single_run(network, original_commodity, selected_commodity, 400., 5)
         for i, value in enumerate(times):
             y[i].append(value)
 
@@ -118,9 +121,6 @@ def eval_tokyo():
             plt.legend()
             plt.grid(which='both')
             plt.show()
-        else:
-            print("The following average travel times were computed:")
-            print(y)
 
 
 def eval_sample():
