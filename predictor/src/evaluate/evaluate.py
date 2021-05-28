@@ -92,17 +92,17 @@ def evaluate_single_run(network: Network, original_commodity: int, split_commodi
 def eval_tokyo():
     plot = False
     y = [[], [], [], [], []]
-    original_commodity = 3
+    #original_commodity = 3
     while True:
         network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.arcs'
         network = network_from_csv(network_path)
         demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.demands'
         add_demands_to_network(network, demands_path, True, suppress_ignored=False, upscale=True)
         network.remove_unnecessary_nodes()
-        #with open("./next_commodity.txt", "r") as file:
-        #    original_commodity = int(file.read())
-        #with open("./next_commodity.txt", "w") as file:
-        #    file.write(str(original_commodity + 1))
+        with open("./next_commodity.txt", "r") as file:
+            original_commodity = int(file.read())
+        with open("./next_commodity.txt", "w") as file:
+            file.write(str(original_commodity + 1))
         if original_commodity >= len(network.commodities):
             break
         #network.commodities = [network.commodities[original_commodity]]
@@ -127,7 +127,7 @@ def eval_tokyo():
             plt.grid(which='both')
             plt.show()
 
-        original_commodity += 1
+        #original_commodity += 1
 
 
 def tokyo_from_file_to_tikz():
