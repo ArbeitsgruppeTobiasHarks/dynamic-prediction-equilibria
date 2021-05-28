@@ -1,5 +1,6 @@
 import pickle
 
+import numpy as np
 from core.constant_predictor import ConstantPredictor
 from core.multi_com_flow_builder import MultiComFlowBuilder
 from core.single_edge_distributor import SingleEdgeDistributor
@@ -13,19 +14,26 @@ if __name__ == '__main__':
     if check_for_optimizations:
         assert (lambda: False)(), "Turn on the optimizer for the real speeeeeeeed"
     while True:
-        network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_small.arcs'
+        network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.arcs'
         network = network_from_csv(network_path)
-        demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo.demands'
+        demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.demands'
         seed = add_demands_to_network(network, demands_path, use_default_demands)
-
+        print(f"The network contains {len(network.graph.nodes)} nodes and {len(network.graph.edges)} edges.")
+        print(f"Moreover, there are {len(network.commodities)} commodities.")
+        print(f"Minimum/Maximum capacity: {np.min(network.capacity)}/{np.max(network.capacity)}")
+        print(f"Minimum/Maximum transit time: {np.min(network.travel_time)}/{np.max(network.travel_time)}")
+        print
         print(f"Generating flow with seed {seed}...")
         max_in_degree = 0
         max_out_degree = 0
+        max_degree = 0
         for node in network.graph.nodes.values():
+            max_degree = max(max_degree, len(node.incoming_edges) + len(node.outgoing_edges))
             max_in_degree = max(max_in_degree, len(node.incoming_edges))
             max_out_degree = max(max_out_degree, len(node.outgoing_edges))
         print(f"Maximum indgree: {max_in_degree}")
         print(f"Maximum outdegree: {max_out_degree}")
+        print(f"Maximum degree: {max_degree}")
 
         predictors = [ConstantPredictor(network)]
         distributor = SingleEdgeDistributor(network)

@@ -23,6 +23,19 @@ class LinearRegressionPredictor(Predictor):
         queues_minus_3 = np.array([max(0., queue(phi - 3)) for queue in old_queues])
         queues_minus_4 = np.array([max(0., queue(phi - 4)) for queue in old_queues])
 
+        m = len(old_queues)
+        zeros = np.zeros(m)
+
+        if np.array_equal(queues_minus_0, zeros) and \
+                np.array_equal(queues_minus_1, zeros) and \
+                np.array_equal(queues_minus_2, zeros) and \
+                np.array_equal(queues_minus_3, zeros) and \
+                np.array_equal(queues_minus_4, zeros):
+            return PredictionResult(
+                [phi, phi + 1],
+                [zeros, zeros]
+            )
+
         return PredictionResult(
             [phi, phi + 1, phi + 2, phi + 3, phi + 4, phi + 5, phi + 6, phi + 7, phi + 8, phi + 9, phi + 10],
             [

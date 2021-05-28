@@ -1,9 +1,8 @@
-import datetime
-
 import json
 
+import datetime
 import os
-from matplotlib import pyplot as plt
+
 import time
 
 from core.constant_predictor import ConstantPredictor
@@ -14,8 +13,7 @@ from core.network import Network, Commodity
 from core.reg_linear_predictor import RegularizedLinearPredictor
 from core.uniform_distributor import UniformDistributor
 from core.zero_predictor import ZeroPredictor
-from importer.csv_importer import network_from_csv, add_demands_to_network
-
+from test.sample_network import build_sample_network
 
 def evaluate_single_run(network: Network, original_commodity: int, split_commodity: int, horizon: float,
                         reroute_interval: float,
@@ -32,9 +30,9 @@ def evaluate_single_run(network: Network, original_commodity: int, split_commodi
     ]
 
     commodity = network.commodities[split_commodity]
-    # network.commodities.remove(commodity)
+    network.commodities.remove(commodity)
     new_commodities = range(len(network.commodities), len(network.commodities) + len(predictors))
-    demand_per_comm = 0.125
+    demand_per_comm = commodity.demand / len(predictors)
     for i in range(len(predictors)):
         network.commodities.append(Commodity(commodity.source, commodity.sink, demand_per_comm, i))
 
@@ -83,70 +81,42 @@ def evaluate_single_run(network: Network, original_commodity: int, split_commodi
 
     if save:
         now = datetime.datetime.now()
-        os.makedirs("../../out/tiny-new-scenario", exist_ok=True)
-        with open(f"../../out/tiny-new-scenario/{original_commodity}.{str(now)}.json", "w") as file:
+        os.makedirs("../../out/evaluation-without-bg", exist_ok=True)
+        with open(f"../../out/evaluation-without-bg/{original_commodity}.{str(now)}.json", "w") as file:
             json.dump(save_dict, file)
     return travel_times
 
 
-def eval_tokyo():
-    plot = False
-    y = [[], [], [], [], []]
-    original_commodity = 3
-    while True:
-        network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.arcs'
-        network = network_from_csv(network_path)
-        demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.demands'
-        add_demands_to_network(network, demands_path, True, suppress_ignored=False, upscale=True)
-        network.remove_unnecessary_nodes()
-        #with open("./next_commodity.txt", "r") as file:
-        #    original_commodity = int(file.read())
-        #with open("./next_commodity.txt", "w") as file:
-        #    file.write(str(original_commodity + 1))
-        if original_commodity >= len(network.commodities):
-            break
-        #network.commodities = [network.commodities[original_commodity]]
-        #selected_commodity = original_commodity
-        #network.commodities[0].demand *= 5
-        selected_commodity = network.remove_unnecessary_commodities(original_commodity)
-        times = evaluate_single_run(network, original_commodity, selected_commodity, 100., 2.5)
-        for i, value in enumerate(times):
-            y[i].append(value)
 
-        if plot:
-            for i in range(len(y)):
-                plt.plot(range(len(y[0])), y[i], label=[
-                    "Constant Predictor",
-                    "Zero Predictor",
-                    "Linear Regression Predictor",
-                    "Linear Predictor",
-                    "Regularized Linear Predictor"
-                ][i])
-            plt.title("Avg travel time when splitting commodity x uniformly")
-            plt.legend()
-            plt.grid(which='both')
-            plt.show()
-
-        original_commodity += 1
+def eval_sample():
+    max_demand = 30.
+    demand = 0.
+    step_size = 0.25
+    avg_times = [[], [], [], [], []]
+    while demand < max_demand:
+        network = build_sample_network()
+        network.add_commodity(0, 2, demand, 0)
+        times = evaluate_single_run(network, 0, 0, 100, 0.25, suppress_log=True, save=False)
+        for i, val in enumerate(times):
+            avg_times[i].append(val)
+        print(f"Calculated for demand={demand}. times={times}")
+        demand += step_size
+    print(avg_times)
+    with open("./avg_times_sample.json", "w") as file:
+        json.dump(avg_times, file)
 
 
-def tokyo_from_file_to_tikz():
-    directory = "../../out/evaluation/"
-    files = os.listdir(directory)
-    times = [[], [], [], []]  # Zero, LinearRegression, Linear, RegularizedLinear
-    for file_path in files:
-        with open(os.path.join(directory, file_path), "r") as file:
-            res_dict = json.load(file)
-            travel_times = res_dict['avg_travel_times']
-            for i in range(len(times)):
-                if any(travel_times[j] != travel_times[0] for j in range(len(travel_times))):
-                    times[i].append(travel_times[i + 1] - travel_times[0])
-    for i in range(len(times)):
-        tikz = "data \\\\\n"
-        for y in times[i]:
-            tikz += f"{y}\\\\\n"
+def sample_from_file_to_tikz():
+    with open("./avg_times_sample.json", "r") as file:
+        avg_times = json.load(file)
+    for values in avg_times:
+        tikz = ""
+        for i, y in enumerate(values):
+            x = i * 0.25
+            tikz += f"({x}, {y})"
+
         print(tikz)
 
 
 if __name__ == '__main__':
-    eval_tokyo()
+    sample_from_file_to_tikz()

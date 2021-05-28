@@ -70,7 +70,7 @@ class MultiComPartialDynamicFlow:
 
             accum_edge_inflow = sum(new_inflow[e])
             cur_queue = self.queues[e](phi)
-            #assert cur_queue >= 0
+            assert cur_queue > -machine_eps
             cur_queue = max(0., cur_queue)
 
             # UPDATE QUEUE_DEPLETIONS
