@@ -131,22 +131,32 @@ def eval_tokyo():
 
 
 def tokyo_from_file_to_tikz():
-    directory = "../../out/evaluation/"
+    directory = "../../out/tiny-new-scenario/"
     files = os.listdir(directory)
     times = [[], [], [], []]  # Zero, LinearRegression, Linear, RegularizedLinear
+    means = [0, 0, 0, 0, 0]
+    num = 0
     for file_path in files:
         with open(os.path.join(directory, file_path), "r") as file:
             res_dict = json.load(file)
             travel_times = res_dict['avg_travel_times']
-            for i in range(len(times)):
-                if any(travel_times[j] != travel_times[0] for j in range(len(travel_times))):
-                    times[i].append(travel_times[i + 1] - travel_times[0])
+            if any(travel_times[j] != travel_times[0] for j in range(len(travel_times))):
+                for i in range(len(times)):
+                        times[i].append(travel_times[i + 1] / travel_times[0])
+                for j in range(len(means)):
+                    means[j] += travel_times[j]
+                num += 1
     for i in range(len(times)):
         tikz = "data \\\\\n"
         for y in times[i]:
             tikz += f"{y}\\\\\n"
         print(tikz)
 
+    print("Means:")
+    for j in range(len(means)):
+        print(means[j] / num)
+
+
 
 if __name__ == '__main__':
-    eval_tokyo()
+    tokyo_from_file_to_tikz()

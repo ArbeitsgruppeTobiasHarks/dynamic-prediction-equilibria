@@ -22,7 +22,6 @@ if __name__ == '__main__':
         print(f"Moreover, there are {len(network.commodities)} commodities.")
         print(f"Minimum/Maximum capacity: {np.min(network.capacity)}/{np.max(network.capacity)}")
         print(f"Minimum/Maximum transit time: {np.min(network.travel_time)}/{np.max(network.travel_time)}")
-        print
         print(f"Generating flow with seed {seed}...")
         max_in_degree = 0
         max_out_degree = 0
