@@ -25,30 +25,23 @@ class LinearRegressionPredictor(Predictor):
 
         m = len(old_queues)
         zeros = np.zeros(m)
-
-        if np.array_equal(queues_minus_0, zeros) and \
-                np.array_equal(queues_minus_1, zeros) and \
-                np.array_equal(queues_minus_2, zeros) and \
-                np.array_equal(queues_minus_3, zeros) and \
-                np.array_equal(queues_minus_4, zeros):
-            return PredictionResult(
-                [phi, phi + 1],
-                [zeros, zeros]
-            )
-
-        return PredictionResult(
+        mask = (queues_minus_0 == 0) & (queues_minus_1 == 0) & (queues_minus_2 == 0) & (queues_minus_3 == 0) \
+               & (queues_minus_4 == 0)
+        result = PredictionResult(
             [phi, phi + 1, phi + 2, phi + 3, phi + 4, phi + 5, phi + 6, phi + 7, phi + 8, phi + 9, phi + 10],
             [
-                queues_minus_0,
-                queues_minus_0 + 2.68,
-                1.01 * queues_minus_0 + 5.36,
-                1.01 * queues_minus_0 + 8.47,
-                1.02 * queues_minus_0 + 11.67,
-                1.02 * queues_minus_4 + 14.67,
-                1.02 * queues_minus_3 + 14.67,
-                1.02 * queues_minus_2 + 14.67,
-                1.02 * queues_minus_1 + 14.67,
-                1.02 * queues_minus_0 + 14.67,
-                1.02 * queues_minus_0 + 14.67
-             ]
+                np.where(mask, zeros, queues_minus_0),
+                np.where(mask, zeros, queues_minus_0 + 2.68),
+                np.where(mask, zeros, 1.01 * queues_minus_0 + 5.36),
+                np.where(mask, zeros, 1.01 * queues_minus_0 + 8.47),
+                np.where(mask, zeros, 1.02 * queues_minus_0 + 11.67),
+                np.where(mask, zeros, 1.02 * queues_minus_4 + 14.67),
+                np.where(mask, zeros, 1.02 * queues_minus_3 + 14.67),
+                np.where(mask, zeros, 1.02 * queues_minus_2 + 14.67),
+                np.where(mask, zeros, 1.02 * queues_minus_1 + 14.67),
+                np.where(mask, zeros, 1.02 * queues_minus_0 + 14.67),
+                np.where(mask, zeros, 1.02 * queues_minus_0 + 14.67)
+            ]
         )
+
+        return result
