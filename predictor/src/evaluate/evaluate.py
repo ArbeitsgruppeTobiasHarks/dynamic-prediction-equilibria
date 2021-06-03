@@ -67,7 +67,7 @@ def eval_tokyo():
         network_path = '/home/michael/Nextcloud2/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.arcs'
         network = network_from_csv(network_path)
         demands_path = '/home/michael/Nextcloud2/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.demands'
-        add_demands_to_network(network, demands_path, True, suppress_log=False, upscale=True)
+        add_demands_to_network(network, demands_path, use_default_demands=True, suppress_log=False, upscale=True)
         network.remove_unnecessary_nodes()
         with open("./next_commodity.txt", "r") as file:
             original_commodity = int(file.read())

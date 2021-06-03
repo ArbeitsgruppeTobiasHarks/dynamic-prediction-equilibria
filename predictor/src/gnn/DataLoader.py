@@ -57,22 +57,20 @@ class QueueDataset(Dataset):
         return len(self._queues) if self._in_memory else len(self._queue_dirs)
 
 
-def generate_queues(past_timesteps: int, future_timesteps: int):
-    flow_folder = "/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/generated_flows/"
-    output_folder = f"../../out/generated_queues/{past_timesteps},{future_timesteps}/"
-    os.makedirs(output_folder, exist_ok=True)
+def generate_queues(past_timesteps: int, future_timesteps: int, flows_folder: str, out_folder: str):
+    os.makedirs(out_folder, exist_ok=True)
     samples_per_flow = 200
     step_size = 1.
 
-    files = [file for file in os.listdir(flow_folder) if file.endswith(".flow.pickle")]
+    files = [file for file in os.listdir(flows_folder) if file.endswith(".flow.pickle")]
 
     for flow_path in files:
-        with open(os.path.join(flow_folder, flow_path), "rb") as file:
+        with open(os.path.join(flows_folder, flow_path), "rb") as file:
             flow = pickle.load(file)
 
         for i in range(samples_per_flow):
             random.seed(i)
-            pred_time = float(random.randint(50, 300))
+            pred_time = float(random.randint(0, 100))
             times_past_queues = [
                 pred_time - i * step_size for i in range(past_timesteps)
             ]
@@ -86,14 +84,17 @@ def generate_queues(past_timesteps: int, future_timesteps: int):
                 [queue(time) for time in times_future_queues] for queue in flow.queues
             ], dtype=torch.float32)
 
-            os.makedirs(os.path.join(output_folder, f"{flow_path}.{i}"), exist_ok=True)
+            os.makedirs(os.path.join(out_folder, f"{flow_path}.{i}"), exist_ok=True)
 
-            with open(os.path.join(output_folder, f"{flow_path}.{i}/past_queues.pt"), "wb") as file:
+            with open(os.path.join(out_folder, f"{flow_path}.{i}/past_queues.pt"), "wb") as file:
                 torch.save(past_queues, file)
 
-            with open(os.path.join(output_folder, f"{flow_path}.{i}/future_queues.pt"), "wb") as file:
+            with open(os.path.join(out_folder, f"{flow_path}.{i}/future_queues.pt"), "wb") as file:
                 torch.save(future_queues, file)
 
 
 if __name__ == '__main__':
-    generate_queues(5, 5)
+    past_timesteps, future_timesteps = 5, 5
+    flows_folder = "/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/generated_flows/"
+    output_folder = f"../../out/generated_queues/{past_timesteps},{future_timesteps}/"
+    generate_queues(5, 5, flows_folder, output_folder)
