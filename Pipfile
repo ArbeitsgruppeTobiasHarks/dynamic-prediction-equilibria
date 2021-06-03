@@ -10,6 +10,7 @@ pylint = "*"
 matplotlib = "*"
 dgl = "*"
 torch = "*"
+numpy = "*"
 
 [dev-packages]
 
