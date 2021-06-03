@@ -1,4 +1,5 @@
 import random
+from typing import Optional, Tuple, List
 
 from numpy import genfromtxt
 from core.network import Network
@@ -24,22 +25,23 @@ def network_from_csv(path: str) -> Network:
     return network
 
 
-def add_demands_to_network(network: Network, demands_path: str, use_default_demands: bool,
-                           suppress_ignored: bool = False, upscale: bool = True):
-    if not use_default_demands:
-        with open("./seed.txt", "r") as file:
-            seed = int(file.read())
-        with open("./seed.txt", "w") as file:
-            file.write(str(seed + 1))
-        random.seed(seed)
+def add_demands_to_network(network: Network, demands_path: str, use_default_demands: bool = False,
+                           random_seed: Optional[int] = None, upscale: bool = True, suppress_log: bool = False) -> None:
+    if random_seed is None and not use_default_demands:
+        raise ValueError("Please either provide a random_seed or set use_default_demands to true.")
+    if random_seed is not None and use_default_demands:
+        raise ValueError("You provided a random seed, but also set the flag to use default demands.")
+    if random_seed is not None:
+        random.seed(random_seed)
+
     np_data = genfromtxt(demands_path, delimiter=' ')
+    removed_rows: List[Tuple[int, int, int]] = []
     for i, row in enumerate(np_data):
-        # Filter unrealistic / impractical commodities where the source cant reach the sink
+        # Filter out unrealistic commodities where the source cannot reach the sink
         source = network.graph.nodes[row[0]]
         sink = network.graph.nodes[row[1]]
         if source not in network.graph.get_nodes_reaching(sink):
-            if not suppress_ignored:
-                print(f"Did not add the commodity of row {i}! The source #{source} can not reach the sink #{sink}!")
+            removed_rows.append((i, source.id, sink.id))
         else:
             if use_default_demands:
                 # after upscaling: between 20 and 100
@@ -47,4 +49,7 @@ def add_demands_to_network(network: Network, demands_path: str, use_default_dema
             else:
                 demand = random.randint(20, 100)
             network.add_commodity(row[0], row[1], demand, 0)
-    return None if use_default_demands else seed
+
+    if not suppress_log and removed_rows:
+        print(f"Did not add the following commodities as their source cannot reach their sink #row(source, sink):")
+        print(", ".join(map(lambda t: f"#{t[0]}({t[1]}, {t[2]})", removed_rows)))
