@@ -4,7 +4,6 @@ import json
 
 import os
 from matplotlib import pyplot as plt
-import time
 
 from core.constant_predictor import ConstantPredictor
 from core.linear_predictor import LinearPredictor
@@ -15,14 +14,13 @@ from core.reg_linear_predictor import RegularizedLinearPredictor
 from core.uniform_distributor import UniformDistributor
 from core.zero_predictor import ZeroPredictor
 from importer.csv_importer import network_from_csv, add_demands_to_network
+from utilities.build_with_times import build_with_times
 
 
 def evaluate_single_run(network: Network, original_commodity: int, split_commodity: int, horizon: float,
                         reroute_interval: float,
                         suppress_log: bool = False, save: bool = True):
-    # Use a better prediction_horizon next time, i.e. 10
     prediction_horizon = 10.
-
     predictors = [
         ConstantPredictor(network),
         ZeroPredictor(network),
@@ -41,35 +39,7 @@ def evaluate_single_run(network: Network, original_commodity: int, split_commodi
     distributor = UniformDistributor(network)
     flow_builder = MultiComFlowBuilder(network, predictors, distributor, reroute_interval)
 
-    generator = flow_builder.build_flow()
-    start_time = last_milestone_time = time.time()
-    flow = next(generator)
-    start_date_time = (
-            datetime.datetime(1970, 1, 1) +
-            datetime.timedelta(seconds=round(start_time))
-    ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
-    if not suppress_log:
-        print(f"Flow#{original_commodity} built until phi={flow.phi}; Started At={start_date_time}")
-    milestone = reroute_interval
-    while flow.phi < horizon:
-        flow = next(generator)
-        if flow.phi >= milestone:
-            new_milestone_time = time.time()
-            elapsed = new_milestone_time - start_time
-            remaining_time = (horizon - flow.phi) * (new_milestone_time - last_milestone_time) / reroute_interval
-            finish_time = (
-                    datetime.datetime(1970, 1, 1) +
-                    datetime.timedelta(seconds=round(new_milestone_time + remaining_time))
-            ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
-            if not suppress_log:
-                print(f"Flow#{original_commodity} built until phi={flow.phi:.1f}; " +
-                      f"Time Elapsed={datetime.timedelta(seconds=round(elapsed))}; " +
-                      f"Estimated Remaining Time={datetime.timedelta(seconds=round(remaining_time))}; " +
-                      f"Finished at {finish_time}; " +
-                      f"TravelTimes={[flow.avg_travel_time(i, flow.phi) for i in new_commodities]}")
-            milestone += reroute_interval
-            last_milestone_time = new_milestone_time
-    print()
+    flow = build_with_times(flow_builder, original_commodity, reroute_interval, horizon, new_commodities, suppress_log)
     travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities]
     save_dict = {
         "prediction_horizon": prediction_horizon,
@@ -94,10 +64,10 @@ def eval_tokyo():
     y = [[], [], [], [], []]
     #original_commodity = 3
     while True:
-        network_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.arcs'
+        network_path = '/home/michael/Nextcloud2/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.arcs'
         network = network_from_csv(network_path)
-        demands_path = '/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.demands'
-        add_demands_to_network(network, demands_path, True, suppress_ignored=False, upscale=True)
+        demands_path = '/home/michael/Nextcloud2/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.demands'
+        add_demands_to_network(network, demands_path, True, suppress_log=False, upscale=True)
         network.remove_unnecessary_nodes()
         with open("./next_commodity.txt", "r") as file:
             original_commodity = int(file.read())
