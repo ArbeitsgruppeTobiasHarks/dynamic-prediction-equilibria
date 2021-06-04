@@ -14,8 +14,8 @@ def build_flows_from_demand(network_path: str, demands_path: str, out_directory:
         assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster generation."
     os.makedirs(out_directory, exist_ok=True)
     print()
-    print("Will save the current state in ./next_random_seed.txt. " + \
-          "You can start multiple processes with this command to speed up the generation. " + \
+    print("Will save the next working step in ./next_random_seed.txt. " +
+          "You can start multiple processes with this command to speed up the generation. " +
           "Make sure to delete the file next_random_seed.txt if you want to do another round of generations.")
     print()
     while True:
