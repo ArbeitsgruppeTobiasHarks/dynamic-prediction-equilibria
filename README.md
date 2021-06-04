@@ -9,9 +9,10 @@ To start working:
 * Install Python 3.8 (if not already)
 * Install pipenv (if not already) `python3 -m pip install --user pipenv`
 * Run `pipenv install`
+* Run `pipenv shell` to create a shell session with an activated pipenv environment
 
 Assertions are used extensively throughout the code and therefore slow down the computation a lot.
-Often, we use the environment variable `PYTHONOPTIMIE` to deactivate assert statements.
+Often, we use the environment variable `PYTHONOPTIMIZE` to deactivate assert statements.
 Run the following code, to disable assertions for a bash session:
 ```
 export PYTHONOPTIMIZE=TRUE
