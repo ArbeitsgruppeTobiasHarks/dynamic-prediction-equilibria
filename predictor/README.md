@@ -1,6 +1,8 @@
 # Prediction Equilibrium for Dynamic Traffic Assignment
 
 This file descibes how the results in the computational study can be reproduced.
+An additional appendix for detailed proofs of the statements in the paper
+can be found in [full-paper.pdf](full-paper.pdf).
 
 ## Getting Started
 
@@ -25,14 +27,14 @@ Generating training data is done in two steps:
 
 To generate flows, run the following command inside an active pipenv shell:
 ```
-python src/main.py generate_flows /path/to/network.arcs /path/to/network.demands ./predictor/out
+python src/main.py generate_flows /path/to/network.arcs /path/to/network.demands /path/to/output-folder
 ```
 This can take several hours, so it is helpful to run multiple processes with the same command.
 
 
 To take the samples, run
 ```
-python src/main.py take_samples ./predictor/out
+python src/main.py take_samples /path/to/output-folder
 ```
 
 To train the Linear Regression Predictor, samples were taken from the tokyo_small network.
@@ -47,7 +49,7 @@ The resulting parameters were hardcoded in the corresponding python file.
 
 This section shows how to deduce the results for the following sample network:
 
-![Sample Network](sample_network.png)
+![Sample Network](data/sample_network.png)
 
 Here, we have a single source s and a single sink t.
 We introduce one commodity for each predictor and have the total inflow split equally between them.
