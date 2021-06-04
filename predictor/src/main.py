@@ -4,7 +4,7 @@ import click
 
 import eval.evaluate_sample
 import eval.evaluate_network
-from ml.generate_queues import generate_queues
+from importer.generate_queues import generate_queues
 from importer.build_test_flows import build_flows_from_demand
 
 
