@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from core.network import Network
-from core.predictor import Predictor, PredictionResult
+from core.predictors.predictor import Predictor, PredictionResult
 from utilities.arrays import elem_rank
 from utilities.interpolate import LinearlyInterpolatedFunction
 

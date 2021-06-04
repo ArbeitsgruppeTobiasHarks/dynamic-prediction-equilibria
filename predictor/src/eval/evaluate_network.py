@@ -62,9 +62,3 @@ def network_results_from_file_to_tikz():
     print("Means:")
     for j in range(len(means)):
         print(means[j] / num)
-
-
-if __name__ == '__main__':
-    network_path = "/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.arcs"
-    demands_path = "/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.demands"
-    eval_network(network_path, demands_path, "../../out/lol")

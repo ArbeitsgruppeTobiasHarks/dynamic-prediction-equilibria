@@ -1,7 +1,7 @@
 import json
 
 from eval.evaluate import evaluate_single_run
-from test.sample_network import build_sample_network
+from eval.sample_network import build_sample_network
 
 
 def eval_sample():
@@ -42,7 +42,3 @@ def sample_from_file_to_tikz():
             tikz += f"({x}, {y})"
 
         print(tikz)
-
-
-if __name__ == '__main__':
-    eval_sample()

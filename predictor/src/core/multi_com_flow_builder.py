@@ -5,37 +5,31 @@ from typing import Generator, Optional, Dict, List, Set
 import numpy as np
 from functools import reduce
 
-from core.bellman_ford import bellman_ford
-from core.constant_predictor import ConstantPredictor
+from core.predictors.constant_predictor import ConstantPredictor
 from core.dijkstra import dijkstra, realizing_dijkstra
-from core.distributor import Distributor
 from core.graph import Node, Edge
-from core.linear_regression_predictor import LinearRegressionPredictor
 from core.machine_precision import eps
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.network import Network
-from core.predictor import Predictor
-from core.zero_predictor import ZeroPredictor
+from core.predictors.predictor import Predictor
+from core.predictors.zero_predictor import ZeroPredictor
 from utilities.interpolate import LinearlyInterpolatedFunction
 
 
 class MultiComFlowBuilder:
     network: Network
     predictors: List[Predictor]
-    distributor: Distributor
     reroute_interval: Optional[float]
     _active_edges: List[Dict[Node, List[Edge]]]
 
     def __init__(self,
                  network: Network,
                  predictors: List[Predictor],
-                 distributor: Distributor,
                  reroute_interval: Optional[float]  # None means rerouting every time some outflow changes
                  ):
         self.network = network
         self.predictors = predictors
         self.reroute_interval = reroute_interval
-        self.distributor = distributor
 
     def build_flow(self) -> Generator[MultiComPartialDynamicFlow, None, None]:
         flow = MultiComPartialDynamicFlow(self.network)
@@ -60,11 +54,7 @@ class MultiComFlowBuilder:
 
         next_reroute_time = flow.phi
         costs = []
-        labels: Dict[int, Dict[Node, LinearlyInterpolatedFunction]] = {}
-        const_labels = {}
-        const_costs = {}
         handle_nodes = set(self.network.graph.nodes.values())
-        queues = None
 
         yield flow
         while flow.phi < float('inf'):
@@ -88,12 +78,10 @@ class MultiComFlowBuilder:
                         const_costs[k] = travel_time + pred_queues_list[k][0, :] / capacity
 
                 # CALCULATE NEW SHORTEST PATHS
-                """
-                PRECALCULATE FOR CONSTANT PREDICTORS
-                """
                 for i, commodity in enumerate(self.network.commodities):
                     if isinstance(self.predictors[commodity.predictor], ConstantPredictor) \
                             or isinstance(self.predictors[commodity.predictor], ZeroPredictor):
+                        # PRECALCULATE FOR CONSTANT PREDICTORS
                         const_labels = dijkstra(commodity.sink, const_costs[commodity.predictor])
                         for v in important_nodes[i]:
                             if v == commodity.sink:
@@ -107,35 +95,11 @@ class MultiComFlowBuilder:
                                     active_edges.append(e)
                             assert len(active_edges) > 0
                             self._active_edges[i][v] = active_edges
-                # for i, commodity in enumerate(self.network.commodities):
-                #     if isinstance(self.predictors[commodity.predictor], ConstantPredictor):
-                #         # Handle constant predictor separately for better performance
-                #         if const_costs is None:
-                #             const_costs = travel_time + pred_queues_list[commodity.predictor][0, :] / capacity
-                #         const_labels[i] = dijkstra(commodity.sink, const_costs)
-                #         if self.distributor.supports_const():
-                #             continue
-                #
-                #         labels[i] = {
-                #             v: LinearlyInterpolatedFunction([flow.phi, flow.phi + 1], [label, label],
-                #                                             (flow.phi, float('inf')))
-                #             for v, label in const_labels[i].items()
-                #         }
-                #     elif isinstance(self.predictors[commodity.predictor], LinearRegressionPredictor):
-                #         # We have an own distributor which cares about finding shortest paths.
-                #         pass
-                #     else:
-                #         labels[i] = bellman_ford(
-                #             commodity.sink, costs[commodity.predictor], important_nodes[i], flow.phi
-                #         )
 
                 next_reroute_time += self.reroute_interval
                 handle_nodes = set(self.network.graph.nodes.values())
 
             # DETERMINE OUTFLOW SPLIT
-            # if self.distributor.needs_queues():
-            #    queues = np.asarray([queue(flow.phi) for queue in flow.queues])
-
             inflow_per_comm: List[Dict[int, float]] = []
             for i, commodity in enumerate(self.network.commodities):
                 node_inflow: Dict[Node, float] = {
@@ -150,21 +114,6 @@ class MultiComFlowBuilder:
                                                important_nodes[i], costs[commodity.predictor])
                 inflow_per_comm.append(new_inflow_i)
 
-                # if isinstance(self.predictors[commodity.predictor], ConstantPredictor) and \
-                #         self.distributor.supports_const():
-                #     new_inflow_i = self.distributor.distribute_const(
-                #         flow.phi, node_inflow, commodity.sink, queues, const_labels[i], const_costs
-                #     )
-                #     inflow_per_comm.append(new_inflow_i)
-                # elif isinstance(self.predictors[commodity.predictor], LinearRegressionPredictor):
-                #     new_inflow_i = self.distribute(next_reroute_time - self.reroute_interval, node_inflow,
-                #                                            commodity.sink, important_nodes[i],
-                #                                            costs[commodity.predictor])
-                #     inflow_per_comm.append(new_inflow_i)
-                # else:
-                #     new_inflow_i = self.distributor.distribute(flow.phi, node_inflow, commodity.sink, queues, labels[i],
-                #                                                costs[commodity.predictor])
-                #     inflow_per_comm.append(new_inflow_i)
             all_keys = reduce(lambda acc, item: acc.union(item.keys()), inflow_per_comm, set())
             new_inflow = {
                 e: np.asarray([
@@ -200,7 +149,7 @@ class MultiComFlowBuilder:
                 # Do Time-Dependent dijkstra from s to t to find active outgoing edges of s
                 arrival_times, realised_cost = realizing_dijkstra(phi, s, sink, interesting_nodes, costs)
 
-                # Dijkstra done. Now searching all active edges leading to t.
+                # Now search all active edges leading to t.
                 active_edges = []
                 touched_nodes = {sink}
                 queue: List[Node] = [sink]

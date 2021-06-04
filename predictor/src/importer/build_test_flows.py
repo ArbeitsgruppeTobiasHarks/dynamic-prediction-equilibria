@@ -1,9 +1,8 @@
 import os
 import pickle
 
-from core.constant_predictor import ConstantPredictor
+from core.predictors.constant_predictor import ConstantPredictor
 from core.multi_com_flow_builder import MultiComFlowBuilder
-from core.uniform_distributor import UniformDistributor
 from importer.csv_importer import network_from_csv, add_demands_to_network
 from utilities.build_with_times import build_with_times
 
@@ -36,11 +35,10 @@ def build_flows_from_demand(network_path: str, demands_path: str, out_directory:
         print(f"Generating flow with seed {random_seed}...")
 
         predictors = [ConstantPredictor(network)]
-        distributor = UniformDistributor(network)
         reroute_interval = 2.5
         horizon = 100
 
-        flow_builder = MultiComFlowBuilder(network, predictors, distributor, reroute_interval)
+        flow_builder = MultiComFlowBuilder(network, predictors, reroute_interval)
         flow = build_with_times(flow_builder, random_seed, reroute_interval, horizon)
 
         print(f"Successfully built flow up to time {flow.phi}!")
@@ -48,10 +46,3 @@ def build_flows_from_demand(network_path: str, demands_path: str, out_directory:
             pickle.dump(flow, file)
         print(f"Successfully written flow to disk!")
         print("\n")
-
-
-if __name__ == '__main__':
-    network_path = '/home/michael/Nextcloud2/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.arcs'
-    demands_path = '/home/michael/Nextcloud2/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.demands'
-
-    build_flows_from_demand(network_path, demands_path, "../../out/generated_flows", 200)

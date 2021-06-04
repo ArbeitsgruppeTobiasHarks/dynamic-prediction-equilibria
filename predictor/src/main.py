@@ -4,7 +4,7 @@ import click
 
 import eval.evaluate_sample
 import eval.evaluate_network
-from gnn.DataLoader import generate_queues
+from ml.generate_queues import generate_queues
 from importer.build_test_flows import build_flows_from_demand
 
 

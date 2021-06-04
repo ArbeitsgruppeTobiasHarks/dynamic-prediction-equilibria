@@ -4,7 +4,7 @@ from typing import List
 
 import numpy as np
 
-from core.predictor import Predictor, PredictionResult
+from core.predictors.predictor import Predictor, PredictionResult
 from utilities.interpolate import LinearlyInterpolatedFunction
 
 

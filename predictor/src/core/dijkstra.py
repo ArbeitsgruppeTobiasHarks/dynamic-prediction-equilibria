@@ -32,7 +32,6 @@ def dijkstra(
                     queue.decrease_key(v, relaxation)
                 else:
                     queue.push(v, relaxation)
-
     return dist
 
 
