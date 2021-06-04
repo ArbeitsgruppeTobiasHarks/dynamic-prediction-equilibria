@@ -8,10 +8,6 @@ To start working:
 * Install pipenv (if not already) `python3 -m pip install --user pipenv`
 * Run `pipenv install`
 
-## Download Network Data
-
-You can download the network data here:
-
 ## Generate Training Data
 
 Generating training data is done in two steps:
