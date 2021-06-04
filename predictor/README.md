@@ -25,14 +25,14 @@ Generating training data is done in two steps:
 
 To generate flows, run the following command inside an active pipenv shell:
 ```
-python predictor/src/main.py generate_flows /path/to/network.arcs /path/to/network.demands ./predictor/out
+python src/main.py generate_flows /path/to/network.arcs /path/to/network.demands ./predictor/out
 ```
 This can take several hours, so it is helpful to run multiple processes with the same command.
 
 
 To take the samples, run
 ```
-python predictor/src/main.py take_samples ./predictor/out
+python src/main.py take_samples ./predictor/out
 ```
 
 To train the Linear Regression Predictor, samples were taken from the tokyo_small network.
@@ -58,7 +58,7 @@ Hence, we measure how the average travel times behave when increasing the total 
 
 To run the experiment, use the following command:
 ```
-python predictor/src/main.py evaluate_sample
+python src/main.py evaluate_sample
 ```
 This generates a file `./avg_times_sample.json` with a json array `arr` of the following structure:
 * `arr[0]` contains samples for the constant predictor
@@ -93,5 +93,5 @@ These entries were removed when creating the boxplot in the paper.
 In the paper, the `tokyo_tiny` network was chosen for evaluation.
 To run the experiment, use the following command:
 ```
-python predictor/src/main.py evaluate_network /path/to/network.arcs /path/to/network.demands /path/to/output-folder
+python src/main.py evaluate_network /path/to/network.arcs /path/to/network.demands /path/to/output-folder
 ```
