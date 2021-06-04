@@ -25,14 +25,14 @@ Generating training data is done in two steps:
 
 To generate flows, run the following command inside an active pipenv shell:
 ```
-python predictor/src/main.py generate_flows /path/to/network.arcs /path/to/network.demands ./predictor/out
+python predictor/src/main.py generate_flows /path/to/network.arcs /path/to/network.demands /path/to/output-folder
 ```
 This can take several hours, so it is helpful to run multiple processes with the same command.
 
 
 To take the samples, run
 ```
-python predictor/src/main.py take_samples ./predictor/out
+python predictor/src/main.py take_samples /path/to/output-folder
 ```
 
 To train the Linear Regression Predictor, samples were taken from the tokyo_small network.
