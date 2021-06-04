@@ -4,12 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-matsim-tools = "*"
 click = "*"
-pylint = "*"
-matplotlib = "*"
-dgl = "*"
-torch = "*"
 numpy = "*"
 
 [dev-packages]
