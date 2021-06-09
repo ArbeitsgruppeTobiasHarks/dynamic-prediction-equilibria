@@ -113,3 +113,20 @@ class Network:
         print(f"Removed {len(remove_commodities)} non-interfering commodities.")
 
         return self.commodities.index(selected_comm)
+
+    def print_info(self):
+        print(f"The network contains {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges.")
+        print(f"Moreover, there are {len(self.commodities)} commodities.")
+        print(f"Minimum/Maximum capacity: {np.min(self.capacity)}/{np.max(self.capacity)}")
+        print(f"Minimum/Maximum transit time: {np.min(self.travel_time)}/{np.max(self.travel_time)}")
+        max_in_degree = 0
+        max_out_degree = 0
+        max_degree = 0
+        for node in self.graph.nodes.values():
+            max_degree = max(max_degree, len(node.incoming_edges) + len(node.outgoing_edges))
+            max_in_degree = max(max_in_degree, len(node.incoming_edges))
+            max_out_degree = max(max_out_degree, len(node.outgoing_edges))
+        print(f"Maximum indgree: {max_in_degree}")
+        print(f"Maximum outdegree: {max_out_degree}")
+        print(f"Maximum degree: {max_degree}")
+
