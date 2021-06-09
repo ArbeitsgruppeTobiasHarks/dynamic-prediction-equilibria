@@ -5,17 +5,15 @@ from typing import Generator, Optional, Dict, List, Set
 import numpy as np
 from functools import reduce
 
-from core.bellman_ford import bellman_ford
-from core.constant_predictor import ConstantPredictor
+from core.predictors.constant_predictor import ConstantPredictor
 from core.dijkstra import dijkstra, realizing_dijkstra
 from core.distributor import Distributor
 from core.graph import Node, Edge
-from core.linear_regression_predictor import LinearRegressionPredictor
 from core.machine_precision import eps
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
-from core.zero_predictor import ZeroPredictor
+from core.predictors.zero_predictor import ZeroPredictor
 from utilities.interpolate import LinearlyInterpolatedFunction
 
 

@@ -3,10 +3,8 @@ import unittest
 import matplotlib.pyplot as plt
 import numpy as np
 
-from core.linear_predictor import LinearPredictor
 from core.multi_com_flow_builder import MultiComFlowBuilder
-from core.reg_linear_predictor import RegularizedLinearPredictor
-from core.single_edge_distributor import SingleEdgeDistributor
+from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.waterfilling_distributor import WaterfillingDistributor
 from test.sample_network import build_sample_network
 

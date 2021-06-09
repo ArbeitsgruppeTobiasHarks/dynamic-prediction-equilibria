@@ -1,7 +1,7 @@
 import os
 import pickle
 
-from core.constant_predictor import ConstantPredictor
+from core.predictors.constant_predictor import ConstantPredictor
 from core.multi_com_flow_builder import MultiComFlowBuilder
 from core.uniform_distributor import UniformDistributor
 from importer.csv_importer import network_from_csv, add_demands_to_network

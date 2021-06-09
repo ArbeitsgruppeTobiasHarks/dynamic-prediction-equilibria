@@ -3,7 +3,7 @@ import unittest
 import matplotlib.pyplot as plt
 import numpy as np
 
-from core.constant_predictor import ConstantPredictor
+from core.predictors.constant_predictor import ConstantPredictor
 from core.flow_builder import FlowBuilder
 from core.single_edge_distributor import SingleEdgeDistributor
 from test.sample_network import build_sample_network

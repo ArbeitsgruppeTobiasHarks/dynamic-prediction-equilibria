@@ -3,14 +3,14 @@ import json
 import os
 from typing import Optional
 
-from core.constant_predictor import ConstantPredictor
-from core.linear_predictor import LinearPredictor
-from core.linear_regression_predictor import LinearRegressionPredictor
+from core.predictors.constant_predictor import ConstantPredictor
+from core.predictors.linear_predictor import LinearPredictor
+from core.predictors.linear_regression_predictor import LinearRegressionPredictor
 from core.multi_com_flow_builder import MultiComFlowBuilder
 from core.network import Network, Commodity
-from core.reg_linear_predictor import RegularizedLinearPredictor
+from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.uniform_distributor import UniformDistributor
-from core.zero_predictor import ZeroPredictor
+from core.predictors.zero_predictor import ZeroPredictor
 from utilities.build_with_times import build_with_times
 
 
