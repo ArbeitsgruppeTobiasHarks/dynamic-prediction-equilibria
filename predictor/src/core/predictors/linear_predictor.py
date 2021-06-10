@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -40,12 +40,14 @@ class LinearPredictor(Predictor):
              new_queues]
         )
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
-        queues = np.array([max(0., queue(phi)) for queue in old_queues])
-        gradients = np.array([queue.gradient(elem_rank(queue.times, phi)) for queue in old_queues])
-        new_queues = np.maximum(queues + self.horizon * gradients, np.zeros(len(old_queues)))
+    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) \
+            -> List[LinearlyInterpolatedFunction]:
+        times = [phi, phi + self.horizon, phi + self.horizon + 1]
+        queues: List[Optional[LinearlyInterpolatedFunction]] = [None] * len(old_queues)
+        for i, old_queue in enumerate(old_queues):
+            curr_queue = max(0., old_queue(phi))
+            gradient = old_queue.gradient(elem_rank(old_queue.times, phi))
+            new_queue = max(0., curr_queue + self.horizon * gradient)
+            queues[i] = LinearlyInterpolatedFunction(times, [curr_queue, new_queue, new_queue])
 
-        return PredictionResult(
-            [phi, phi + self.horizon, phi + self.horizon + 1],
-            [queues, new_queues, new_queues]
-        )
+        return queues

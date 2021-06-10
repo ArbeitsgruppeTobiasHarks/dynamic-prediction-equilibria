@@ -23,10 +23,7 @@ class ZeroPredictor(Predictor):
             [queues, queues]
         )
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
-        queues = np.zeros(len(old_queues))
-
-        return PredictionResult(
-            [phi, phi + 1],
-            [queues, queues]
-        )
+    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> \
+            List[LinearlyInterpolatedFunction]:
+        zero_fct = LinearlyInterpolatedFunction([phi, phi + 1], [0., 0.])
+        return [zero_fct for _ in old_queues]

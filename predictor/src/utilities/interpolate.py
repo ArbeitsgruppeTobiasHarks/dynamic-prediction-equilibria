@@ -3,6 +3,8 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import List, Tuple, Optional
 
+import numbers
+
 from core.machine_precision import eps
 from utilities.arrays import elem_rank, elem_lrank, merge_sorted
 
@@ -20,7 +22,7 @@ class LinearlyInterpolatedFunction:
         assert len(self.values) == len(self.times)
         assert all(float('-inf') < self.values[i] < float('inf') for i in range(len(self.times)))
         assert all(self.domain[0] <= self.times[i] <= self.domain[1] for i in range(len(self.times)))
-        assert all(self.times[i] < self.times[i+1] + eps for i in range(len(self.times) - 1))
+        assert all(self.times[i] < self.times[i + 1] + eps for i in range(len(self.times) - 1))
 
     def __call__(self, at: float) -> float:
         return self.eval(at)
@@ -38,9 +40,9 @@ class LinearlyInterpolatedFunction:
         new_values = [self.values[0]]
         for i in range(0, len(self.times) - 2):
             # Add i+1, if it's necessary.
-            if abs(self.gradient(i) - self.gradient(i+1)) >= 1000*eps:
-                new_times.append(self.times[i+1])
-                new_values.append(self.values[i+1])
+            if abs(self.gradient(i) - self.gradient(i + 1)) >= 1000 * eps:
+                new_times.append(self.times[i + 1])
+                new_values.append(self.values[i + 1])
         new_times.append(self.times[-1])
         new_values.append(self.values[-1])
         return LinearlyInterpolatedFunction(new_times, new_values, self.domain)

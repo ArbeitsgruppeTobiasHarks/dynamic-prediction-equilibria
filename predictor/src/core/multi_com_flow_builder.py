@@ -5,7 +5,6 @@ from typing import Generator, Optional, Dict, List, Set
 import numpy as np
 from functools import reduce
 
-from core.predictors.constant_predictor import ConstantPredictor
 from core.dijkstra import dijkstra, realizing_dijkstra
 from core.distributor import Distributor
 from core.graph import Node, Edge
@@ -13,7 +12,6 @@ from core.machine_precision import eps
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
-from core.predictors.zero_predictor import ZeroPredictor
 from utilities.interpolate import LinearlyInterpolatedFunction
 
 
@@ -42,7 +40,7 @@ class MultiComFlowBuilder:
         m = len(graph.edges)
         travel_time = self.network.travel_time
         capacity = self.network.capacity
-        self._active_edges = [{} for i in range(n)]
+        self._active_edges = [{} for _ in range(n)]
 
         # Preprocessing...
         # For each commodity find the nodes that reach the sink
@@ -64,22 +62,24 @@ class MultiComFlowBuilder:
         while flow.phi < float('inf'):
             if self.reroute_interval is None or flow.phi >= next_reroute_time - eps:
                 # PREDICT NEW QUEUES
-                self._active_edges = [{} for i in range(n)]
+                self._active_edges = [{} for _ in range(n)]
                 predictions = [predictor.predict_from_fcts(flow.queues, flow.phi) for predictor in self.predictors]
-                pred_queues_list = [np.asarray(prediction.queues) for prediction in predictions]
-                pred_costs = [[travel_time[e] + pred_queues[:, e] / capacity[e] for e in range(m)]
-                              for pred_queues in pred_queues_list]
                 costs = [
                     [
-                        LinearlyInterpolatedFunction(predictions[k].times, pred_costs[k][e], (flow.phi, float('inf')))
+                        LinearlyInterpolatedFunction(
+                            prediction[e].times,
+                            [travel_time[e] + value / capacity[e] for value in prediction[e].values],
+                            (flow.phi, float('inf'))
+                        )
                         for e in range(m)
                     ]
-                    for k in range(len(self.predictors))]
+                    for prediction in predictions
+                ]
 
                 const_costs = {}
                 for k, predictor in enumerate(self.predictors):
                     if predictor.is_constant():
-                        const_costs[k] = travel_time + pred_queues_list[k][0, :] / capacity
+                        const_costs[k] = [cost.values[0] for cost in costs[k]]
 
                 # CALCULATE NEW SHORTEST PATHS
                 """

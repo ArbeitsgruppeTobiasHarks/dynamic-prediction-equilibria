@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -22,10 +22,12 @@ class ConstantPredictor(Predictor):
             [old_queues[-1], old_queues[-1]]
         )
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
-        queues = np.array([max(0., queue(phi)) for queue in old_queues])
+    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> \
+            List[LinearlyInterpolatedFunction]:
+        queues: List[Optional[LinearlyInterpolatedFunction]] = [None] * len(old_queues)
+        times = [phi, phi + 1]
+        for i, queue in enumerate(old_queues):
+            curr_queue = queue(phi)
+            queues[i] = LinearlyInterpolatedFunction(times, [curr_queue, curr_queue])
 
-        return PredictionResult(
-            [phi, phi + 1],
-            [queues, queues]
-        )
+        return queues

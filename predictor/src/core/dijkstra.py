@@ -12,7 +12,7 @@ from utilities.queues import PriorityQueue
 
 def dijkstra(
         sink: Node,
-        costs: np.ndarray
+        costs: List[float]
 ) -> Dict[Node, float]:
     dist: Dict[Node, float] = {sink: 0}
 

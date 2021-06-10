@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -22,20 +22,19 @@ class RegularizedLinearPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
+    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) \
+            -> List[LinearlyInterpolatedFunction]:
+
+        times = [phi, phi + self.horizon, phi + self.horizon + 1]
         phi_minus_delta = phi - self.delta
-        queue_at_phi_minus_delta = np.asarray([max(0., queue(phi_minus_delta)) for queue in old_queues])
-        queue_at_phi = np.asarray([max(0., queue(phi)) for queue in old_queues])
+        queues: List[Optional[LinearlyInterpolatedFunction]] = [None] * len(old_queues)
+        for i, old_queue in enumerate(old_queues):
+            queue_at_phi = max(0., old_queue(phi))
+            queue_at_phi_minus_delta = max(0., old_queue(phi_minus_delta))
+            new_queue = queue_at_phi + self.horizon * (queue_at_phi - queue_at_phi_minus_delta) / self.delta
+            queues[i] = LinearlyInterpolatedFunction(times, [queue_at_phi, new_queue, new_queue])
 
-        new_queues = np.maximum(
-            np.zeros(len(self.network.graph.edges)),
-            queue_at_phi + self.horizon * (queue_at_phi - queue_at_phi_minus_delta) / self.delta
-        )
-
-        return PredictionResult(
-            [phi, phi + self.horizon, phi + self.horizon + 1],
-            [queue_at_phi, new_queues, new_queues]
-        )
+        return queues
 
     def type(self) -> str:
         return "Regularized Linear Predictor"

@@ -20,7 +20,8 @@ class Predictor(ABC):
         pass
 
     @abstractmethod
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
+    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) \
+            -> List[LinearlyInterpolatedFunction]:
         pass
 
     @abstractmethod
