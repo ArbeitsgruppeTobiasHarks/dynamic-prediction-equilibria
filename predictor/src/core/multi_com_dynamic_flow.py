@@ -146,22 +146,3 @@ class MultiComPartialDynamicFlow:
         accum_net_outflow = net_outflow.integral()
         avg_travel_time = horizon / 2 - accum_net_outflow.integrate(0., horizon) / (horizon * commodity.demand)
         return avg_travel_time
-
-
-class OutflowChangeEvent:
-    edge: int
-    time: float
-    new_outflow: np.ndarray
-
-    def __init__(self, edge: int, time: float, new_outflow: np.ndarray):
-        self.edge = edge
-        self.time = time
-        self.new_outflow = new_outflow
-
-
-@dataclass
-class QueueDepletionEvent:
-    edge: int
-    change_time: float
-    depletion_time: float
-    new_outflow: np.ndarray
