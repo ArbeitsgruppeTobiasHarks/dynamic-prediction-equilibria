@@ -10,6 +10,9 @@ from utilities.interpolate import LinearlyInterpolatedFunction
 
 class ZeroPredictor(Predictor):
 
+    def is_constant(self) -> bool:
+        return True
+
     def type(self) -> str:
         return "Zero Predictor"
 

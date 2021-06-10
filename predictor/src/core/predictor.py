@@ -24,6 +24,10 @@ class Predictor(ABC):
         pass
 
     @abstractmethod
+    def is_constant(self) -> bool:
+        pass
+
+    @abstractmethod
     def type(self) -> str:
         pass
 

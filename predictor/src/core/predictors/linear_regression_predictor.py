@@ -13,6 +13,9 @@ class LinearRegressionPredictor(Predictor):
     def type(self) -> str:
         return "Constant Predictor"
 
+    def is_constant(self) -> bool:
+        return False
+
     def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
         raise NotImplementedError()
 

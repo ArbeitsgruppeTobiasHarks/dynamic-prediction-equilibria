@@ -14,6 +14,7 @@ from utilities.interpolate import LinearlyInterpolatedFunction
 
 
 class MLPredictor(Predictor):
+
     _past_timesteps: int
     _future_timesteps: int
     _step_size: float
@@ -36,6 +37,9 @@ class MLPredictor(Predictor):
         u = torch.tensor([e[0] for e in new_edges])
         v = torch.tensor([e[1] for e in new_edges])
         self._dgl_graph = dgl.graph((u, v)).add_self_loop()
+
+    def is_constant(self) -> bool:
+        return False
 
     def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
         times_past_queues = [

@@ -20,6 +20,9 @@ class LinearPredictor(Predictor):
     def type(self) -> str:
         return "Linear Predictor"
 
+    def is_constant(self) -> bool:
+        return False
+
     def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
         if len(old_queues) < 2:
             return PredictionResult(

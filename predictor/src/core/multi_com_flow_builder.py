@@ -37,24 +37,20 @@ class MultiComFlowBuilder:
 
     def build_flow(self) -> Generator[MultiComPartialDynamicFlow, None, None]:
         flow = MultiComPartialDynamicFlow(self.network)
+        graph = self.network.graph
         n = len(self.network.commodities)
-        m = len(self.network.graph.edges)
+        m = len(graph.edges)
         travel_time = self.network.travel_time
         capacity = self.network.capacity
         self._active_edges = [{} for i in range(n)]
 
         # Preprocessing...
         # For each commodity find the nodes that reach the sink
-        reaching_nodes = [
-            self.network.graph.get_nodes_reaching(commodity.sink) for commodity in self.network.commodities
-        ]
-        reachable_nodes = [
-            self.network.graph.get_reachable_nodes(commodity.source) for commodity in self.network.commodities
-        ]
         important_nodes = [
-            reaching_nodes[i].intersection(reachable_nodes[i]) for i in range(len(self.network.commodities))
+            graph.get_nodes_reaching(commodity.sink).intersection(graph.get_reachable_nodes(commodity.source))
+            for commodity in self.network.commodities
         ]
-        assert all(c.source in reaching_nodes[i] for i, c in enumerate(self.network.commodities))
+        assert all(c.source in important_nodes[i] for i, c in enumerate(self.network.commodities))
 
         next_reroute_time = flow.phi
         costs = []
@@ -82,7 +78,7 @@ class MultiComFlowBuilder:
 
                 const_costs = {}
                 for k, predictor in enumerate(self.predictors):
-                    if isinstance(predictor, ConstantPredictor) or isinstance(predictor, ZeroPredictor):
+                    if predictor.is_constant():
                         const_costs[k] = travel_time + pred_queues_list[k][0, :] / capacity
 
                 # CALCULATE NEW SHORTEST PATHS
@@ -90,8 +86,7 @@ class MultiComFlowBuilder:
                 PRECALCULATE FOR CONSTANT PREDICTORS
                 """
                 for i, commodity in enumerate(self.network.commodities):
-                    if isinstance(self.predictors[commodity.predictor], ConstantPredictor) \
-                            or isinstance(self.predictors[commodity.predictor], ZeroPredictor):
+                    if self.predictors[commodity.predictor].is_constant():
                         const_labels = dijkstra(commodity.sink, const_costs[commodity.predictor])
                         for v in important_nodes[i]:
                             if v == commodity.sink:
