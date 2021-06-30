@@ -60,6 +60,6 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
 
     if output_folder is not None:
         now = datetime.datetime.now()
-        with open(os.path.join(output_folder, f"{flow_id}.{str(now)}.json"), "w") as file:
+        with open(os.path.join(output_folder, f"{flow_id}.{str(now).replace(':','-')}.json"), "w") as file:
             json.dump(save_dict, file)
     return travel_times
