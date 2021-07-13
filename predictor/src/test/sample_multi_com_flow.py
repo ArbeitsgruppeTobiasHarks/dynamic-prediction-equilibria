@@ -4,8 +4,8 @@ import numpy as np
 
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from test.sample_network import build_sample_network
-from utilities.interpolate import zero
-from utilities.right_constant import RightConstantFunction
+from utilities.piecewise_linear import zero
+from utilities.right_constant import RightConstant
 
 
 class TestMultiComPartialDynamicFlow(unittest.TestCase):
@@ -22,14 +22,14 @@ class TestMultiComPartialDynamicFlow(unittest.TestCase):
 
         for i in range(m):
             self.assertTrue(flow.queues[i].equals(zero))
-            self.assertTrue(flow.inflow[i][0].equals(RightConstantFunction([-1], [0])))
+            self.assertTrue(flow.inflow[i][0].equals(RightConstant([-1], [0])))
 
         edges_changed = flow.extend({0: np.array([2.]), 1: np.array([1.])}, 10)
         self.assertEqual(edges_changed, {0})
         self.assertEqual(flow.phi, 1)
         for i in range(2, m):
             self.assertTrue(flow.queues[i].equals(zero))
-            self.assertTrue(flow.inflow[i][0].equals(RightConstantFunction([-1], [0])))
+            self.assertTrue(flow.inflow[i][0].equals(RightConstant([-1], [0])))
 
         edges_changed = flow.extend({1: np.array([0.]), 2: np.array([2.]), 4: np.array([4.])}, 10)
         self.assertEqual(flow.phi, 2.)

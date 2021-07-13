@@ -10,7 +10,7 @@ from dgl._deprecate.graph import DGLGraph
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
 from gnn.Model import Model
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class MLPredictor(Predictor):
@@ -37,7 +37,7 @@ class MLPredictor(Predictor):
         v = torch.tensor([e[1] for e in new_edges])
         self._dgl_graph = dgl.graph((u, v)).add_self_loop()
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
+    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> PredictionResult:
         times_past_queues = [
             phi - i * i * self._step_size for i in range(self._past_timesteps)
         ]

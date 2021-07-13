@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List, Dict
 
 from core.graph import DirectedGraph, Node
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue, PriorityItem
 
 """
@@ -13,10 +13,10 @@ by Bolin Ding, Jeffrey Xu Yu, Lu Qin
 """
 
 
-def time_refinement(graph: DirectedGraph, sink: Node, costs: List[LinearlyInterpolatedFunction], phi: float):
+def time_refinement(graph: DirectedGraph, sink: Node, costs: List[PiecewiseLinear], phi: float):
     nodes = graph.nodes.values()
-    identity = LinearlyInterpolatedFunction([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
-    g: Dict[Node, LinearlyInterpolatedFunction] = {
+    identity = PiecewiseLinear([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
+    g: Dict[Node, PiecewiseLinear] = {
         sink: identity
     }
     tau: Dict[Node, float] = {v: phi for v in nodes}

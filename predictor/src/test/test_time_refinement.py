@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from core.time_refinement import time_refinement
 from test.sample_network import build_sample_network
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class TestTimeRefinement(unittest.TestCase):
@@ -14,24 +14,24 @@ class TestTimeRefinement(unittest.TestCase):
         network.add_commodity(0, 2, 3.)
 
         weights = [
-            LinearlyInterpolatedFunction([0., 1.], [1., 1.]),
-            LinearlyInterpolatedFunction([0., 1., 5.], [1., 1., 30.]),
-            LinearlyInterpolatedFunction([0., 1.], [1., 1.]),
-            LinearlyInterpolatedFunction([0., 1.], [1., 1.]),
-            LinearlyInterpolatedFunction([0., 1.], [1., 1.])
+            PiecewiseLinear([0., 1.], [1., 1.]),
+            PiecewiseLinear([0., 1., 5.], [1., 1., 30.]),
+            PiecewiseLinear([0., 1.], [1., 1.]),
+            PiecewiseLinear([0., 1.], [1., 1.]),
+            PiecewiseLinear([0., 1.], [1., 1.])
         ]
         g = time_refinement(network.graph, network.commodities[0].sink, weights, 0)
         plot_many(g)
 
 
-def plot(f: LinearlyInterpolatedFunction):
+def plot(f: PiecewiseLinear):
     plt.plot([f.domain[0]] + f.times + [f.domain[1]],
              [f(f.domain[0])] + f.values + [f(f.domain[1])])
     plt.grid(which='both', axis='both')
     plt.show()
 
 
-def plot_many(fs: Dict[Any, LinearlyInterpolatedFunction]):
+def plot_many(fs: Dict[Any, PiecewiseLinear]):
     for key in fs:
         f = fs[key]
         l_time = f.times[0] - (f.times[-1] - f.times[0]) if f.domain[1] == float('-inf') else f.domain[0]

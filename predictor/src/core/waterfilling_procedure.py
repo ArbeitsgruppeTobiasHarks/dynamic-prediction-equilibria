@@ -4,11 +4,11 @@ from typing import List
 
 import numpy as np
 
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 def waterfilling_procedure(inflow: float,
-                           h: List[LinearlyInterpolatedFunction],
+                           h: List[PiecewiseLinear],
                            alpha: List[float],
                            beta: List[float]):
     deg = len(beta)

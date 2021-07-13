@@ -6,7 +6,7 @@ import numpy as np
 
 from core.graph import Node, Edge
 from core.machine_precision import eps
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
 
 
@@ -37,7 +37,7 @@ def dijkstra(
 
 
 def realizing_dijkstra(
-        phi: float, source: Node, sink: Node, interesting_nodes: Set[Node], costs: List[LinearlyInterpolatedFunction]
+        phi: float, source: Node, sink: Node, interesting_nodes: Set[Node], costs: List[PiecewiseLinear]
 ) -> Tuple[Dict[Node, float], Dict[Edge, float]]:
     arrival_times: Dict[Node, float] = {source: phi}
     queue: PriorityQueue[Node] = PriorityQueue([(source, phi)])

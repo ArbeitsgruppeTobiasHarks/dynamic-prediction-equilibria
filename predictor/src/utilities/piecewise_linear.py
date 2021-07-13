@@ -3,13 +3,11 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import List, Tuple, Optional
 
-import numbers
-
 from core.machine_precision import eps
 from utilities.arrays import elem_rank, elem_lrank, merge_sorted
 
 
-class LinearlyInterpolatedFunction:
+class PiecewiseLinear:
     times: List[float]
     values: List[float]
     domain: Tuple[float, float] = (float('-inf'), float('inf'))
@@ -32,7 +30,7 @@ class LinearlyInterpolatedFunction:
         rnk = elem_rank(self.times, at)
         return self._eval_with_rank(at, rnk)
 
-    def simplify(self) -> LinearlyInterpolatedFunction:
+    def simplify(self) -> PiecewiseLinear:
         """
         This removes unnecessary timesteps
         """
@@ -45,7 +43,7 @@ class LinearlyInterpolatedFunction:
                 new_values.append(self.values[i + 1])
         new_times.append(self.times[-1])
         new_values.append(self.values[-1])
-        return LinearlyInterpolatedFunction(new_times, new_values, self.domain)
+        return PiecewiseLinear(new_times, new_values, self.domain)
 
     def _eval_with_rank(self, at: float, rnk: int):
         assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
@@ -81,7 +79,7 @@ class LinearlyInterpolatedFunction:
             i = len(self.times) - 2
         return (self.values[i + 1] - self.values[i]) / (self.times[i + 1] - self.times[i])
 
-    def plus(self, other: LinearlyInterpolatedFunction) -> LinearlyInterpolatedFunction:
+    def plus(self, other: PiecewiseLinear) -> PiecewiseLinear:
         """
             Calculate the sum of two functions.
             Can still be optimized: There might be unnecessary time-steps at the boundaries.
@@ -109,7 +107,7 @@ class LinearlyInterpolatedFunction:
             else:
                 times = times[:rnk + 1] + [new_domain[1]]
         values: List[float] = [self(phi) + other(phi) for phi in times]
-        return LinearlyInterpolatedFunction(times, values, new_domain)
+        return PiecewiseLinear(times, values, new_domain)
 
     def inverse(self, x: float, i: int) -> float:
         assert -1 <= i < len(self.times)
@@ -129,7 +127,7 @@ class LinearlyInterpolatedFunction:
         return lmbda * self.times[i] + (1 - lmbda) * self.times[i + 1]
 
     @lru_cache
-    def compose(self, f: LinearlyInterpolatedFunction) -> LinearlyInterpolatedFunction:
+    def compose(self, f: PiecewiseLinear) -> PiecewiseLinear:
         g = self
         # We calculate g ⚬ f
         assert f.is_monotone(), "Composition g ⚬ f only implemented for monotone incr. function f"
@@ -161,9 +159,9 @@ class LinearlyInterpolatedFunction:
                     values.append(g(f.values[f_ind + 1]))
             f_ind += 1
 
-        return LinearlyInterpolatedFunction(times, values, f.domain)
+        return PiecewiseLinear(times, values, f.domain)
 
-    def minimum(self, otherf: LinearlyInterpolatedFunction) -> LinearlyInterpolatedFunction:
+    def minimum(self, otherf: PiecewiseLinear) -> PiecewiseLinear:
         # Calculate the pointwise minimum of self and otherf.
         # TODO: This procedure is not perfect yet.
         new_domain = (max(self.domain[0], otherf.domain[0]), min(self.domain[1], otherf.domain[1]))
@@ -226,7 +224,7 @@ class LinearlyInterpolatedFunction:
                         times.append(t + 1 if new_domain[1] == float('inf') else new_domain[1])
 
         values = [min(self(t), otherf(t)) for t in times]
-        return LinearlyInterpolatedFunction(times, values, new_domain)
+        return PiecewiseLinear(times, values, new_domain)
 
     def is_monotone(self):
         return all(self.values[i] <= self.values[i + 1] for i in range(len(self.values) - 1))
@@ -258,7 +256,7 @@ class LinearlyInterpolatedFunction:
             else:
                 return self.inverse(bound, len(self.times) - 1)
 
-    def ensure_monotone(self, assert_monotone: bool) -> LinearlyInterpolatedFunction:
+    def ensure_monotone(self, assert_monotone: bool) -> PiecewiseLinear:
         """
         This function makes sure that an almost monotone function becomes actually monotone.
         It only fixes values where the monotonicity is broken most likely due to rounding errors.
@@ -267,9 +265,9 @@ class LinearlyInterpolatedFunction:
         for i in range(len(new_values) - 1):
             assert not assert_monotone or new_values[i] <= new_values[i + 1] + eps
             new_values[i + 1] = max(new_values[i], new_values[i + 1])
-        return LinearlyInterpolatedFunction(self.times, new_values, self.domain)
+        return PiecewiseLinear(self.times, new_values, self.domain)
 
-    def smaller_equals(self, other: LinearlyInterpolatedFunction) -> bool:
+    def smaller_equals(self, other: PiecewiseLinear) -> bool:
         """
         Returns whether self is smaller or equal to other everywhere.
         """
@@ -306,7 +304,7 @@ class LinearlyInterpolatedFunction:
             self.values.append(value)
 
     def equals(self, other):
-        if not isinstance(other, LinearlyInterpolatedFunction):
+        if not isinstance(other, PiecewiseLinear):
             return False
         return self.values == other.values and self.times == other.times and self.domain == other.domain
 
@@ -331,5 +329,5 @@ class LinearlyInterpolatedFunction:
         return value
 
 
-identity = LinearlyInterpolatedFunction([0., 1.], [0., 1.])
-zero = LinearlyInterpolatedFunction([-1, 0.], [0., 0.])
+identity = PiecewiseLinear([0., 1.], [0., 1.])
+zero = PiecewiseLinear([-1, 0.], [0., 0.])

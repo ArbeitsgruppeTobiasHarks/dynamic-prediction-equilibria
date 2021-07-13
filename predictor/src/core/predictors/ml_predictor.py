@@ -10,7 +10,7 @@ from dgl._deprecate.graph import DGLGraph
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
 from gnn.Model import Model
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class MLPredictor(Predictor):
@@ -41,7 +41,7 @@ class MLPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
+    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> PredictionResult:
         times_past_queues = [
             phi - i * i * self._step_size for i in range(self._past_timesteps)
         ]

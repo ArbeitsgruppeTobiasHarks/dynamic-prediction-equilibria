@@ -4,10 +4,10 @@ from typing import List, Tuple
 
 from core.machine_precision import eps
 from utilities.arrays import elem_lrank, merge_sorted
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
-class RightConstantFunction:
+class RightConstant:
     """
     This class defines right-continuous functions with finitely many break points (xᵢ, yᵢ).
     The breakpoints are encoded in the two lists times = [x₀, ..., xₙ] and values = [y₀,..., yₙ]
@@ -56,28 +56,28 @@ class RightConstantFunction:
             self.values.append(value)
 
     def equals(self, other):
-        if not isinstance(other, RightConstantFunction):
+        if not isinstance(other, RightConstant):
             return False
         return self.values == other.values and self.times == other.times and self.domain == other.domain
 
     def __radd__(self, other):
         if other == 0:
             return self
-        if not isinstance(other, RightConstantFunction):
+        if not isinstance(other, RightConstant):
             raise TypeError("Can only add a RightConstantFunction.")
         assert self.domain == other.domain
 
         new_times = merge_sorted(self.times, other.times)
         new_values = [self(t) + other(t) for t in new_times]
-        return RightConstantFunction(new_times, new_values, self.domain)
+        return RightConstant(new_times, new_values, self.domain)
 
     def __add__(self, other):
         return self.__radd__(other)
 
-    def integral(self) -> LinearlyInterpolatedFunction:
+    def integral(self) -> PiecewiseLinear:
         assert self.times[0] == self.domain[0] and self.domain[1] >= self.times[-1] + 1
         times = self.times + [self.times[-1] + 1]
         values = [0.] * len(times)
         for i in range(len(times) - 1):
             values[i + 1] = values[i] + self.values[i] * (times[i + 1] - times[i])
-        return LinearlyInterpolatedFunction(times, values, self.domain)
+        return PiecewiseLinear(times, values, self.domain)

@@ -2,7 +2,7 @@ import unittest
 
 from core.bellman_ford import bellman_ford
 from test.sample_network import build_sample_network
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class TestBellmanFord(unittest.TestCase):
@@ -10,11 +10,11 @@ class TestBellmanFord(unittest.TestCase):
     def test_flow_bellman_ford(self):
         network = build_sample_network()
         costs = [
-            LinearlyInterpolatedFunction([2.05, 2.55, 3.55], [1.025, 1., 1.], (2.05, float('inf'))),
-            LinearlyInterpolatedFunction([2.05, 2.55, 3.55], [3.075, 3.7, 3.7], (2.05, float('inf'))),
-            LinearlyInterpolatedFunction([2.05, 2.55, 3.55], [1., 1., 1.], (2.05, float('inf'))),
-            LinearlyInterpolatedFunction([2.05, 2.55, 3.55], [1., 1., 1.], (2.05, float('inf'))),
-            LinearlyInterpolatedFunction([2.05, 2.55, 3.55], [1.05, 1.55, 1.55], (2.05, float('inf')))
+            PiecewiseLinear([2.05, 2.55, 3.55], [1.025, 1., 1.], (2.05, float('inf'))),
+            PiecewiseLinear([2.05, 2.55, 3.55], [3.075, 3.7, 3.7], (2.05, float('inf'))),
+            PiecewiseLinear([2.05, 2.55, 3.55], [1., 1., 1.], (2.05, float('inf'))),
+            PiecewiseLinear([2.05, 2.55, 3.55], [1., 1., 1.], (2.05, float('inf'))),
+            PiecewiseLinear([2.05, 2.55, 3.55], [1.05, 1.55, 1.55], (2.05, float('inf')))
         ]
         phi = 2.075
         labels = bellman_ford(network.graph.nodes[2], costs, 2.075)

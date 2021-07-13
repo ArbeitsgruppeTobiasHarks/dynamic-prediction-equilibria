@@ -9,7 +9,7 @@ from core.dynamic_flow import PartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
 from core.time_refinement import time_refinement
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class FlowBuilder:
@@ -47,7 +47,7 @@ class FlowBuilder:
             pred_costs = [travel_time[e] + pred_queues[:, e] / capacity[e] for e in range(m)]
 
             costs = [
-                LinearlyInterpolatedFunction(pred_times, pred_costs[e], (phi, float('inf')))
+                PiecewiseLinear(pred_times, pred_costs[e], (phi, float('inf')))
                 for e in range(m)
             ]
 

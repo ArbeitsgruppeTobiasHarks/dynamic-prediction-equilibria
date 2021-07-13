@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from core.predictor import Predictor, PredictionResult
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class ZeroPredictor(Predictor):
@@ -23,7 +23,7 @@ class ZeroPredictor(Predictor):
             [queues, queues]
         )
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> \
-            List[LinearlyInterpolatedFunction]:
-        zero_fct = LinearlyInterpolatedFunction([phi, phi + 1], [0., 0.])
+    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> \
+            List[PiecewiseLinear]:
+        zero_fct = PiecewiseLinear([phi, phi + 1], [0., 0.])
         return [zero_fct for _ in old_queues]

@@ -5,7 +5,7 @@ from typing import List, Optional
 import numpy as np
 
 from core.predictor import Predictor, PredictionResult
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class LinearRegressionPredictor(Predictor):
@@ -19,10 +19,10 @@ class LinearRegressionPredictor(Predictor):
     def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
         raise NotImplementedError()
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) -> PredictionResult:
+    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> PredictionResult:
         times = [phi, phi + 1, phi + 2, phi + 3, phi + 4, phi + 5, phi + 6, phi + 7, phi + 8, phi + 9, phi + 10]
-        zero_fct = LinearlyInterpolatedFunction([phi, phi + 1], [0., 0.])
-        queues: List[Optional[LinearlyInterpolatedFunction]] = [None] * len(old_queues)
+        zero_fct = PiecewiseLinear([phi, phi + 1], [0., 0.])
+        queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
         for i, old_queue in enumerate(old_queues):
             queue_minus_0 = max(0., old_queue(phi))
             queue_minus_1 = max(0., old_queue(phi - 1))
@@ -33,7 +33,7 @@ class LinearRegressionPredictor(Predictor):
             if max(queue_minus_0, queue_minus_1, queue_minus_2, queue_minus_3, queue_minus_4) == 0.:
                 queues[i] = zero_fct
             else:
-                queues[i] = LinearlyInterpolatedFunction(
+                queues[i] = PiecewiseLinear(
                     times,
                     [
                         queue_minus_0,

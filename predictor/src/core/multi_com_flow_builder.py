@@ -12,7 +12,7 @@ from core.machine_precision import eps
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class MultiComFlowBuilder:
@@ -52,7 +52,7 @@ class MultiComFlowBuilder:
 
         next_reroute_time = flow.phi
         costs = []
-        labels: Dict[int, Dict[Node, LinearlyInterpolatedFunction]] = {}
+        labels: Dict[int, Dict[Node, PiecewiseLinear]] = {}
         const_labels = {}
         const_costs = {}
         handle_nodes = set(self.network.graph.nodes.values())
@@ -66,7 +66,7 @@ class MultiComFlowBuilder:
                 predictions = [predictor.predict_from_fcts(flow.queues, flow.phi) for predictor in self.predictors]
                 costs = [
                     [
-                        LinearlyInterpolatedFunction(
+                        PiecewiseLinear(
                             prediction[e].times,
                             [travel_time[e] + value / capacity[e] for value in prediction[e].values],
                             (flow.phi, float('inf'))
@@ -178,7 +178,7 @@ class MultiComFlowBuilder:
                 handle_nodes.add(self.network.graph.edges[e].node_to)
 
     def distribute(self, i: int, phi: float, node_inflow: Dict[Node, float], sink: Node, interesting_nodes: Set[Node],
-                   costs: List[LinearlyInterpolatedFunction]) -> Dict[int, float]:
+                   costs: List[PiecewiseLinear]) -> Dict[int, float]:
         new_inflow = {}
         for s in node_inflow.keys():
             if s == sink:

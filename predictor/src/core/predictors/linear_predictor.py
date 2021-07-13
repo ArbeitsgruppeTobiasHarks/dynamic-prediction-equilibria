@@ -7,7 +7,7 @@ import numpy as np
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
 from utilities.arrays import elem_rank
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class LinearPredictor(Predictor):
@@ -40,14 +40,14 @@ class LinearPredictor(Predictor):
              new_queues]
         )
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) \
-            -> List[LinearlyInterpolatedFunction]:
+    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) \
+            -> List[PiecewiseLinear]:
         times = [phi, phi + self.horizon, phi + self.horizon + 1]
-        queues: List[Optional[LinearlyInterpolatedFunction]] = [None] * len(old_queues)
+        queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
         for i, old_queue in enumerate(old_queues):
             curr_queue = max(0., old_queue(phi))
             gradient = old_queue.gradient(elem_rank(old_queue.times, phi))
             new_queue = max(0., curr_queue + self.horizon * gradient)
-            queues[i] = LinearlyInterpolatedFunction(times, [curr_queue, new_queue, new_queue])
+            queues[i] = PiecewiseLinear(times, [curr_queue, new_queue, new_queue])
 
         return queues

@@ -7,9 +7,9 @@ import numpy as np
 
 from core.machine_precision import eps as machine_eps
 from core.network import Network
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
-from utilities.right_constant import RightConstantFunction
+from utilities.right_constant import RightConstant
 
 
 class MultiComPartialDynamicFlow:
@@ -19,12 +19,12 @@ class MultiComPartialDynamicFlow:
 
     # We use List for fast extensions
     phi: float
-    inflow: List[List[RightConstantFunction]]  # inflow[e][i] is the function fᵢₑ⁺
-    outflow: List[List[RightConstantFunction]]  # outflow[e][i] is the function fᵢₑ⁻
-    queues: List[LinearlyInterpolatedFunction]  # queue[e] is the queue length at e
+    inflow: List[List[RightConstant]]  # inflow[e][i] is the function fᵢₑ⁺
+    outflow: List[List[RightConstant]]  # outflow[e][i] is the function fᵢₑ⁻
+    queues: List[PiecewiseLinear]  # queue[e] is the queue length at e
     outflow_changes: PriorityQueue[Tuple[int, float]]  # A priority queue with times where some edge outflow changes
     queue_depletions: PriorityQueue[int]  # A priority queue with times where queues deplete
-    depletion_dict: Dict[int, float]  # Maps an edge with ongoing depletion_to outflow change time and new_outflow
+    depletion_dict: Dict[int, float]  # Maps an edge with ongoing depletion to outflow change time
 
     _network: Network
 
@@ -33,10 +33,10 @@ class MultiComPartialDynamicFlow:
         n = len(network.commodities)
         m = len(network.graph.edges)
         self.phi = 0.
-        self.inflow = [[RightConstantFunction([self.phi], [0.], (self.phi, float('inf'))) for i in range(n)] for e in
+        self.inflow = [[RightConstant([self.phi], [0.], (self.phi, float('inf'))) for i in range(n)] for e in
                        range(m)]
-        self.queues = [LinearlyInterpolatedFunction([self.phi - 1, self.phi], [0., 0.]) for e in range(m)]
-        self.outflow = [[RightConstantFunction([self.phi], [0.], (self.phi, float('inf'))) for i in range(n)] for e in
+        self.queues = [PiecewiseLinear([self.phi - 1, self.phi], [0., 0.]) for e in range(m)]
+        self.outflow = [[RightConstant([self.phi], [0.], (self.phi, float('inf'))) for i in range(n)] for e in
                         range(m)]
         self.outflow_changes = PriorityQueue()
         self.queue_depletions = PriorityQueue()
@@ -52,6 +52,24 @@ class MultiComPartialDynamicFlow:
     def __setstate__(self, state):
         self.__dict__.update(state)
         print("Please reset network on flow before accessing its functions")
+
+    def _update_queue_depletions(self, phi: float, edge: int, accum_edge_inflow: float, cur_queue: float):
+        """
+            Update the queue_depletions queue and its corresponding dictionary depletion_dict for the change times.
+        """
+        capacity = self._network.capacity
+        travel_time = self._network.travel_time
+        if cur_queue > 0:
+            if accum_edge_inflow < capacity[edge]:
+                depletion_time = phi + cur_queue / (capacity[edge] - accum_edge_inflow)
+                self.depletion_dict[edge] = depletion_time + travel_time[edge]
+                if self.queue_depletions.has(edge):
+                    self.queue_depletions.update(edge, depletion_time)
+                else:
+                    self.queue_depletions.push(edge, depletion_time)
+            elif self.queue_depletions.has(edge):
+                self.queue_depletions.remove(edge)
+                self.depletion_dict.pop(edge)
 
     def extend(self, new_inflow: Dict[int, np.ndarray], max_extension_length: float) -> Set[int]:
         """
@@ -73,19 +91,7 @@ class MultiComPartialDynamicFlow:
             assert cur_queue > -machine_eps
             cur_queue = max(0., cur_queue)
 
-            # UPDATE QUEUE_DEPLETIONS
-            if cur_queue > 0:
-                if accum_edge_inflow < capacity[e]:
-                    depletion_time = phi + cur_queue / (capacity[e] - accum_edge_inflow)
-                    if self.queue_depletions.has(e):
-                        self.queue_depletions.update(e, depletion_time)
-                        self.depletion_dict[e] = depletion_time + travel_time[e]
-                    else:
-                        self.queue_depletions.push(e, depletion_time)
-                        self.depletion_dict[e] = depletion_time + travel_time[e]
-                elif self.queue_depletions.has(e):
-                    self.queue_depletions.remove(e)
-                    self.depletion_dict.pop(e)
+            self._update_queue_depletions(phi, e, accum_edge_inflow, cur_queue)
 
             # UPDATE OUTFLOW, OUTFLOW CHANGE_EVENTS AND QUEUES
             if any(new_inflow[e][i] != self.inflow[e][i].values[-1] for i in range(n)):
@@ -142,7 +148,7 @@ class MultiComPartialDynamicFlow:
         commodity = self._network.commodities[i]
         if commodity.demand == 0:
             return 0.
-        net_outflow: RightConstantFunction = sum(self.outflow[e.id][i] for e in commodity.sink.incoming_edges)
+        net_outflow: RightConstant = sum(self.outflow[e.id][i] for e in commodity.sink.incoming_edges)
         accum_net_outflow = net_outflow.integral()
         avg_travel_time = horizon / 2 - accum_net_outflow.integrate(0., horizon) / (horizon * commodity.demand)
         return avg_travel_time

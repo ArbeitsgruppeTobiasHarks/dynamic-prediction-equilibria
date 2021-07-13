@@ -8,7 +8,7 @@ from core.distributor import Distributor
 from core.graph import Node
 from core.machine_precision import eps
 from core.waterfilling_procedure import waterfilling_procedure
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class WaterfillingDistributor(Distributor):
@@ -31,14 +31,14 @@ class WaterfillingDistributor(Distributor):
             node_inflow: Dict[Node, float],
             sink: Node,
             queues: Optional[np.ndarray],
-            labels: Dict[Node, LinearlyInterpolatedFunction],
-            costs: List[LinearlyInterpolatedFunction]
+            labels: Dict[Node, PiecewiseLinear],
+            costs: List[PiecewiseLinear]
     ) -> Dict[int, float]:
         assert queues is not None
         m = len(self.network.graph.edges)
         capacity = self.network.capacity
         new_inflow = {}
-        identity = LinearlyInterpolatedFunction([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
+        identity = PiecewiseLinear([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
         for v in node_inflow.keys():
             if v == sink:
                 continue
@@ -66,13 +66,13 @@ class WaterfillingDistributor(Distributor):
             alpha = [capacity[e.id] for e in active_edges]
             gamma = [0 if queues[e.id] > 0 else capacity[e.id] for e in active_edges]
             h = [
-                LinearlyInterpolatedFunction([0, gamma[index], gamma[index] + 1],
-                                             [beta[index], beta[index], beta[index] + 1. / capacity[e.id]],
-                                             (0, float('inf')))
+                PiecewiseLinear([0, gamma[index], gamma[index] + 1],
+                                [beta[index], beta[index], beta[index] + 1. / capacity[e.id]],
+                                (0, float('inf')))
                 if gamma[index] > 0 else
-                LinearlyInterpolatedFunction([gamma[index], gamma[index] + 1],
-                                             [beta[index], beta[index] + 1. / capacity[e.id]],
-                                             (0, float('inf')))
+                PiecewiseLinear([gamma[index], gamma[index] + 1],
+                                [beta[index], beta[index] + 1. / capacity[e.id]],
+                                (0, float('inf')))
                 for index, e in enumerate(active_edges)
             ]
             z = waterfilling_procedure(node_inflow[v], h, alpha, beta)

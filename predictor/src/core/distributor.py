@@ -7,7 +7,7 @@ import numpy as np
 
 from core.graph import Node
 from core.network import Network
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class Distributor(ABC):
@@ -22,8 +22,8 @@ class Distributor(ABC):
                    node_inflow: Dict[Node, float],
                    sink: Node,
                    queues: Optional[np.ndarray],
-                   labels: Dict[Node, LinearlyInterpolatedFunction],
-                   costs: List[LinearlyInterpolatedFunction]) -> Dict[int, float]:
+                   labels: Dict[Node, PiecewiseLinear],
+                   costs: List[PiecewiseLinear]) -> Dict[int, float]:
         pass
 
     @abstractmethod

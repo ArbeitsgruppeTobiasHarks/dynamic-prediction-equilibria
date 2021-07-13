@@ -3,18 +3,18 @@ from __future__ import annotations
 from typing import List, Dict, Set
 
 from core.graph import Node
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
 
 
 def bellman_ford(
         sink: Node,
-        costs: List[LinearlyInterpolatedFunction],
+        costs: List[PiecewiseLinear],
         interesting_nodes: Set[Node],
         phi: float
-) -> Dict[Node, LinearlyInterpolatedFunction]:
-    identity = LinearlyInterpolatedFunction([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
-    g: Dict[Node, LinearlyInterpolatedFunction] = {
+) -> Dict[Node, PiecewiseLinear]:
+    identity = PiecewiseLinear([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
+    g: Dict[Node, PiecewiseLinear] = {
         sink: identity
     }
     node_distance: Dict[Node, int] = {

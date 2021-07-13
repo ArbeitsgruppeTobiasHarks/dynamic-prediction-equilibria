@@ -7,7 +7,7 @@ import numpy as np
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
 from utilities.arrays import elem_rank
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class RegularizedLinearPredictor(Predictor):
@@ -22,17 +22,17 @@ class RegularizedLinearPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) \
-            -> List[LinearlyInterpolatedFunction]:
+    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) \
+            -> List[PiecewiseLinear]:
 
         times = [phi, phi + self.horizon, phi + self.horizon + 1]
         phi_minus_delta = phi - self.delta
-        queues: List[Optional[LinearlyInterpolatedFunction]] = [None] * len(old_queues)
+        queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
         for i, old_queue in enumerate(old_queues):
             queue_at_phi = max(0., old_queue(phi))
             queue_at_phi_minus_delta = max(0., old_queue(phi_minus_delta))
             new_queue = queue_at_phi + self.horizon * (queue_at_phi - queue_at_phi_minus_delta) / self.delta
-            queues[i] = LinearlyInterpolatedFunction(times, [queue_at_phi, new_queue, new_queue])
+            queues[i] = PiecewiseLinear(times, [queue_at_phi, new_queue, new_queue])
 
         return queues
 

@@ -6,7 +6,7 @@ from typing import List
 import numpy as np
 
 from core.network import Network
-from utilities.interpolate import LinearlyInterpolatedFunction
+from utilities.piecewise_linear import PiecewiseLinear
 
 
 class Predictor(ABC):
@@ -20,8 +20,8 @@ class Predictor(ABC):
         pass
 
     @abstractmethod
-    def predict_from_fcts(self, old_queues: List[LinearlyInterpolatedFunction], phi: float) \
-            -> List[LinearlyInterpolatedFunction]:
+    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) \
+            -> List[PiecewiseLinear]:
         pass
 
     @abstractmethod
