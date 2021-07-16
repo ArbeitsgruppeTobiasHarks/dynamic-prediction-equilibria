@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
         "./predictor/src"
-    ]
+    ],
+    "latex-workshop.latex.outDir": "%DIR%/out"
 }
