@@ -1,0 +1,42 @@
+\documentclass[titlepage]{scrartcl}
+
+\author{Michael Markl}
+\title{Computation of Dynamic~Prediction~Equilibria}
+\subtitle{A software project as part of the M.\,Sc. Mathematics at~the~University~of~Augsburg.}
+
+\newcommand{\capa}{\nu}
+\newcommand{\transit}{\tau}
+
+\begin{document}
+    \maketitle
+
+    \newpage
+    \tableofcontents
+
+    \newpage
+    \section{Introduction}
+
+    The computation of dynamic flows is up to today a hard challenge.
+
+    \newpage
+    \section{Equilibrium Flows}
+
+    We begin by defining the model of dynamic flows, also called flows over time, which is used here.
+    The traffic network is represented as a directed Graph $(V, E)$ with a finite set of nodes $V$ and a finite set of edges $E$.
+    Although, we allow parallel edges, we often write $e=(v,w)\in E$ for a directed edge $e$ from node $v$ to node $w$.
+    Each edge $e$ has a positive rate capacity $\capa_e > 0$ and a positive transit time $\transit_e > 0$.
+    The rate capacity bounds the amount flow an edge can transfer at a time, which can be imagined as the width of a conveyor belt.
+    The transit time on the other is the time the conveyor belt needs to transfer particles from its beginning to its end.
+
+    %We use Vickrey's fluid queuing model in which agents are described as infinitesimally small particles.
+    
+    
+
+    \newpage
+    \section{Single-Commodity Flows}
+
+    \subsection{Piecewise Linear Functions}
+
+
+
+\end{document}

@@ -1,5 +1,6 @@
 /predictor/out
 local_env_variables.sh
+/university-report/out
 
 ### Python template
 # Byte-compiled / optimized / DLL files
