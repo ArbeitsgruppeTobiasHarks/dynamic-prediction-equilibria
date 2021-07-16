@@ -5,6 +5,7 @@
 \usepackage{amsthm}
 \usepackage{hyperref}
 \usepackage{mathtools}
+\usepackage{enumitem}
 \usepackage{todonotes}
 
 \newtheorem{theorem}{Theorem}[section]
@@ -14,7 +15,7 @@
 
 \author{Michael Markl}
 \title{Computation of Dynamic~Prediction~Equilibria}
-\subtitle{A software project as part of the M.\,Sc. Mathematics at~the~University~of~Augsburg.}
+\subtitle{A software project as part of the M.Sc. Mathematics at~the~University~of~Augsburg.}
 
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\diff}{\,\textnormal{d}}
@@ -22,9 +23,13 @@
 % Flow-specifics
 \newcommand{\capa}{\nu}
 \newcommand{\transit}{\tau}
+\newcommand{\outEdges}[1]{\delta^-_{#1}}
+\newcommand{\inEdges}[1]{\delta^+_{#1}}
 \newcommand{\infl}[1][f]{{#1}^+}
 \newcommand{\outfl}[1][f]{{#1}^-}
+\newcommand{\bal}[2]{b_{#1,#2}}
 \newcommand{\qulen}{q}
+
 
 \begin{document}
     \maketitle
@@ -42,28 +47,54 @@
 
     We begin by defining the model of dynamic flows, also called flows over time: Here, Vickrey's fluid queuing model is used. \todo{Add cite}
     The traffic network is represented as a directed Graph $(V, E)$ with a finite set of nodes $V$ and a finite set of edges $E$.
-    Although, we allow parallel edges, we often write $e=(v,w)\in E$ for a directed edge $e$ from node $v$ to node $w$.
-    Each edge $e$ has a positive rate capacity $\capa_e > 0$ and a positive transit time $\transit_e > 0$.
-    The rate capacity bounds the amount flow an edge can transfer at a time, which can be imagined as the width of a conveyor belt.
+    Although, we allow parallel edges, we often write $e=vw\in E$ for a directed edge $e$ from node $v$ to node $w$.
+    For a node $v$, we denote the set of \emph{outgoing edges} of $v$ as $\outEdges{v}\coloneqq \{ vw \in E \}$ and the set of \emph{incoming edges} as $\inEdges{v} \coloneqq \{ uv \in E \}$.
+
+    Each edge $e$ has a positive \emph{rate capacity} $\capa_e > 0$ and a positive \emph{transit time} $\transit_e > 0$.
+    The rate capacity bounds the amount of flow an edge can transfer at a time, which can be imagined as the width of a conveyor belt.
     The transit time on the other is the time the conveyor belt needs to transfer particles from its beginning to its end.
+
+    We often analyse multi-commodity flows.
+    That means, we have a finite set $I$ of commodities and each commodity $i\in I$ has a \emph{source node} $s_i\in V$ and a \emph{sink node} $t_i\in V\setminus\{ s_i \}$.
+    Moreover, the \emph{network inflow rate} of a commodity is given by a locally integrable function $u_i:\R \rightarrow \R_{\geq 0}$ with $u_i(\theta) = 0$ for $\theta \leq 0$.
 
 
     
     \begin{definition}
-        A \emph{dynamic flow} is a pair $(\infl, \outfl)$ of families of locally integrable functions with $\infl_e, \outfl_e : \R \rightarrow \R_{\geq 0}$ with $\infl_e(\theta) = \outfl_e(\theta) = 0$ for $\theta \leq 0$ and  $e\in E$.
-        Here, $\infl_e(\theta)$ is called the \emph{inflow rate} of edge $e$ at time $\theta$ whereas $\outfl_e(\theta)$ describes the \emph{outflow rate} of $e$ at time $\theta$.
+        A \emph{dynamic flow} is a pair $(\infl, \outfl)$ of families of locally integrable functions with $\infl_e, \outfl_{i,e} : \R \rightarrow \R_{\geq 0}$ with $\infl_{i,e}(\theta) = \outfl_{i,e}(\theta) = 0$ for $\theta \leq 0$ and  $e\in E$ and $i\in I$.
+        Here, $\infl_{i,e}(\theta)$ is called the \emph{inflow rate} of commodity $i$ into edge $e$ at time $\theta$ whereas $\outfl_{i,e}(\theta)$ describes the \emph{outflow rate} of commodity $i$ out of $e$ at time $\theta$.
+        We denote the \emph{total inflow and outflow rates} of an edge $e$ as $\infl_e(\theta) \coloneqq \sum_{i\in I} \infl_{i,e}(\theta)$ and $\outfl_e(\theta) \coloneqq \sum_{i\in I}\outfl_{i,e}(\theta)$.
 
         Given a dynamic flow, we can define the \emph{accumulative inflow and outflow} as
         \[
-            F^+_e(\theta) \coloneqq \int_0^\theta \infl_e(t) \diff t \quad\text{and}\quad  F^-_e(\theta) \coloneqq \int_0^\theta \outfl_e(t) \diff t 
+            F^+_e(\theta) \coloneqq \int_0^\theta \infl_e(t) \diff t \quad\text{and}\quad  F^-_e(\theta) \coloneqq \int_0^\theta \outfl_e(t) \diff t,
         \]
         respectively.
-        The \emph{queue length} of an edge $e$ at time $\theta$ can then be determined as $\qulen_e(\theta) \coloneqq F^+_e(\theta) - F^-_e(\theta + \transit_e)$.
-        
+        Based on that, the \emph{queue length} of an edge $e$ at time $\theta$ can be determined as $\qulen_e(\theta) \coloneqq F^+_e(\theta) - F^-_e(\theta + \transit_e)$.
+        The time-dependent cost of traversing an edge is thus defined as $c_e(\theta) \coloneqq \transit_e + \qulen_e(\theta) / \capa_e$.
 
         A dynamic flow is called \emph{feasible}, if it fulfills the following conditions:
-        \begin{enumerate}
-            \item 
+        \begin{enumerate}[label=(F\arabic*)]
+            \item No total outflow rate exceeds the capacity, i.e. $\forall e\in E, \theta\in\R: \outfl_e(\theta)\leq \capa_e$.
+            \item Flow traverses an edge in a FIFO-manner, i.e. \[
+                \forall e\in E, \theta\in\R: \quad 
+                \outfl_{i,e}(\theta) = \begin{cases}
+                 \outfl_e(\theta) \cdot \frac{\infl_{i,e}(\xi)}{\outfl_e(\xi)}, & \text{if $\infl_e(\xi) > 0$,}\\
+                 0, & \text{otherwise,}
+            \end{cases}
+            \]
+            where $\xi\coloneqq \min \{ \xi \leq \theta  \mid \xi + c_e(\xi) = \theta \}$. 
+            \item Flow conservation is preserved on intermediary nodes, i.e. \[\forall i\in I, v\in V\setminus\{ s_i, t_i \}: \quad
+            \bal{i}{v}(\theta)\coloneqq \sum_{e\in\outEdges{v}}\infl_{i,e}(\theta) - \sum_{e\in\inEdges{v}} \outfl_{i,e}(\theta) = 0 \]
+            and $\bal{i}{s_i}(\theta) = u_i(\theta)$ as well as $\bal{i}{t_i}(\theta) \leq 0$ for all $\theta\in\R$.
+
+            \item Edges operate at capacity, i.e. 
+            \[
+                \forall e\in E, \theta\in \R: \quad \outfl_{e}(\theta) = \begin{cases}
+                    \capa_e, &\text{if $\qulen_e(\theta - \transit_e)>0$,} \\
+                    \infl_e(\theta-\transit_e), &\text{otherwise.}
+                \end{cases}
+            \]
         \end{enumerate}
         
     \end{definition}
