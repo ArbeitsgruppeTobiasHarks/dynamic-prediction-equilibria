@@ -1,3 +1,4 @@
 Equilibria
 Piecewise
 Markl
+equilibria

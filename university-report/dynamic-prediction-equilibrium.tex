@@ -1,3 +1,55 @@
 \subsection{Dynamic Prediction Equilibrium}\label{subsec-dynamic-prediction-equilibrium}
 
+To enable a game theoretic perspective on dynamic flows, the infinitesimally small particles are interpreted as agents belonging to a commodity $i\in I$.
+An agent gets generated at some time at the source node $s_i$.
+Each time an agent arrives at a node, it can update its route based on historical traffic data of the network.
+More specifically, each commodity has its own prediction method to predict future queue lengths on all edges of the network.
+Based on the predicted queue lengths an agent now determines a time-dependent shortest path starting from his current position to $t_i$.
 
+More formally, for a commodity $i\in I$ the \emph{predicted queue length} of an edge $e$ at time $\theta$ as predicted at time $\bar\theta$ based on the historical queue lengths $q=(q_e)_{e\in E}$ is given by $\predq_{i,e}(\theta, \bar\theta, q)$.
+Aside from the predicted queue lengths all other predicted values will be denoted with a hat. 
+This means, each commodity $i$ has a set of predictor functions $(\predq_{i,e})_{e\in E}$ each of which has the following the signature:
+\[
+    \predq_{i,e} : \R_{\geq 0} \times \R_{\geq 0} \times \contFcts{\R_{\geq 0}}{\R_{\geq 0}}^E \rightarrow \R_{\geq0},
+\]
+where $\contFcts{A}{B}$ denotes the set of all continuous functions from $A$ to $B$.
+
+Based on the predicted queue lengths we can also determine \emph{predicted queue costs} by \[
+    \predc_{i,e}(\theta, \bar\theta, q) \coloneqq \transit_e + \frac{\predq_{i,e}(\theta, \bar\theta, q)}{\capa_e}.
+\]
+The \emph{predicted traversal time of an edge $e=vw$} is the predicted arrival time at $w$ when entering edge $e$ at time $\theta$ defined as $\predT_{i,e}(\theta, \bar\theta, q) \coloneqq \theta + \predc(\theta, \bar\theta, q)$.
+The \emph{predicted traversal time of a path $P=e_1\,e_2\,\cdots\,e_k$} is thus defined as \[
+    \predT_{i,P}(\theta,\bar\theta, q) \coloneqq \left(
+        \predT_{i,e_k}(\emptyArg, \bar\theta, q) \circ \cdots \circ \predT_{i,e_1}(\emptyArg, \bar\theta, q)
+    \right) (\theta).
+\]
+
+For all nodes $v$ that can reach $t_i$, we denote the set of all simple $v$-$t_i$-paths as $\paths_{v,t_i}$.
+We can then determine the \emph{predicted earliest arrival time} at $t_i$ when starting in $v$ at time $\theta$ by
+\[
+    \predl_{v,i}(\theta, \bar\theta, q) \coloneqq \min_{P \in \paths_{v,t_i}} \predT_{i, P}(\theta,\bar\theta, q).
+\]
+We call a path that attains this minimum a \emph{$\bar\theta$-predicted shortest path at time $\theta$}.
+\todo[inline]{
+    We will later see, why we can restrict ourselves to simple paths.
+    (Choosing $\transit_e$ to be strictly positive is not enough. We need to have "FIFO-costs".)
+}
+
+
+\begin{proposition}
+    For all $\bar\theta\in \R,q\in\contFcts{\R_{\geq0}}{\R_{\geq0}}$, the vector $(\predl_{v,i}(\emptyArg,\bar\theta, q))_{v\in V_i}$ of functions is the unique solution of the following system of equations in the function-valued variables $(l_v)_{v\in V_i}$:
+    \[
+        l_v(\theta) = \begin{cases}
+            \theta, &\text{if $v = t_i$}, \\
+            \min_{
+                e=vw\in\outEdges{v}\atop
+                w \in V_i                
+            } l_w\left(
+                \predT_{i, e}(\theta, \bar\theta, q)
+            \right), &\text{otherwise}.
+        \end{cases}
+    \]
+\end{proposition}
+\begin{proof}
+    \todo[inline]{Todo.}
+\end{proof}
