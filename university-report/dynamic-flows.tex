@@ -12,11 +12,10 @@ The transit time on the other is the time the conveyor belt needs to transfer pa
 
 We often analyze multi-commodity flows.
 That means, we have a finite set $I$ of commodities and each commodity $i\in I$ has a \emph{source node} $s_i\in V$ and a \emph{sink node} $t_i\in V\setminus\{ s_i \}$.
-Moreover, the \emph{network inflow rate} of a commodity is given by a locally integrable function $u_i:\R \rightarrow \R_{\geq 0}$ with $u_i(\theta) = 0$ for $\theta \leq 0$.
+We require, that $s_i$ can reach $t_i$ in $(V,E)$.
+Furthermore, we define $V_i \coloneqq \{ v \in V \mid \text{$s_i$ can reach $v$ and $v$ can reach $t_i$ in (V, E)} \}$ as the subset of nodes that are relevant to commodity $i$.
 
-\todo[inline]{
-    $s_i$ should be able to reach $t_i$. Maybe we define $V_i$ as the set of "important nodes" for commodity $i$, i.e. $V_i = \{ v \in V \mid \text{$s_i$ can reach $v$ and $v$ can reach $t_i$ in (V, E)} \}$
-}
+Moreover, the \emph{network inflow rate} of a commodity is given by a locally integrable function $u_i:\R \rightarrow \R_{\geq 0}$ with $u_i(\theta) = 0$ for $\theta \leq 0$.
 
 \begin{definition}
     A \emph{(dynamic) flow} is a pair $f = (\infl, \outfl)$ of families of locally integrable functions with $\infl_{i,e}, \outfl_{i,e} : \R \rightarrow \R_{\geq 0}$ with $\infl_{i,e}(\theta) = \outfl_{i,e}(\theta) = 0$ for $\theta \leq 0$ and  $e\in E$ and $i\in I$.
