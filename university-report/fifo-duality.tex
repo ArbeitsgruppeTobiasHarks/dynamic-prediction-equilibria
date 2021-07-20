@@ -1,0 +1,95 @@
+\subsection{Duality of Arrival and Departure Times}
+
+Sometimes it is useful not to work on the earliest arrival time, but the latest possible departure time.
+To enable this switch, we define a kind of inverse of a monotonically increasing function:
+
+\newcommand{\IncCoercive}{\mathcal{F}}
+\begin{definition}
+    We define the function space 
+    \[
+        \IncCoercive \coloneqq \left\{ f:\R \rightarrow \R \mid \text{ $f$ is increasing and $ \lim_{\abs{x}\rightarrow\infty} \abs{f(x)} = \infty$} \right\}.
+    \]
+    The \emph{reversal of $f\in\IncCoercive$} is defined as 
+    \[
+        \minv{f}:\R \rightarrow \R,\ \theta\mapsto \sup \{ \xi\in\R \mid f(\xi) \leq \theta \}.
+    \]
+\end{definition}
+
+We can interpret the reversal of $f$ in the following way:
+If $f(\theta)$ is the earliest arrival time when departing at time $\theta$, then $\minv{f}(\theta)$ is the latest departure time for arriving before or at time $\theta$.
+
+\begin{proposition}
+    For $f,g\in \IncCoercive$ the following statements hold:
+    \begin{enumerate}[label=(\roman*)]
+        \item\label{prop:reversal-props:inner-operator} It holds that $\minv{f}\in\IncCoercive$, i.e. $\minv{f}$ is increasing and $\lim_{\abs{x}\rightarrow\infty} \abs{f(x)} = \infty$.
+        \item\label{prop:reversal-props:continuous} If $f$ is continuous, then $\minv{f}(\theta) = \max \{ \xi\in\R \mid f(\xi) = \theta \}$ holds for all $\theta\in\R$ and $\minv{f}$ is strictly increasing.
+        \item\label{prop:reversal-props:inverse} If $f$ is continuous and strictly increasing, then  $\minv{f}$ is the inverse of $f$.
+        \item\label{prop:reversal-props:composition-minimum} It holds that $\minv{(g\circ f)} = \minv{f}\circ\minv{g}$ and $\minv{(\min\{f,g\})} = \max\{\minv{f}, \minv{g}\}$.
+    \end{enumerate}
+\end{proposition}
+\begin{proof}
+    \ref{prop:reversal-props:inner-operator}. 
+    Let $\theta_1, \theta_2\in\R$ with $\theta_1 < \theta_2$.
+    Then \begin{equation}\label{eq:reversal-props:increasing}
+        \minv{f}(\theta_1) = \sup\{\xi\in\R \mid f(\xi) \leq \theta_1 \}
+        \leq \sup\{\xi\in\R \mid f(\xi)\leq \theta_2 \} = \minv{f}(\theta_2)
+    \end{equation}
+    implies the monotonicity.
+    From $\lim_{\abs{\theta}\rightarrow \infty} \abs{f(\theta)}$ and the monotonicity of $f$ we conclude \[
+        \lim_{\abs{\theta}\rightarrow \infty} \abs{\minv{f}(\theta)}
+        = \lim_{\abs{\theta}\rightarrow \infty} \abs{ \sup\{\xi\in\R \mid f(\xi)\leq \theta \} } = \infty.
+    \]
+
+    \ref{prop:reversal-props:continuous}.
+    We note, that $\{ \xi\in\R \mid f(\xi) = \theta \}$ is non-empty, closed and bounded from above because of the condition $\lim_{\abs{\theta}\rightarrow \infty} \abs{f(\theta)} = \infty$ and the continuity and monotonicity of $f$.
+    The reversal $\minv{f}$ is strictly increasing as the inequality~\eqref{eq:reversal-props:increasing} is strict for continuous $f$.
+    
+    \ref{prop:reversal-props:inverse}.
+    Let $f$ be continuous and strictly increasing.
+    Then it holds that 
+    \[
+        \minv{f}(\theta) = \max\{\xi\mid f(\xi) = \theta \} = f^{-1}(\theta).
+    \]
+
+    \ref{prop:reversal-props:composition-minimum}.
+    After inserting the definition the first statement evaluated in $\theta$ becomes
+    \[
+        l\coloneqq \sup\left\{
+            \xi \mid g(f(\xi)) \leq \theta
+        \right\}
+        =
+        \sup\left\{
+            \xi_f \mid f(\xi_f) \leq
+            \sup\left\{ \xi_g \mid g(\xi_g) \leq \theta \right\}
+            \right\}
+         \eqqcolon r.
+    \]
+    Let $\xi_f\in\R$ fulfill $f(\xi_f) \leq \minv{g}(\theta)$.
+    Then for all $\xi_g$ with $g(\xi_g) \leq \theta$ we have $f(\xi_f) \leq \xi_g$.
+    Then because of the monotonicity of $g$ and $f$ we follow $g(f(\xi_f)) \leq g(\xi_g) \leq \theta$ which implies $l \geq r$.
+    To see that $r\geq l$ holds, any $\xi\in\R$ with $g(f(\xi)) \leq \theta$ fulfills $f(\xi)\leq \minv{g}(\theta)$.
+
+    The statement on the minimum of $f$ and $g$ evaluated in $\theta$ is of the form
+    \[
+        l\coloneqq \sup\{\xi \mid \min\{f(\xi),g(\xi)\} \leq \theta \}
+        =
+        \max\{
+            \sup\{\xi \mid f(\xi)\leq \theta \},
+            \sup\{\xi\mid g(\xi)\leq\theta\}
+        \} \eqqcolon r.
+    \]
+    Let $\xi\in\R$ fulfill $\min\{f(\xi),g(\xi)\}\leq \theta$ and assume $f(\xi)\leq g(\xi)$ without loss of generality.
+    Then it holds that $f(\xi) \leq \theta$ and therefore $\xi \leq \minv{f}(\theta)\leq r$ implying $l\leq r$.
+    On the contrary, assume $\minv{f}(\theta)\leq \minv{g}(\theta)$ without loss of generality, so that $r = \minv{g}(\theta)$.
+    Any $\xi\in\R$ with $g(\xi)\leq \theta$ fulfills $\min\{f(\xi),g(\xi)\}\leq g(\xi)\leq\theta$ and hence $l \geq r$ holds true.
+\end{proof}
+
+\begin{corollary}
+    For a cost-function $c:\R\rightarrow\R_{\geq0}^E$, that follows the FIFO rule and that fulfills $\lim_{\theta\to-\infty} T_e(\theta) = -\infty$, the following statements hold true:
+    \begin{enumerate}[label=(\roman*)]
+        \item For all edges $e\in E$ we have $T_e \in \IncCoercive$.
+        \item\label{prop:reversal-props:paths} For any path $P=e_1\,\cdots \,e_k$ it holds that $\minv{T_P} = \minv{T_{e_1}} \circ \cdots \circ \minv{T_{e_k}}$.
+        \item For any node $v\in V$ it holds that $\minv{l_v} = \max_{P\in\paths_{v,t}} \minv{T_P}$.
+    \end{enumerate}
+\end{corollary}
+

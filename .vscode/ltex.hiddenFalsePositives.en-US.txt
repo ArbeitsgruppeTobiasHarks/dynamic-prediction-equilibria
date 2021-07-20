@@ -1,1 +1,2 @@
 {"rule":"THE_SUPERLATIVE","sentence":"^\\QWe call a path that attains this minimum a \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q-predicted shortest path at time \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"THE_SUPERLATIVE","sentence":"^\\QComputation of Shortest Paths with FIFO Costs.\\E$"}
