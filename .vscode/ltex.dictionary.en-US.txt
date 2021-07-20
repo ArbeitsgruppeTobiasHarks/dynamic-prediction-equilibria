@@ -2,3 +2,4 @@ Equilibria
 Piecewise
 Markl
 equilibria
+monotonicity

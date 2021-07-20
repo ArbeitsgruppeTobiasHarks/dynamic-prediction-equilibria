@@ -1,0 +1,109 @@
+\section{Time-Dependent FIFO Cost Functions}
+
+Time-dependent cost functions that follow the First In First Out (FIFO) rule are very important for the algorithms introduced later.
+We begin by defining the FIFO rule in a directed graph $(V, E)$.
+
+
+\begin{definition}
+    A time-dependent cost function $c: \R\rightarrow \R_{\geq0}^E$ \emph{follows the FIFO rule} if for all $e\in E$ the function $T_e: \theta\mapsto \theta + c_e(\theta)$ is monotone increasing.
+    The function $T_e$ is called \emph{traversal time} of $e$.
+\end{definition}
+
+For the following we concentrate on a graph $(V,E)$ where all nodes can reach a specific sink node $t\in V$.
+Moreover, let $c:\R\rightarrow \R_{\geq0}^E$ be a time-dependent cost function.
+
+The traversal time $T_P$ of a path $P = e_1\,\cdots\,e_k$ is given by the concatenation of the edges' traversal times as $T_P \coloneqq T_{e_k} \circ \cdots \circ T_{e_1}$.
+The set of all simple $v$-$t$-Paths is denoted as $\paths_{v,t}$.
+The \emph{earliest arrival time} at $t$ when starting at time $\theta$ in $v$ is then given by $l_v(\theta)\coloneqq \min_{P\in\paths_{v,t}} T_P(\theta)$.
+To make sure that we can ignore non-simple paths in this definition, we exploit the FIFO property of the cost functions:
+
+\begin{proposition}\label{prop:removing-cycles-in-fifo-graphs}
+    Given cost functions $c:\R\rightarrow\R_{\geq0}^E$ following the FIFO rule, we can remove a cycle in any $v$-$t$-path $P$ while not increasing the path's traversal time.
+
+    More specifically, if $P=P_1\circ C \circ P_2$ is the concatenation of paths $P_1$, a cycle $C$ and another path $P_2$, then it holds that $
+        T_P(\theta) \geq \left(
+        T_{P_2} \circ T_{P_1} \right)(\theta)$ for all $\theta\in\R$.
+\end{proposition}
+\begin{proof}
+The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the fact that $T_C(\theta) \geq \theta$ holds for all $\theta\in\R$.
+\end{proof}
+
+Sometimes it is useful not to calculate the earliest arrival time, but the latest possible departure time.
+To enable this switch, we define a kind of inverse of a monotonically increasing function:
+
+
+
+\newcommand{\IncCoercive}{\mathcal{F}}
+\begin{definition}
+    We define the function space 
+    \[
+        \IncCoercive \coloneqq \left\{ f:\R \rightarrow \R \mid \text{ $f$ is increasing and $ \lim_{\abs{x}\rightarrow\infty} \abs{f(x)} = \infty$} \right\}.
+    \]
+    The \emph{backward of $f\in\IncCoercive$} is defined as $\minv{f}:\R \rightarrow \R,\ \theta\mapsto \sup \{ \xi\in\R \mid f(\xi) \leq \theta \}$.
+\end{definition}
+
+\begin{proposition}
+    For $f,g\in \IncCoercive$ the following statements hold:
+    \begin{enumerate}[label=(\roman*)]
+        \item\label{prop:backward-props:inner-operator} It holds that $\minv{f}\in\IncCoercive$, i.e. $\minv{f}$ is increasing and $\lim_{\abs{x}\rightarrow\infty} \abs{f(x)} = \infty$.
+        \item\label{prop:backward-props:continuous} If $f$ is continuous, then $\minv{f}(\theta) = \max \{ \xi\in\R \mid f(\xi) = \theta \}$ holds for all $\theta\in\R$ and $\minv{f}$ is strictly increasing.
+        \item\label{prop:backward-props:composition-minimum} It holds that $\minv{(g\circ f)} = \minv{f}\circ\minv{g}$ and $\minv{(\min\{f,g\})} = \min\{\minv{f}, \minv{g}\}$.
+    \end{enumerate}
+\end{proposition}
+\begin{proof}
+    \ref{prop:backward-props:inner-operator}. 
+    Let $\theta_1, \theta_2\in\R$ with $\theta_1 < \theta_2$.
+    Then \begin{equation}\label{eq:backward-props:increasing}
+        \minv{f}(\theta_1) = \sup\{\xi\in\R \mid f(\xi) \leq \theta_1 \}
+        \leq \sup\{\xi\in\R \mid f(\xi)\leq \theta_2 \} = \minv{f}(\theta_2)
+    \end{equation}
+    implies the monotonicity.
+    Moreover, from $\lim_{\abs{\theta}\rightarrow \infty} \abs{f(\theta)}$ and the monotonicity of $f$, we follow \[
+        \lim_{\abs{\theta}\rightarrow \infty} \abs{\minv{f}(\theta)}
+        = \lim_{\abs{\theta}\rightarrow \infty} \abs{ \sup\{\xi\in\R \mid f(\xi)\leq \theta \} } = \infty.
+    \]
+
+    \ref{prop:backward-props:continuous}.
+    We note, that $\{ \xi\in\R \mid f(\xi) = \theta \}$ is non-empty, closed and bounded from above because of the condition $\lim_{\abs{\theta}\rightarrow \infty} \abs{f(\theta)} = \infty$ and the continuity and monotonicity of $f$.
+    The backward $\minv{f}$ is strictly increasing as the inequality~\eqref{eq:backward-props:increasing} is strict for continuous $f$.
+    
+    \ref{prop:backward-props:composition-minimum}.
+    After inserting the definition the first statement evaluated in $\theta$ becomes
+    \[
+        l\coloneqq \sup\left\{
+            \xi \mid g(f(\xi)) \leq \theta
+        \right\}
+        =
+        \sup\left\{
+            \xi_f \mid f(\xi_f) \leq
+            \sup\left\{ \xi_g \mid g(\xi_g) \leq \theta \right\}
+            \right\}
+         \eqqcolon r.
+    \]
+    Let $\xi_f\in\R$ fulfill $f(\xi_f) \leq \minv{g}(\theta)$.
+    Then for all $\xi_g$ with $g(\xi_g) \leq \theta$ we have $f(\xi_f) \leq \xi_g$.
+    Then because of the monotonicity of $g$ and $f$ we follow $g(f(\xi_f)) \leq g(\xi_g) \leq \theta$ which implies $l \geq r$.
+    To see that $r\geq l$ holds, any $\xi\in\R$ with $g(f(\xi)) \leq \theta$ fulfills $f(\xi)\leq \minv{g}(\theta)$.
+
+    The statement on the minimum of $f$ and $g$ evaluated in $\theta$ is of the form
+    \[
+        l\coloneqq \sup\{\xi \mid \min\{f(\xi),g(\xi)\} \leq \theta \}
+        =
+        \min\{
+            \sup\{\xi \mid f(\xi)\leq \theta \},
+            \sup\{\xi\mid g(\xi)\leq\theta\}
+        \} \eqqcolon r.
+    \]
+    For $\xi\in\R$ with $\min\{f(\xi),g(\xi)\}\leq \theta$ it holds that $\xi\leq \minv{f}(\theta)$ and $\xi\leq \minv{g}(\theta)$ implying $l\leq r$.
+    Assume $\minv{f}(\theta)\leq \minv{g}(\theta)$ without loss of generality, so that $r = \minv{f}(\theta)$.
+    Any $\xi\in\R$ fulfilling $f(\xi)\leq \theta$ also fulfills $\min\{f(\xi),g(\xi)\}\leq \theta$ and hence $l \geq r$.
+\end{proof}
+
+\begin{corollary}
+    For a cost-function $c:\R\rightarrow\R_{\geq0}^E$, that follows the FIFO rule and that fulfills $\lim_{\theta\to-\infty} T_e(\theta) = -\infty$, the following statements hold:
+    \begin{enumerate}[label=(\roman*)]
+        \item For all edges $e\in E$ we have $T_e \in \IncCoercive$.
+        \item\label{prop:backward-props:paths} For any path $P=e_1\,\cdots e_k$ it holds that $\minv{T_P} = \minv{T_{e_1}} \circ \cdots \circ \minv{T_{e_k}}$.
+        \item For any node $v\in V$ it holds that $\minv{l_v} = \min_{P\in\paths_{v,t}} \minv{T_P}$.
+    \end{enumerate}
+\end{corollary}

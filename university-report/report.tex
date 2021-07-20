@@ -10,6 +10,7 @@
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
 \theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
 
@@ -22,7 +23,10 @@
 \newcommand{\diff}{\,\textnormal{d}}
 \newcommand{\contFcts}[2]{{C}{\left({#1},{#2}\right)}}
 \newcommand{\emptyArg}{\,\boldsymbol{\cdot}\,}
+\newcommand{\abs}[1]{\left| #1 \right|}
 
+\newcommand{\minv}[1]{#1^{\leftarrow}}
+\newcommand{\id}{\mathbf{id}}
 % Flow-specifics
 \newcommand{\capa}{\nu}
 \newcommand{\transit}{\tau}
@@ -52,6 +56,9 @@
     The computation of dynamic flows is up to today a hard challenge.
 
     \newpage
+    \input{fifo-cost-functions.tex}
+
+    \newpage
     \section{Equilibrium Flows}
 
     The goal of this project is to compute several kinds of equilibrium flows.
@@ -64,7 +71,5 @@
     \section{Single-Commodity Flows}
 
     \subsection{Piecewise Linear Functions}
-
-
 
 \end{document}

@@ -104,10 +104,10 @@ The statement is a direct result of the monotonicity of $\predT_{i,P_2}(\emptyAr
     \]
     such that removing any cycles in the path $e_1\circ Q$ would yield a shorter path than $P$.
 
-    \todo{show uniqueness}
-    Let $(l_v)_{v\in V_i}$ be a solution of the system of equations and let $P_v$ be a $\bar\theta$-predicted shortest path at time $\theta$.
-    We first show, that $\predl_{v,i}(\theta,\bar\theta, q)\leq l_v(\theta)$ holds for all $v\in V_i$ and $\theta\in\R$.
-    Assume the contrary and pick the 
+    \todo[inline]{
+    We now have to show the uniqueness of the solution.
+    Let $(l_v)_{v\in V_i}$ be a solution of the system of equations.
+    }
 \end{proof}
 
 An edge $e=vw$ is called \emph{active} for commodity $i\in I$ at time $\theta\in\R$ as predicted at time~$\bar\theta$, if the equality $\predl_{i,v}(\theta, \bar\theta, q) = \predl_{i,w}{\left(
@@ -117,10 +117,11 @@ All active edges of a commodity $i$ are collected in the set $\predE_i(\theta, \
 
 We can now define an equilibrium based on these predictors, in which all agents only take shortest paths at all times based on their current prediction.
 \begin{definition}
-    A pair $(\predq, f)$ of a set of predictors $(\predq_{i,e})_{i\in I, e\in E}$ and a dynamic flow $f$ is a \emph{dynamic prediction equilibrium (DPE)} if for all $e\in E, i\in I$ and $\theta\geq 0$ it holds that
+    A pair $(\predq, f)$ of a set of predictors $(\predq_{i,e})_{i\in I, e\in E}$ and a dynamic flow $f$ is a \emph{partial dynamic prediction equilibrium up to time $H\in\R\cup\{\infty\}$} if $f$ is feasible up to time $H$ and for all $e\in E, i\in I$ and $\theta < H$ it holds that
     \[
         \infl_{i,e}(\theta) > 0 \implies e \in \predE_i(\theta, \theta, q).
     \]
+    For $H = \infty$ the pair $(\predq, f)$ is called \emph{dynamic prediction equilibrium (DPE)}. 
 \end{definition}
 
 In other words, a pair of a set of predictors and a flow is a DPE, if whenever flow enters an edge at some time $\theta$, then the prediction of that commodity evaluated at the same time $\theta$ says, that the edge lies on a dynamic shortest path to $t_i$.
