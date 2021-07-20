@@ -2,5 +2,6 @@
     "python.analysis.extraPaths": [
         "./predictor/src"
     ],
-    "latex-workshop.latex.outDir": "%DIR%/out"
+    "latex-workshop.latex.outDir": "%DIR%/out",
+    "gitlens.currentLine.enabled": false
 }
