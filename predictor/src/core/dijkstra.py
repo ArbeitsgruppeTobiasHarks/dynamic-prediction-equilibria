@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-from typing import Dict, List, Set, Tuple
-
-import numpy as np
-
+from typing import Callable, Dict, List, Set, Tuple
 from core.graph import Node, Edge
 from core.machine_precision import eps
-from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
 
 
@@ -37,30 +33,30 @@ def dijkstra(
 
 
 def realizing_dijkstra(
-        phi: float, source: Node, sink: Node, interesting_nodes: Set[Node], costs: List[PiecewiseLinear]
+        phi: float, source: Node, sink: Node, relevant_nodes: Set[Node], costs: List[Callable[[float], float]]
 ) -> Tuple[Dict[Node, float], Dict[Edge, float]]:
-    arrival_times: Dict[Node, float] = {source: phi}
+    '''
+    Assumes costs to follow the FIFO rule and relevant_nodes to contain
+    all nodes that lie on a path from source to sink.
+    Returns the earliest arrival times when departing from source at
+    time phi for nodes that source can reach up to the arrival at sink.
+    '''
+    arrival_times: Dict[Node, float] = {}
     queue: PriorityQueue[Node] = PriorityQueue([(source, phi)])
-    realised_cost = {}
-    stop_after = float('inf')
+    realized_cost = {}
     while len(queue) > 0:
-        arrival_time = queue.min_key()
-        v = queue.pop()
+        arrival_time, v = queue.min_key(), queue.pop()
+        arrival_times[v] = arrival_time
         if v == sink:
-            stop_after = arrival_time
-        if arrival_time > stop_after:
             break
-
         for e in v.outgoing_edges:
             w = e.node_to
-            if w not in interesting_nodes:
+            if w in arrival_times.keys() or w not in relevant_nodes:
                 continue
-            realised_cost[e] = costs[e.id](arrival_time)
-            relaxation = arrival_times[v] + realised_cost[e]
-            if w not in arrival_times.keys():
-                arrival_times[w] = relaxation
+            realized_cost[e] = costs[e.id](arrival_times[v])
+            relaxation = arrival_times[v] + realized_cost[e]
+            if not queue.has(w):
                 queue.push(w, relaxation)
-            elif relaxation < arrival_times[w]:
-                arrival_times[w] = relaxation
+            elif relaxation < queue.key_of(w):
                 queue.decrease_key(w, relaxation)
-    return arrival_times, realised_cost
+    return arrival_times, realized_cost

@@ -3,3 +3,5 @@ Piecewise
 Markl
 equilibria
 monotonicity
+splitwise
+piecewise
