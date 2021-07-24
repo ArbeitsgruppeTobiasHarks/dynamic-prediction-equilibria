@@ -15,7 +15,7 @@ The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the f
 
 \begin{proposition}
     Let $c:\R\rightarrow\R_{>0}^E$ be a cost function following the FIFO rule.
-    The vector $(l_v)_{v\in V}$ of functions is the maximal solution of the following system of equations in the function-valued variables $(\tilde l_v: \R \rightarrow \R)_{v\in V}$:
+    The vector $(l_{v,t})_{v\in V}$ of functions is the maximal solution of the following system of equations in the function-valued variables $(\tilde l_v: \R \rightarrow \R)_{v\in V}$:
     \[
         \tilde l_v(\theta) = \begin{cases}
             \theta, &\text{if $v = t$}, \\
@@ -28,7 +28,7 @@ The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the f
     \]
 \end{proposition}
 \begin{proof}
-    To see that $(l_v)_{v\in V}$ is a solution of the system, we note that for $v = t$ we have $l_v(\theta) = \theta$ for all $\theta\in\R$.
+    To see that $(l_{v,t})_{v\in V}$ is a solution of the system, we note that for $v = t$ we have $l_{v,t}(\theta) = \theta$ for all $\theta\in\R$.
     For $v\neq t$ let $e=vw\in\outEdges{v}$.
     Let $P$ be a shortest $w$-$t$-path at time $T_{e}(\theta)$.
     Let $P'\coloneqq e\circ P$ be the concatenation of $e$ and $P$.
@@ -36,19 +36,19 @@ The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the f
     If $P'$ contains a cycle, then it must have been introduced by $e$ and $v$ must be visited a second time in $P'$.
     Removing this cycle gives a simple $v$-$t$-path $Q$ with 
     \[
-        l_{v}(\theta) \leq T_{Q}(\theta)\leq T_{P'}(\theta) = l_{w}(T_{e}(\theta))
+        l_{v,t}(\theta) \leq T_{Q}(\theta)\leq T_{P'}(\theta) = l_{w,t}(T_{e}(\theta))
     \]
     by Proposition~\ref{prop:removing-cycles-in-fifo-graphs}.
     If $P'$ does not contain a cycle, we follow analogously
     \[
-        l_{v}(\theta) \leq T_{P'}(\theta) = l_{w}(T_{e}(\theta)).
+        l_{v,t}(\theta) \leq T_{P'}(\theta) = l_{w,t}(T_{e}(\theta)).
     \]
-    This shows that $l_v(\theta)$ is a lower bound on $\{ \tilde l_w(
+    This shows that $l_{v,t}(\theta)$ is a lower bound on $\{ \tilde l_{w,t}(
         T_{e}(\theta)
     ) \mid e=vw\in\outEdges{v}  \}$.
     Let $P = e_1\, \cdots\, e_k$ be a shortest $v$-$t$-path at time $\theta$ and let $e_1=vw$ and $P' = e_2\,\cdots\,e_k$.
     Furthermore, let $Q$ be a shortest $w$-$t$-path at time $T_{e_1}(\theta)$.
-    Assume $T_{P}(\theta) > l_{w}(T_{e_1}(\theta))$.
+    Assume $T_{P}(\theta) > l_{w,t}(T_{e_1}(\theta))$.
     This implies
     \[
         T_{P}(\theta) > 
@@ -56,11 +56,11 @@ The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the f
     \]
     such that removing any cycles in the path $e_1\circ Q$ would yield a shorter path than $P$.
 
-    We now have to show that $(l_v)_{v\in V}$ is the maximal solution.
+    We now have to show that $(l_{v,t})_{v\in V}$ is the maximal solution.
     That means that for any other solution $(\tilde l_v)_{v\in V}$ of the system of equations
-     $\tilde l_v(\theta) \leq l_v(\theta)$ holds for all $v\in V$ and $\theta\in\R$.
+     $\tilde l_{v,t}(\theta) \leq l_v(\theta)$ holds for all $v\in V$ and $\theta\in\R$.
     Let $P = e_1 \,\cdots e_k$ be a shortest $v$-$t$-path at time $\theta$ and let $v_0 = v, v_k= t$ and $e_i = v_{i-1} v_i$ for $i=1,\dots,k$.
     Then by the system of equations we infer \[
-        \tilde l_{v}(\theta) \leq \tilde l_{v_1}(T_{e_1}(\theta)) \leq \tilde l_{v_2}(T_{e_1\,e_2} (\theta)) \leq \cdots \leq \tilde l_t(T_P(\theta)) = T_P(\theta) \leq l_v(\theta).
+        \tilde l_{v}(\theta) \leq \tilde l_{v_1}(T_{e_1}(\theta)) \leq \tilde l_{v_2,t}(T_{e_1\,e_2} (\theta)) \leq \cdots \leq \tilde l_{t}(T_P(\theta)) = T_P(\theta) \leq l_{v,t}(\theta).
     \]
 \end{proof}

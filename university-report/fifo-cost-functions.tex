@@ -14,10 +14,10 @@ Moreover, let $c:\R\rightarrow \R_{\geq0}^E$ be a time-dependent cost function.
 
 The traversal time $T_P$ of a path $P = e_1\,\cdots\,e_k$ is given by the concatenation of the edges' traversal times as $T_P \coloneqq T_{e_k} \circ \cdots \circ T_{e_1}$.
 The set of all simple $v$-$t$-Paths is denoted as $\paths_{v,t}$.
-The \emph{earliest arrival time} at $t$ when starting at time $\theta$ in $v$ is then given by $l_v(\theta)\coloneqq \min_{P\in\paths_{v,t}} T_P(\theta)$.
+The \emph{earliest arrival time} at $t$ when starting at time $\theta$ in $v$ is then given by $l_{v,t}(\theta)\coloneqq \min_{P\in\paths_{v,t}} T_P(\theta)$.
 Paths that attain this minimum are called \emph{shortest $v$-$t$-Path at time $\theta$}.
 
-We call an edge $e=vw\in E$ \emph{active at time $\theta$}, if the condition $l_v(\theta) = l_w(T_e(\theta))$ holds true.
+We call an edge $e=vw\in E$ \emph{active at time $\theta$}, if the condition $l_{v,t}(\theta) = l_{w,t}(T_e(\theta))$ holds true.
 The set of active edges at time $\theta$ is collected in $E(\theta)$.
 \todo[inline]{
     Isn't it disturbing, that these edges might not lie on a \textbf{simple} shortest path?

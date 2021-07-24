@@ -7,11 +7,7 @@ This subsection covers two variants of computing dynamic shortest paths.
 In the first, we only want to efficiently compute the active edges at some given time $\theta$.
 In the second, we want to compute the piecewise linear functions $(l_v)_{v\in V}$ from which the active edges can easily be constructed.
 
-\subsubsection*{Computing Active Outgoing Edges}
-
-Given a node $v$, a time $\theta\in\R$ and a sink $t$, we want to compute the active outgoing edges $E(\theta) \cap \outEdges{v}$ of $v$, i.e. the edges $e=vw$ with $l_v(\theta) = l_w(T_e(\theta))$.
-We start by defining the arrival time for arbitrary sinks $w$:
-The earliest arrival at node $w$ when departing at time $\theta$ at node $v$ is denoted as $l_{s,w} (\theta) \coloneqq \min_{P\in\paths_{s,w}}T_P(\theta)$.
+\subsubsection*{The Dynamic Dijkstra Algorithm}
 
 We start off with a simple modification of the Dijkstra Algorithm to determine the earliest arrival times $(l_{s,w}(\theta))_{w\in V'}$ at nodes in $V'$ when departing from a source node $s$ at time $\theta$.
 Only those nodes are relevant for us that are reachable from $s$ and that can reach $t$.
@@ -90,3 +86,11 @@ This priority queue holds all discovered nodes where the priority key of a node 
 A simple binary min-heap together with a lookup table was implemented to support the operations of the queue efficiently.
 With this data structure, the worst case running time is logarithmic for the operations \texttt{push(item,key)}, \texttt{pop()} and \texttt{decrease\_key(item, new\_key)} and constant for the operations \texttt{min\_key()} and \texttt{contains(item)}.
 Thus, the Dynamic Dijkstra Algorithm terminates with a running time of $\bigO( (\abs{V} + \abs{E}) \cdot \log \abs{V})$.
+
+
+\subsubsection*{Computing Active Outgoing Edges}
+
+Given a node $v$, a time $\theta\in\R$ and a sink $t$, we want to compute the active outgoing edges $E(\theta) \cap \outEdges{v}$ of $v$, i.e. the edges $e=vw$ with $l_{v,t}(\theta) = l_{w,t}(T_e(\theta))$.
+Unfortunately even for costs following the FIFO rule, this condition is not equivalent to $l_{v,w}(\theta) = T_e(\theta)$ as there might be a shortest path from  $v$ to $t$ via $w$ while the edge from $v$ to $w$ is not a shortest path from $v$ to $w$.
+On the other hand, if $l_{v,w}(\theta) = T_e(\theta)$
+Therefore, the Dynamic Dijkstra Algorithm only yields a subset of the active edges. 

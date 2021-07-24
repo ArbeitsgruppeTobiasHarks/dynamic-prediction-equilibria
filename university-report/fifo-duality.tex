@@ -18,11 +18,12 @@ To enable this switch, we define a kind of inverse of a monotonically increasing
 We can interpret the reversal of $f$ in the following way:
 If $f(\theta)$ is the earliest arrival time when departing at time $\theta$, then $\minv{f}(\theta)$ is the latest departure time for arriving before or at time $\theta$.
 
-\begin{proposition}
+\begin{proposition}\label{prop:reversal-props}
     For $f,g\in \IncCoercive$ the following statements hold:
     \begin{enumerate}[label=(\roman*)]
         \item\label{prop:reversal-props:inner-operator} It holds that $\minv{f}\in\IncCoercive$, i.e. $\minv{f}$ is increasing and $\lim_{\abs{x}\rightarrow\infty} \abs{f(x)} = \infty$.
         \item\label{prop:reversal-props:continuous} If $f$ is continuous, then $\minv{f}(\theta) = \max \{ \xi\in\R \mid f(\xi) = \theta \}$ holds for all $\theta\in\R$ and $\minv{f}$ is strictly increasing.
+        Moreover, we have $f\circ \minv{f} = \id_\R$.
         \item\label{prop:reversal-props:inverse} If $f$ is continuous and strictly increasing, then  $\minv{f}$ is the inverse of $f$.
         \item\label{prop:reversal-props:composition-minimum} It holds that $\minv{(g\circ f)} = \minv{f}\circ\minv{g}$ and $\minv{(\min\{f,g\})} = \max\{\minv{f}, \minv{g}\}$.
     \end{enumerate}
@@ -89,7 +90,24 @@ If $f(\theta)$ is the earliest arrival time when departing at time $\theta$, the
     \begin{enumerate}[label=(\roman*)]
         \item For all edges $e\in E$ we have $T_e \in \IncCoercive$.
         \item\label{prop:reversal-props:paths} For any path $P=e_1\,\cdots \,e_k$ it holds that $\minv{T_P} = \minv{T_{e_1}} \circ \cdots \circ \minv{T_{e_k}}$.
-        \item For any node $v\in V$ it holds that $\minv{l_v} = \max_{P\in\paths_{v,t}} \minv{T_P}$.
+        \item For any node $v\in V$ it holds that $\minv{l_{v,t}} = \max_{P\in\paths_{v,t}} \minv{T_P}$.
     \end{enumerate}
 \end{corollary}
 
+The reversal of a function can be utilized for a characterization of active edges:
+
+\begin{lemma}
+    Let $c: \R\rightarrow\R_{\geq0}^E$ be a continuous cost function following the FIFO rule with $\lim_{\theta\to-\infty} T_e(\theta) = -\infty$ for all $e\in E$ and let $t\in V$ be a sink node.
+    Then an edge $e=vw$ is active at time $\theta$ if and only if $T_e(\theta) \leq \minv{l_{w,t}}( l_{v,t}(\theta) )$.
+\end{lemma}
+\begin{proof}
+    The edge $e$ is by definition active at time $\theta$ if and only if 
+    Let edge $e$ be active at time $\theta$ which means $l_{w,t}(T_e(\theta)) \leq l_{v,t}(\theta)$.
+    By definition of the reversal this already implies $\minv{l_{w,t}}(l_{v,t}(\theta)) \geq T_e(\theta)$.
+
+    If on the contrary $T_e(\theta) \leq \minv{l_{w,t}}( l_{v,t}(\theta) )$ holds, then the monotonicity of $l_{w,t}$ implies 
+    \[
+        l_{w,t}( T_e(\theta) ) \leq l_{w,t}\left(\minv{l_{w,t}}(l_{v,t}(\theta))\right),
+    \]
+    and by the continuity of $l_{w,t}$ the claim follows because Proposition~\ref{prop:reversal-props}~\ref{prop:reversal-props:continuous} states that $l_{w,t} \circ \minv{l_{w,t}} = \id_\R$. 
+\end{proof}
