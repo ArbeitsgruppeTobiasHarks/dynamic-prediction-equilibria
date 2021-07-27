@@ -1,0 +1,58 @@
+\subsection{Computing the Arrival Functions}
+
+Often, it is useful not only to compute active edges at some fixed point in time, but to have the earliest arrival functions $(l_{w,t})_{w\in V'}$ at some sink available as functions over time.
+
+A very simple but also quite expensive method of computing these functions is a modification of the Bellman-Ford algorithm. \todo{Add cite}
+It uses the representation found in Proposition~\ref{prop:characterization-arrival-functions}.
+This means, we want to find the maximal solution of the system of equations \[
+    \tilde l_v(\theta) = \begin{cases}
+        \theta, &\text{if $v = t$}, \\
+        \min_{\substack{
+            e=vw\in\outEdges{v}               
+        }} \tilde{l}_w\left(
+            T_e(\theta)
+        \right), &\text{otherwise}.
+    \end{cases}
+\]
+Hence, the idea is to initialize all functions with $\tilde l_v(\theta) \coloneqq \infty$ for $v\neq t$ and $\tilde l_t(\theta) \coloneqq \theta$ and decrease the functions (pointwise) using the operation $\tilde l_v \coloneqq \min_{vw\in\outEdges{v}} \tilde l_w \circ T_{vw}$ until no further changes are made and the equations are fulfilled for all $v\in V$.
+
+More specifically, if some function $\tilde l_w$ changes, then all nodes $v$ with an edge $vw$ leading to $w$ might need to be adjusted as well using $\tilde l_v \coloneqq \min\{ \tilde l_v, \tilde l_w \circ T_{vw} \}$.
+Therefore, we need some operations on the class of functions operated on to formulate the algorithm:
+To calculate the traversal times $T_e = c_e + \id_\R$ we need pointwise addition and a representation of the identity function, for updating the functions pointwise minimum and composition of functions have to be implemented.
+This has been done for piecewise linear functions.
+Instead of representing the constant function with value $\infty$, we can simply only add a function once it gets its first update.
+The resulting procedure is shown in Algorithm~\ref{alg:dynamic-dijkstra}.
+
+\begin{algorithm}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        framesep=5mm]{python}
+def dynamic_bellman_ford(
+    sink: Node, costs: List[PiecewiseLinear], relevant_nodes: Set[Node],
+    theta: float
+) -> Dict[Node, PiecewiseLinear]:
+    arrivals: Dict[Node, PiecewiseLinear] = { sink: identity }
+    traversals = [cost + identity for cost in costs]
+    changed_nodes = {sink}
+    while len(changed_nodes) > 0:
+        change_detected = {}
+        for w in changed_nodes:
+            for e in w.incoming_edges:
+                v = e.node_from
+                if v not in relevant_nodes:
+                    continue
+                relaxation = arrivals[w].compose(traversals[e.id])
+                if v not in arrivals.keys():
+                    change_detected.add(v)
+                    arrivals[v] = relaxation
+                elif not arrivals[v] <= relaxation:
+                    change_detected.add(v)
+                    arrivals[v] = min(arrivals[v], relaxation)
+        changed_nodes = change_detected
+    return arrivals
+    \end{minted}
+    \caption{Dynamic Bellman-Ford Algorithm}
+    \label{alg:dynamic-bellman-ford}
+\end{algorithm}
+

@@ -34,8 +34,6 @@ Before we continue, we want to make sure, that this definition of shortest-paths
 We can only restrict ourselves to simple paths, if waiting at a node -- or traveling through a short cycle -- is never helpful.
 This can be realized by assuming the FIFO-property of predictors:
 \begin{definition}
-    A time-dependent cost function $c: \R\rightarrow \R_{\geq0}^E$ \emph{follows the FIFO-rule} if for all $e\in E$ and $\theta_1,\theta_2\in\R$ it holds that $\theta_1 + c_e(\theta_1) \leq \theta_2 + c_e(\theta_2)$ for $\theta_1\leq \theta_2$.
-
     A set of predictors $(\predq_{i,e})_{e\in E}$ \emph{follows the FIFO-rule} if $(\predc_{i,e}(\emptyArg, \bar\theta, q))_{e\in E}$ follows the FIFO-rule for all $\bar\theta\in\R_{\geq0}, q\in\contFcts{\R_{\geq0}}{\R_{\geq0}}$.
 \end{definition}
 
