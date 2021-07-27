@@ -5,3 +5,4 @@ equilibria
 monotonicity
 splitwise
 piecewise
+pointwise

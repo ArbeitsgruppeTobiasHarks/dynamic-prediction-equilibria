@@ -217,7 +217,7 @@ def get_active_edges(
     )
     if strong_fifo:
         return backward_search(costs, arrivals, source, sink)
-    else:
+    else: # Second run of Dijkstra on the reverse graph.
         graph.reverse()
         traversals = [cost + identity for cost in costs]
         new_costs: List[Callable[[float], float]] = [
