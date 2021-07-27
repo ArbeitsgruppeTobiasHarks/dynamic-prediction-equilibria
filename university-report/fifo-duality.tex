@@ -108,13 +108,12 @@ The reversal of a function can be utilized for a characterization of active edge
     Then an edge $e=vw$ is active at time $\theta$ if and only if $T_e(\theta) \leq \minv{l_{w,t}}( l_{v,t}(\theta) )$.
 \end{lemma}
 \begin{proof}
-    The edge $e$ is by definition active at time $\theta$ if and only if 
-    Let edge $e$ be active at time $\theta$ which means $l_{w,t}(T_e(\theta)) \leq l_{v,t}(\theta)$.
+    Let edge $e$ be active at time $\theta$, i.e. $l_{w,t}(T_e(\theta)) \leq l_{v,t}(\theta)$.
     By definition of the reversal this already implies $\minv{l_{w,t}}(l_{v,t}(\theta)) \geq T_e(\theta)$.
 
     If on the contrary $T_e(\theta) \leq \minv{l_{w,t}}( l_{v,t}(\theta) )$ holds, then the monotonicity of $l_{w,t}$ implies 
     \[
         l_{w,t}( T_e(\theta) ) \leq l_{w,t}\left(\minv{l_{w,t}}(l_{v,t}(\theta))\right),
     \]
-    and by the continuity of $l_{w,t}$ the claim follows because Proposition~\ref{prop:reversal-props}~\ref{prop:reversal-props:continuous} states that $l_{w,t} \circ \minv{l_{w,t}} = \id_\R$. 
+    and by the continuity of $l_{w,t}$ the claim follows from Proposition~\ref{prop:reversal-props}~\ref{prop:reversal-props:continuous} which states that $l_{w,t} \circ \minv{l_{w,t}} = \id_\R$. 
 \end{proof}
