@@ -6,6 +6,7 @@ We begin by defining the FIFO rule in a directed graph $(V, E)$.
 
 \begin{definition}
     A time-dependent cost function $c: \R\rightarrow \R_{\geq0}^E$ \emph{follows the FIFO rule} if for all $e\in E$ the function $T_e: \theta\mapsto \theta + c_e(\theta)$ is monotone increasing.
+    It \emph{follows the strong FIFO rule} if $T_e$ is strictly increasing for all $e\in E$.
     The function $T_e$ is called \emph{traversal time} of $e$.
 \end{definition}
 

@@ -19,13 +19,14 @@ We can interpret the reversal of $f$ in the following way:
 If $f(\theta)$ is the earliest arrival time when departing at time $\theta$, then $\minv{f}(\theta)$ is the latest departure time for arriving before or at time $\theta$.
 
 \begin{proposition}\label{prop:reversal-props}
-    For $f,g\in \IncCoercive$ the following statements hold:
+    For $f,g\in \IncCoercive$ the following statements are true:
     \begin{enumerate}[label=(\roman*)]
         \item\label{prop:reversal-props:inner-operator} It holds that $\minv{f}\in\IncCoercive$, i.e. $\minv{f}$ is increasing and $\lim_{\abs{x}\rightarrow\infty} \abs{f(x)} = \infty$.
         \item\label{prop:reversal-props:continuous} If $f$ is continuous, then $\minv{f}(\theta) = \max \{ \xi\in\R \mid f(\xi) = \theta \}$ holds for all $\theta\in\R$ and $\minv{f}$ is strictly increasing.
         Moreover, we have $f\circ \minv{f} = \id_\R$.
         \item\label{prop:reversal-props:inverse} If $f$ is continuous and strictly increasing, then  $\minv{f}$ is the inverse of $f$.
         \item\label{prop:reversal-props:composition-minimum} It holds that $\minv{(g\circ f)} = \minv{f}\circ\minv{g}$ and $\minv{(\min\{f,g\})} = \max\{\minv{f}, \minv{g}\}$.
+        \item\label{prop:reversal-props:flip-id} If $f\geq \id_\R$ holds pointwise, then so does $\minv{f} \leq \id_\R$.
     \end{enumerate}
 \end{proposition}
 \begin{proof}
@@ -83,6 +84,12 @@ If $f(\theta)$ is the earliest arrival time when departing at time $\theta$, the
     Then it holds that $f(\xi) \leq \theta$ and therefore $\xi \leq \minv{f}(\theta)\leq r$ implying $l\leq r$.
     On the contrary, assume $\minv{f}(\theta)\leq \minv{g}(\theta)$ without loss of generality, so that $r = \minv{g}(\theta)$.
     Any $\xi\in\R$ with $g(\xi)\leq \theta$ fulfills $\min\{f(\xi),g(\xi)\}\leq g(\xi)\leq\theta$ and hence $l \geq r$ holds true.
+
+    \ref{prop:reversal-props:flip-id}.
+    For $f\geq \id_R$ we deduce for all $\theta\in\R$ \[
+        \minv{f}(\theta) = \sup\{ \xi\in\R \mid f(\xi) \leq \theta \}
+        \leq \sup\{\xi\in\R \mid \xi \leq \theta \} = \theta. \qedhere
+    \]
 \end{proof}
 
 \begin{corollary}
@@ -96,7 +103,7 @@ If $f(\theta)$ is the earliest arrival time when departing at time $\theta$, the
 
 The reversal of a function can be utilized for a characterization of active edges:
 
-\begin{lemma}
+\begin{lemma}\label{lem:characterization-active-edges}
     Let $c: \R\rightarrow\R_{\geq0}^E$ be a continuous cost function following the FIFO rule with $\lim_{\theta\to-\infty} T_e(\theta) = -\infty$ for all $e\in E$ and let $t\in V$ be a sink node.
     Then an edge $e=vw$ is active at time $\theta$ if and only if $T_e(\theta) \leq \minv{l_{w,t}}( l_{v,t}(\theta) )$.
 \end{lemma}

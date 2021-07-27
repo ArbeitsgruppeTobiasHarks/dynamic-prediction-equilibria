@@ -5,7 +5,7 @@ from typing import Generator, Optional, Dict, List, Set
 import numpy as np
 from functools import reduce
 
-from core.dijkstra import dijkstra, realizing_dijkstra
+from core.dijkstra import dijkstra, dynamic_dijkstra
 from core.distributor import Distributor
 from core.graph import Node, Edge
 from core.machine_precision import eps
@@ -191,7 +191,7 @@ class MultiComFlowBuilder:
 
             if s not in self._active_edges[i].keys():
                 # Do Time-Dependent dijkstra from s to t to find active outgoing edges of s
-                arrival_times, realised_cost = realizing_dijkstra(phi, s, sink, interesting_nodes, costs)
+                arrival_times, realised_cost = dynamic_dijkstra(phi, s, sink, interesting_nodes, costs)
 
                 # Dijkstra done. Now searching all active edges leading to t.
                 active_edges = []

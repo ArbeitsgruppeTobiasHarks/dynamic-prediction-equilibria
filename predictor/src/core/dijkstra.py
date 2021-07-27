@@ -32,7 +32,7 @@ def dijkstra(
     return dist
 
 
-def realizing_dijkstra(
+def dynamic_dijkstra(
         phi: float, source: Node, sink: Node, relevant_nodes: Set[Node], costs: List[Callable[[float], float]]
 ) -> Tuple[Dict[Node, float], Dict[Edge, float]]:
     '''

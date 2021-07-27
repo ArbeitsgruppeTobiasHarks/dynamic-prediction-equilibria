@@ -109,6 +109,8 @@ class PiecewiseLinear:
         values: List[float] = [self(phi) + other(phi) for phi in times]
         return PiecewiseLinear(times, values, new_domain)
 
+    
+
     def inverse(self, x: float, i: int) -> float:
         assert -1 <= i < len(self.times)
         if i == -1:
@@ -232,6 +234,9 @@ class PiecewiseLinear:
     def image(self) -> Tuple[float, float]:
         assert self.is_monotone(), "Only implemented for monotone functions"
         return self(self.domain[0]), self(self.domain[1])
+
+    def reversal(self, at: float):
+        return self.max_t_below_bound(at)
 
     def max_t_below_bound(self, bound: float, default: Optional[float] = None):
         """
