@@ -17,12 +17,6 @@ def dynamic_dijkstra(
     theta: float, source: Node, sink: Node, relevant_nodes: Set[Node],
     costs: List[Callable[[float], float]]
 ) -> Dict[Node, float]:
-    '''
-    Assumes costs to follow the FIFO rule and relevant_nodes to be the
-    set of all nodes that lie on a path from source to sink.
-    Returns the earliest arrival times when departing from source at
-    time theta for nodes that source can reach up to the arrival at sink.
-    '''
     arrival_times: Dict[Node, float] = {}
     queue: PriorityQueue[Node] = PriorityQueue([(source, theta)])
     while len(queue) > 0:

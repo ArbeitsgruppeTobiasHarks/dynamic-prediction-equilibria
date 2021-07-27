@@ -16,12 +16,11 @@ This means, we want to find the maximal solution of the system of equations \[
 \]
 Hence, the idea is to initialize all functions with $\tilde l_v(\theta) \coloneqq \infty$ for $v\neq t$ and $\tilde l_t(\theta) \coloneqq \theta$ and decrease the functions (pointwise) using the operation $\tilde l_v \coloneqq \min_{vw\in\outEdges{v}} \tilde l_w \circ T_{vw}$ until no further changes are made and the equations are fulfilled for all $v\in V$.
 
-More specifically, if some function $\tilde l_w$ changes, then all nodes $v$ with an edge $vw$ leading to $w$ might need to be adjusted as well using $\tilde l_v \coloneqq \min\{ \tilde l_v, \tilde l_w \circ T_{vw} \}$.
+More specifically, if some function $\tilde l_w$ changes, then all nodes $v$ with an edge $vw$ leading to $w$ might need to be adjusted as well using the operation $\tilde l_v \coloneqq \min\{ \tilde l_v, \tilde l_w \circ T_{vw} \}$.
 Therefore, we need some operations on the class of functions operated on to formulate the algorithm:
-To calculate the traversal times $T_e = c_e + \id_\R$ we need pointwise addition and a representation of the identity function, for updating the functions pointwise minimum and composition of functions have to be implemented.
-This has been done for piecewise linear functions.
+To calculate the traversal times $T_e = c_e + \id_\R$ we need pointwise addition and a representation of the identity function; for updates of the functions the pointwise minimum and the composition of functions have to be implemented.
+To detect changes we also need to be able to identify whether one function is everywhere smaller or equal to some other function. 
 Instead of representing the constant function with value $\infty$, we can simply only add a function once it gets its first update.
-The resulting procedure is shown in Algorithm~\ref{alg:dynamic-dijkstra}.
 
 \begin{algorithm}
     \begin{minted}[mathescape,
@@ -48,7 +47,7 @@ def dynamic_bellman_ford(
                     arrivals[v] = relaxation
                 elif not arrivals[v] <= relaxation:
                     change_detected.add(v)
-                    arrivals[v] = min(arrivals[v], relaxation)
+                    arrivals[v] = arrivals[v].minimum(relaxation)
         changed_nodes = change_detected
     return arrivals
     \end{minted}
@@ -56,3 +55,8 @@ def dynamic_bellman_ford(
     \label{alg:dynamic-bellman-ford}
 \end{algorithm}
 
+All the necessary operations explained above have been created for piecewise linear functions.
+The resulting procedure is shown in Algorithm~\ref{alg:dynamic-bellman-ford}.
+Here, \code{cost + identity} is the piecewise linear function representing the sum of \code{cost} and \code{identity}, the expression \code{arrivals[w].compose(traversals[e.id])} computes the piecewise linear function representing $\code{arrivals[w]}\circ \code{traversals[e.id]}$.
+The decision whether the inequality $\code{arrivals[v]}(\theta) \leq \code{relaxation}(\theta)$ holds for all $\theta \in \R$ is expressed by the term \code{arrivals[v] <= relaxation}. 
+Finally, the pointwise minimum of the functions \code{arrivals[v]} and \code{relaxation} is computed by \code{arrivals[v].minimum(relaxation)}.
