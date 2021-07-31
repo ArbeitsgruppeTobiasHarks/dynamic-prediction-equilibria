@@ -31,7 +31,7 @@ We can then determine the \emph{predicted earliest arrival time} at $t_i$ when s
 \]
 We call a path that attains this minimum a \emph{$\bar\theta$-predicted shortest $v$-$t_i$-path at time $\theta$}.
 Before we continue, we want to make sure, that this definition of shortest-paths is sensible:
-We can only restrict ourselves to simple paths, if waiting at a node -- or traveling through a short cycle -- is never helpful.
+We can only restrict ourselves to simple paths, if waiting at a node, or traveling through a short cycle, is never helpful.
 This can be realized by assuming the FIFO-property of predictors:
 \begin{definition}
     A set of predictors $(\predq_{i,e})_{e\in E}$ \emph{follows the FIFO rule} if $(\predc_{i,e}(\emptyArg, \bar\theta, q))_{e\in E}$ follows the FIFO-rule for all $\bar\theta\in\R_{\geq0}, q\in\contFcts{\R_{\geq0}}{\R_{\geq0}}$.

@@ -1,6 +1,6 @@
 \subsection{Computing the Arrival Functions}
 
-Often, it is useful not only to compute active edges at some fixed point in time, but to have the earliest arrival functions $(l_{w,t})_{w\in V'}$ at some sink available as functions over time.
+Often, it is useful not only to compute active edges at some fixed point in time, but to have the earliest arrival functions $(l_{v,t})_{v\in V'}$ at some sink available as functions over time.
 
 A very simple but also quite expensive method of computing these functions is a modification of the Bellman-Ford algorithm. \todo{Add cite}
 It uses the representation found in Proposition~\ref{prop:characterization-arrival-functions}.
@@ -14,7 +14,7 @@ This means, we want to find the maximal solution of the system of equations \[
         \right), &\text{otherwise}.
     \end{cases}
 \]
-Hence, the idea is to initialize all functions with $\tilde l_v(\theta) \coloneqq \infty$ for $v\neq t$ and $\tilde l_t(\theta) \coloneqq \theta$ and decrease the functions (pointwise) using the operation $\tilde l_v \coloneqq \min_{vw\in\outEdges{v}} \tilde l_w \circ T_{vw}$ until no further changes are made and the equations are fulfilled for all $v\in V$.
+Hence, the idea is to initialize all functions with $\tilde l_v(\theta) \coloneqq \infty$ for $v\neq t$ and $\tilde l_t(\theta) \coloneqq \theta$ and decrease the functions (pointwise) using the operation $\tilde l_v \coloneqq \min_{vw\in\outEdges{v}} \tilde l_w \circ T_{vw}$ until no further changes are made, and the equations are fulfilled for all $v\in V$.
 
 More specifically, if some function $\tilde l_w$ changes, then all nodes $v$ with an edge $vw$ leading to $w$ might need to be adjusted as well using the operation $\tilde l_v \coloneqq \min\{ \tilde l_v, \tilde l_w \circ T_{vw} \}$.
 Therefore, we need some operations on the class of functions operated on to formulate the algorithm:
@@ -22,7 +22,7 @@ To calculate the traversal times $T_e = c_e + \id_\R$ we need pointwise addition
 To detect changes we also need to be able to identify whether one function is everywhere smaller or equal to some other function. 
 Instead of representing the constant function with value $\infty$, we can simply only add a function once it gets its first update.
 
-\begin{algorithm}
+\begin{algorithm}[h]
     \begin{minted}[mathescape,
         linenos,
         numbersep=5pt,
@@ -60,3 +60,6 @@ The resulting procedure is shown in Algorithm~\ref{alg:dynamic-bellman-ford}.
 Here, \code{cost + identity} is the piecewise linear function representing the sum of \code{cost} and \code{identity}, the expression \code{arrivals[w].compose(traversals[e.id])} computes the piecewise linear function representing $\code{arrivals[w]}\circ \code{traversals[e.id]}$.
 The decision whether the inequality $\code{arrivals[v]}(\theta) \leq \code{relaxation}(\theta)$ holds for all $\theta \in \R$ is expressed by the term \code{arrivals[v] <= relaxation}. 
 Finally, the pointwise minimum of the functions \code{arrivals[v]} and \code{relaxation} is computed by \code{arrivals[v].minimum(relaxation)}.
+
+
+The benefit of calculating the arrival times as functions is that the active outgoing edges of all nodes $v$ can be determined in one run of the Dynamic Bellman-Ford Algorithm by simply evaluating $l_{w,t}(T_e(\theta)) \leq  l_{v,t}(\theta)$ for $vw\in E$.

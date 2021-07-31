@@ -5,9 +5,6 @@ Here, only those nodes are relevant for us that are reachable from $s$ and that 
 Moreover, we only need to determine the arrival times of nodes $w$ that can be reached before $t$, i.e. that fulfill $l_{s,w}(\theta) \leq l_{s,t}(\theta)$.
 Hence, the set $V'$ consists of all nodes $w$ that lie on a path from $v$ to $t$ and fulfill $l_{s,w}(\theta) \leq l_{s,t}(\theta)$.
 
-Adjusting the classical Dijkstra Algorithm to our setting yields the Dynamic Dijkstra Algorithm as depicted in Algorithm~\ref{alg:dynamic-dijkstra}.
-
-
 \begin{algorithm}[h]
 \begin{minted}[mathescape,
     linenos,
@@ -38,6 +35,8 @@ def dynamic_dijkstra(
 \caption{The Dynamic Dijkstra Algorithm}
 \label{alg:dynamic-dijkstra}
 \end{algorithm}
+
+Adjusting the classical Dijkstra Algorithm to our setting yields the Dynamic Dijkstra Algorithm as depicted in Algorithm~\ref{alg:dynamic-dijkstra}.
 
 At the heart of the algorithm operates a priority queue consisting of items together with a priority key associated with each item.
 This queue has to support the operations \texttt{push(item, key)}, \texttt{min\_key()}, \texttt{pop()}, \texttt{decrease\_key(item, new\_key)} as well as \texttt{contains(item)}.
@@ -83,7 +82,7 @@ Unfortunately, from the arrival times $(l_{s,w}(\theta))_{w\in V'}$ obtained by 
 Usually, the idea for determining all active edges would be to do a backward search starting from $t$ on edges $e=vw$ with $l_{s,w}(\theta) = T_e(l_{s,v}(\theta))$ and remember those edges as \emph{active} as they lie on a shortest $s$-$t$-path.
 An implementation of this is shown in Algorithm~\ref{alg:backward-search}, where \texttt{arrivals} consists of the labels $(l_{s,w}(\theta))_{w\in V'}$ as returned by the Dynamic Dijkstra Algorithm.
 
-\begin{algorithm}
+\begin{algorithm}[h]
     \begin{minted}[mathescape,
         linenos,
         numbersep=5pt,
@@ -187,15 +186,7 @@ With this setup, we can do a second run of the Dynamic Dijkstra Algorithm to obt
 \]
 Using Lemma~\ref{lem:characterization-active-edges} we can now check whether an outgoing edge $sw\in\outEdges{s}$ of $s$ is active at time $\theta$ by evaluating $T_e(\theta) \leq \minv{l_{t,w}}( l_{s,t}(\theta))$.
 
-To implement this algorithm, we have to restrict ourselves to cost functions where the reversal of $T_e$ can be evaluated easily.
-This is the case, for example, if $c_e$ are piecewise linear functions.
-The resulting algorithm for this class of functions can be seen in Algorithm~\ref{alg:calculate-active-edges}.
-Here, the flag \texttt{strong\_fifo} is expected to be set only for cost functions following the strong FIFO rule.
-For these type of functions, we use the simpler backward search; for  general FIFO functions, we use the approach described above.
-Other than that, if $s$ has only up to one outgoing edge, we simply return $\outEdges{s}$.
-
-
-\begin{algorithm}
+\begin{algorithm}[h]
     \begin{minted}[mathescape,
         linenos,
         numbersep=5pt,
@@ -221,70 +212,19 @@ def get_active_edges(
             -arrivals[sink], sink, source, relevant_nodes, new_costs
         )
         graph.reverse()
-        active_edges = []
-        for e in source.outgoing_edges:
-            if traversals[e.id](theta) <= -neg_departures[e.node_to]:
-                active_edges.append(e)
-        return active_edges
+        return [
+            e for e in source.outgoing_edges
+            if traversals[e.id](theta) <= -neg_departures[e.node_to]
+        ]
     \end{minted}
     \caption{Calculating Active Edges}
     \label{alg:calculate-active-edges}
 \end{algorithm}
 
-\iffalse
-\todo[inline]{
 
-    Let us have another look at the characterization of active edges given in Lemma~\ref{lem:characterization-active-edges}:
-    \[
-        T_e(\theta) \leq \minv{l_{w,t}}(l_{v,t}(\theta))
-    \]
-
-    for costs following the FIFO rule this condition is not equivalent to $l_{v,w}(\theta) = T_e(\theta)$ as there might be a shortest path from  $v$ to $t$ via $w$ while the edge from $v$ to $w$ is not a shortest path from $v$ to $w$.
-On the other hand, if $l_{v,w}(\theta) = T_e(\theta)$
-Therefore, the Dynamic Dijkstra Algorithm only yields a subset of the active edges. 
-}
-
-\begin{proposition}
-    Let $P=e_1\,\cdots\,e_k$ be a path with $e_i = v_{i-1}v_{i}$ and $v_0 = s, v_k= t$ and let $c:\R\rightarrow\R^E_{\geq0}$ be a cost function following the FIFO rule. Then
-    \[ 
-        \left(\forall i:\, T_{e_i}(l_{s,v_{i-1}}(\theta)) = l_{s,v_i}(\theta)\right)
-        \implies
-        \left(\forall i:\, l_{v_{i-1},t}(l_{s,v_{i-1}}(\theta)) = l_{v_{i},t}(T_{e_i}(l_{s,v_{i-1}}(\theta)))\right)
-    \]
-    If $c$ follows the strong FIFO rule, then the reverse direction is also true.
-\end{proposition}
-\begin{proof}
-    By induction going backwards on the path from $t$ to $s$ we show the hypothesis
-    \[
-        l_{s,t}(\theta) = l_{v_{i-1},t}(l_{s,v_{i-1}}(\theta)) = l_{v_{i},t}(T_{e_i}(l_{s,v_{i-1}}(\theta))).
-    \]
-    Note that $l_{s,t}(\theta) \leq l_{v_{i-1},t}(l_{s,v_{i-1}}(\theta))\leq l_{v_i, t}(T_{e_i}(l_{s,v_{i-1}}(\theta))$ already follows from the FIFO rule and Proposition~\ref{prop:removing-cycles-in-fifo-graphs}.
-    For $v_k=t$ we have \[
-        l_{v_k, t}(T_{e_k}(l_{s,v_{k-1}}(\theta)) = T_{e_k}(l_{s,v_{k-1}}(\theta)) = l_{s,v_k}(\theta) = l_{s,t}(\theta).
-    \]
-    Assume the hypothesis holds for $v_i$ and let $v_{i-1}$ be its predecessor in $P$.
-    Then by induction we have \[
-        l_{v_{i-1},t}(T_{e_{i-1}}(l_{s,v_{i-2}}(\theta)))
-        = l_{v_{i-1},t}(l_{s,v_{i-1}}(\theta)) = l_{s,t}(\theta).
-    \]
-    
-    For the reverse direction, let $c$ follow the strong FIFO rule.
-    Assume there is some $i\in\{1,\dots, k\}$ with $T_{e_i}(l_{s,v_{i-1}}(\theta)) > l_{s,v_i}(\theta)$.
-    Let $P'$ be a shortest $s$-$v_i$-path at time $\theta$.
-    If we extend $P'$ with $e_{i+1}\,\cdots\,e_{k}$ we get an $s$-$t$-path $P''$ with \[
-        l_{s,t}(\theta) \leq T_{P''}(\theta)
-        = T_{e_{i+1}\,\cdots\,e_k}(l_{s,v_{i}}(\theta))
-        < T_{e_{i+1}\,\cdots\,e_k}(T_{e_1\,\cdots\,e_i}(\theta))
-        = T_P(\theta),
-    \]
-    which forms a contradiction because the previous proof implies \[
-        l_{s,t}(\theta)
-        = l_{v_{i-1},t}(T_{e_{i-1}}(l_{s,v_{i-2}}(\theta)))
-        \geq l_{v_{i-1},t}(l_{s,v_{i-1}}(\theta)),
-    \]
-    on which we can apply our given property yielding \[
-        l_{s,t}(\theta) \geq 
-        l_{v_{i},t}(T_{e_i}(l_{s,v_{i-1}}(\theta)))
-    \]
-\end{proof}
-\fi
+To implement this algorithm, we have to restrict ourselves to cost functions where the reversal of $T_e$ can be evaluated easily.
+This is the case, for example, if $c_e$ are piecewise linear functions.
+The resulting algorithm for this class of functions can be seen in Algorithm~\ref{alg:calculate-active-edges}.
+Here, the flag \texttt{strong\_fifo} is expected to be set only for cost functions following the strong FIFO rule.
+For these type of functions, we use the simpler backward search; for  general FIFO functions, we use the approach described above.
+Other than that, if $s$ has only up to one outgoing edge, we simply return $\outEdges{s}$.
