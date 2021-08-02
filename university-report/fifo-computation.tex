@@ -6,10 +6,7 @@ Moreover, we only need to determine the arrival times of nodes $w$ that can be r
 Hence, the set $V'$ consists of all nodes $w$ that lie on a path from $v$ to $t$ and fulfill $l_{s,w}(\theta) \leq l_{s,t}(\theta)$.
 
 \begin{algorithm}[h]
-\begin{minted}[mathescape,
-    linenos,
-    numbersep=5pt,
-    framesep=5mm]{python}
+\begin{minted}[mathescape, linenos]{python}
 def dynamic_dijkstra(
     theta: float, source: Node, sink: Node, relevant_nodes: Set[Node],
     costs: List[Callable[[float], float]]
@@ -83,10 +80,7 @@ Usually, the idea for determining all active edges would be to do a backward sea
 An implementation of this is shown in Algorithm~\ref{alg:backward-search}, where \texttt{arrivals} consists of the labels $(l_{s,w}(\theta))_{w\in V'}$ as returned by the Dynamic Dijkstra Algorithm.
 
 \begin{algorithm}[h]
-    \begin{minted}[mathescape,
-        linenos,
-        numbersep=5pt,
-        framesep=5mm]{python}
+    \begin{minted}[mathescape, linenos]{python}
 def backward_search(
     costs: List[Callable[[float], float]], arrivals: Dict[Node, float],
     source: Node, sink: Node
@@ -187,10 +181,7 @@ With this setup, we can do a second run of the Dynamic Dijkstra Algorithm to obt
 Using Lemma~\ref{lem:characterization-active-edges} we can now check whether an outgoing edge $sw\in\outEdges{s}$ of $s$ is active at time $\theta$ by evaluating $T_e(\theta) \leq \minv{l_{t,w}}( l_{s,t}(\theta))$.
 
 \begin{algorithm}[h]
-    \begin{minted}[mathescape,
-        linenos,
-        numbersep=5pt,
-        framesep=5mm]{python}
+    \begin{minted}[mathescape, linenos]{python}
 def get_active_edges(
     costs: List[PiecewiseLinear], theta: float, source: Node, sink: Node,
     relevant_nodes: Set[Node], graph: DirectedGraph, strong_fifo: bool

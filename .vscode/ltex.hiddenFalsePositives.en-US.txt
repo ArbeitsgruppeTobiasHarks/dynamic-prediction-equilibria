@@ -1,3 +1,4 @@
 {"rule":"THE_SUPERLATIVE","sentence":"^\\QWe call a path that attains this minimum a \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q-predicted shortest path at time \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
 {"rule":"THE_SUPERLATIVE","sentence":"^\\QComputation of Shortest Paths with FIFO Costs.\\E$"}
 {"rule":"THE_SUPERLATIVE","sentence":"^\\QAssume \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and let \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q be a shortest \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q-\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q-path at time \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\QThe functions \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q correspond to the attributes inflow[e][i] and outflow[e][i], respectively.\\E$"}

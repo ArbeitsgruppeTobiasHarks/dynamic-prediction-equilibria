@@ -9,7 +9,7 @@
 \usepackage{enumitem}
 \usepackage{todonotes}
 \usepackage{algorithm}
-\usepackage[outputdir=out]{minted}
+\usepackage[outputdir=out, cache=true]{minted}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -18,6 +18,17 @@
 \theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
 
+\makeatletter
+\newcounter{classdef}
+\newenvironment{classdef}[1][htb]
+  {\floatname{algorithm}{Data Structure}
+   \let\c@algorithm\c@classdef
+   \begin{algorithm}[#1]%
+  }{\end{algorithm}}
+\makeatother
+
+\BeforeBeginEnvironment{minted}{\vspace{0.3em}}
+\AfterEndEnvironment{minted}{\vspace{-0.6em}}
 
 \author{Michael Markl}
 \title{Computation of Dynamic~Prediction~Equilibria}

@@ -1,32 +1,93 @@
 \section{Computation of Multi-Commodity Flows}
 
+In this section we want to discuss how we can compute an approximated variant of DPEs.
+We recall from the definition, that in a DPE all infinitesimally small agents update their routing decision every time they arrive at an intermediate node.
+As we are dealing with continuous flow, these routing decisions take place in a continuous manner.
+To approximate this, we choose to allow updates of the routing decisions to happen at predefined intervals.
+This leads to the following definition:
+
+\begin{definition}
+    A pair $(\predq, f)$ of a set of predictors $(\predq_{i,e})_{i\in I, e\in E}$ and a dynamic flow $f$ is a \emph{partial $\varepsilon$-approximated dynamic prediction equilibrium ($\varepsilon$-DPE) up to time $H\in\R\cup\{\infty\}$} if $f$ is feasible up to time $H$ and for all $e\in E, i\in I$ and $\theta < H$ it holds that
+    \[
+        \infl_{i,e}(\theta) > 0 \implies e \in \predE_i(\varepsilon\cdot \left\lfloor{\theta / \varepsilon}\right\rfloor, \varepsilon\cdot \left\lfloor{\theta / \varepsilon}\right\rfloor, q).
+    \]
+\end{definition}
+
+To compute these kinds of dynamic flows, we begin by setting up the data structures representing dynamic flows before we have a look at the extension of feasible flows and finally how to use the predictors and the computation of dynamic shortest paths to extend the flows following the prescript in the definition of $\varepsilon$-DPEs.
+
+\todo[inline]{
+    right constant inflow rates
+}
+
 \subsection{Data Representation}
 
+We begin by defining the data structure used for representing partial feasible dynamic flows.
+This is shown in Data~Structure~\ref{data:flow}.
 
-\begin{algorithm}
-    \begin{minted}[mathescape,
-        linenos,
-        numbersep=5pt,
-        framesep=5mm]{python}
+
+\begin{classdef}
+    \begin{minted}[mathescape, linenos]{python}
 class MultiComFlow
     phi: float
     inflow: Dict[Edge,List[RightConstant]]
     outflow: Dict[Edge, List[RightConstant]]
-    queues: List[PiecewiseLinear]
+    queues: Dict[Edge, PiecewiseLinear]
     outflow_changes: PriorityQueue[Tuple[Edge, float]]
     queue_depletions: PriorityQueue[Edge]
 
     #  ... (methods)
-    \end{minted}
-\end{algorithm}
+\end{minted}
+    \caption{Partial Dynamic Flows}
+    \label{data:flow}
+\end{classdef}
+
+The horizon of such a flow is written to the attribute \code{phi}.
+The functions $\infl_{i,e}$ and $\outfl_{i,e}$ correspond to the attributes \code{inflow[e][i]} and \code{outflow[e][i]}, respectively.
+Both are objects of the class \code{RightConstant} which is discussed later.
+Although, we could compute the queue length of an edge $e$ from these two functions, we allocate 
+another attribute \code{queues[e]} for the queue lengths to speed up the extension procedure.
+This can be done using an object representing a piecewise linear function because it is the integral of piecewise constant functions.
+Next, the priority queue \code{outflow_changes} holds all upcoming events where some edge outflow will change due to an inflow change.
+It saves tuples \code{(e, change_time)} with $\code{change_time} > \code{phi}$ prioritized by \code{change_time} with the interpretation that \code{outflow[e]} will change at time \code{change_time}.
+Finally, we have another priority queue \code{queue_depletions} with events where an edge will supposedly deplete its queue.
+That means, an edge \code{e} with prioritization key \code{depletion_time} is contained in \code{queue_depletions} if \code{queues[e](phi)} is positive and \code{queues[e]} reaches $0$ at time \code{depletion_time}.
+
+\begin{minipage}[t]{0.45\textwidth}
+\begin{classdef}[H]
+    \begin{minted}[mathescape, linenos]{python}
+class PiecewiseLinear:
+    times: List[float]
+    values: List[float]
+    first_slope: float
+    last_slope: float
+
+    #  ... (methods)
+\end{minted}
+    \caption{\\Piecewise~Linear~Functions}%
+\end{classdef}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.45\textwidth}
+\begin{classdef}[H]
+    \begin{minted}[mathescape, linenos]{python}
+class RightConstant:
+    times: List[float]
+    values: List[float]
+    first_value: float
+
+    #  ... (methods)
+\end{minted}
+    \caption{\\Right~Constant~Functions}%
+\end{classdef}
+\end{minipage}
 
 
 
 
 \subsection{Extension of Feasible Flows}
 
-\begin{algorithm}
 
+
+\begin{algorithm}
     \begin{minted}[mathescape,
         linenos,
         numbersep=5pt,
