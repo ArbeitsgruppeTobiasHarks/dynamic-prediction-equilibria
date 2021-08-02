@@ -7,6 +7,7 @@ To approximate this, we choose to allow updates of the routing decisions to happ
 This leads to the following definition:
 
 \begin{definition}
+    Let $\varepsilon > 0$.
     A pair $(\predq, f)$ of a set of predictors $(\predq_{i,e})_{i\in I, e\in E}$ and a dynamic flow $f$ is a \emph{partial $\varepsilon$-approximated dynamic prediction equilibrium ($\varepsilon$-DPE) up to time $H\in\R\cup\{\infty\}$} if $f$ is feasible up to time $H$ and for all $e\in E, i\in I$ and $\theta < H$ it holds that
     \[
         \infl_{i,e}(\theta) > 0 \implies e \in \predE_i(\varepsilon\cdot \left\lfloor{\theta / \varepsilon}\right\rfloor, \varepsilon\cdot \left\lfloor{\theta / \varepsilon}\right\rfloor, q).
@@ -19,7 +20,7 @@ To compute these kinds of dynamic flows, we begin by setting up the data structu
     right constant inflow rates
 }
 
-\subsection{Data Representation}
+\subsection{Data Encoding}
 
 We begin by defining the data structure used for representing partial feasible dynamic flows.
 This is shown in Data~Structure~\ref{data:flow}.
@@ -49,10 +50,31 @@ another attribute \code{queues[e]} for the queue lengths to speed up the extensi
 This can be done using an object representing a piecewise linear function because it is the integral of piecewise constant functions.
 Next, the priority queue \code{outflow_changes} holds all upcoming events where some edge outflow will change due to an inflow change.
 It saves tuples \code{(e, change_time)} with $\code{change_time} > \code{phi}$ prioritized by \code{change_time} with the interpretation that \code{outflow[e]} will change at time \code{change_time}.
+This is useful for maintaining feasibility of the flow as we only want to extend at most as long as no edge outflow rate changes.
 Finally, we have another priority queue \code{queue_depletions} with events where an edge will supposedly deplete its queue.
 That means, an edge \code{e} with prioritization key \code{depletion_time} is contained in \code{queue_depletions} if \code{queues[e](phi)} is positive and \code{queues[e]} reaches $0$ at time \code{depletion_time}.
 
-\begin{minipage}[t]{0.45\textwidth}
+Let us now discuss how the piecewise constant and piecewise linear functions are encoded.
+Let $f: \R \rightarrow \R$ be a piecewise function given by \[
+    f(x) \coloneqq \begin{cases}
+        f(\xi_0) +  (x - \xi_0) \cdot s_f & \text{for $x < \xi_0$,} \\
+        f(\xi_i) + (x - \xi_i) \cdot \frac{f(\xi_{i+1}) - f(\xi_i)}{\xi_{i+1} - \xi_i} & \text{for $\xi_i \leq x < \xi_{i+1}, i \in \firstN{k-1}$},\\
+        f(\xi_k) + (x - \xi_k)\cdot s_l & \text{for $x \geq \xi_k$,}
+    \end{cases}
+\]
+where $\xi_0 < \xi_1 < \cdots < \xi_k$ are the supporting points, and $s_f$ and $s_l$ are the first and last slopes, respectively.
+Data~Structure~\ref{data:piecewise-linear} encodes this function by saving $[\xi_0,\xi_1,\dots,\xi_k]$ in the list \code{times}, $[f(\xi_0), f(\xi_1),\dots, f(\xi_k)]$ in the list \code{values} and $s_f$ and $s_l$ in the attributes \code{first_slope} and \code{last_slope}.
+Similarly, Data~Structure~\ref{data:right-constant} encodes a right-constant function $f:\R \rightarrow \R$ given by \[
+    f(x) \coloneqq \begin{cases}
+        v_f, & \text{for $x < \xi_0$,} \\
+        f(\xi_i), & \text{for $\xi_i \leq x < \xi_{i+1}, i \in \firstN{k-1}$},\\
+        f(\xi_k), & \text{for $x \geq \xi_k$,}
+    \end{cases}
+\]
+where $v_f$ is written to the attribute \code{first_value}.
+In both cases, an evaluation of the function can be done using a simple binary search in the \code{times} array resulting in a logarithmic complexity in the time dimension $k$.
+
+\begin{minipage}[t]{0.5\textwidth}
 \begin{classdef}[H]
     \begin{minted}[mathescape, linenos]{python}
 class PiecewiseLinear:
@@ -63,29 +85,51 @@ class PiecewiseLinear:
 
     #  ... (methods)
 \end{minted}
-    \caption{\\Piecewise~Linear~Functions}%
+    \caption{\\Piecewise~Linear~Functions\vphantom{Right}}%
+    \label{data:piecewise-linear}
 \end{classdef}
 \end{minipage}\hfill
-\begin{minipage}[t]{0.45\textwidth}
+\begin{minipage}[t]{0.5\textwidth}
 \begin{classdef}[H]
-    \begin{minted}[mathescape, linenos]{python}
+    \begin{minted}[mathescape, linenos, stripnl=false]{python}
 class RightConstant:
     times: List[float]
     values: List[float]
     first_value: float
 
     #  ... (methods)
+
 \end{minted}
+    \vspace{.084em}
     \caption{\\Right~Constant~Functions}%
+    \label{data:right-constant}
 \end{classdef}
 \end{minipage}
 
 
-
-
 \subsection{Extension of Feasible Flows}
 
+In this section we discuss how to extend a feasible flow for some time period given new constant inflow rates on a subset of the edges.
 
+In the beginning we usually start with an empty flow representing a feasible flow up to time $0$.
+This is an object of the class \code{MultiComFlow} initialized using the operations
+\begin{itemize}
+\setlength{\itemsep}{0em}
+\item \code{phi = 0},
+\item \code{inflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i},
+\item \code{outflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i}
+\item \code{queues[e] = PiecewiseLinear(times=[0], values=[0], first_slope=0,}\\\code{last_slope=0)} for all edges \code{e},
+\end{itemize}
+and initially empty priority queues \code{outflow_changes} and \code{queue_depletions}.
+
+We now want to extend this initialized flow by small so called \emph{extension phases}.
+We keep up the invariant that within one such extension phase, no edge inflow or outflow rate changes.
+\todo[inline]{
+    Explain more
+}
+Suppose we are given a feasible flow up to some time $H$.
+The idea now is, that some external mechanism 
+As traffic networks can get very large, we do not want 
 
 \begin{algorithm}
     \begin{minted}[mathescape,
@@ -97,26 +141,7 @@ def extend(
 ) -> Set[Edge]:
     phi = self.phi
     for e in new_inflow.keys():
-        acc_in, cur_queue = sum(new_inflow[e]), self.queues[e](phi)
-        acc_out = min(capacity[e], acc_in)
-        change_time = phi + cur_queue / capacity[e] + travel_time[e]
-        for i in range(n):
-            new_in = new_inflow[e][i]
-            self.inflow[e][i].extend(phi, new_in)
-            new_out = 0 if acc_out == 0 else acc_out * new_in / acc_in
-            self.outflow[e][i].extend(change_time, new_out)
-        if not self.outflow_changes.has((e, change_time)):
-            self.outflow_changes.push((e, change_time), change_time)
-        
-        slope = max(0, acc_in - capacity[e])
-                if cur_queue == 0 else
-                acc_in - capacity[e]
-        self.queues[e].extend_with_slope(phi, slope)
-        if slope < 0:
-            depletion_time = phi - cur_queue / slope
-            self.queue_depletions.push_or_update(edge, depletion_time)
-        elif self.queue_depletions.has(edge):
-            self.queue_depletions.remove(edge)
+        self._extend_edge(e, new_inflow[e])
 
     eps = min(self.outflow_changes.min_key() - phi, max_eps)
     self.phi = phi + eps
@@ -129,6 +154,30 @@ def extend(
     while self.outflow_changes.min_key() <= self.phi:
         changed_edges.add(self.outflow_changes.pop()[0])
     return changed_edges
+
+def _extend_edge(self, e: Edge, new_inflow: List[float]):
+    acc_in, cur_queue = sum(new_inflow), self.queues[e](phi)
+    acc_out = min(capacity[e], acc_in)
+    change_time = phi + cur_queue / capacity[e] + travel_time[e]
+    for i in range(n):
+        new_in = new_inflow[i]
+        self.inflow[e][i].extend(phi, new_in)
+        new_out = 0 if acc_out == 0 else acc_out * new_in / acc_in
+        self.outflow[e][i].extend(change_time, new_out)
+    if not self.outflow_changes.has((e, change_time)):
+        self.outflow_changes.push((e, change_time), change_time)
+
+    slope = max(0, acc_in - capacity[e])
+            if cur_queue == 0 else
+            acc_in - capacity[e]
+    self.queues[e].extend_with_slope(phi, slope)
+    if slope < 0:
+        depletion_time = phi - cur_queue / slope
+        self.queue_depletions.push_or_update(edge, depletion_time)
+    elif self.queue_depletions.has(edge):
+        self.queue_depletions.remove(edge)
+
+
     \end{minted}
     \caption{Extension Procedure in \code{class MultiComFlow}}
 \end{algorithm}
