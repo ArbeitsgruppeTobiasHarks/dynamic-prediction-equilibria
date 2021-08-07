@@ -39,23 +39,23 @@ Once it arrives at an intermediary node $v\neq t_i$, it will again have an oppor
 
 To make the dynamic flows behave like imagined above, we have to make several restrictions forming the class of feasible dynamic flows:
 
-\begin{definition}
-    A dynamic flow $f$ is called \emph{feasible up to time $H\in\R \cup \{\infty \}$}, if it fulfills the following conditions for all $\theta < H$:
+\begin{definition}\label{def:feasible-flow}
+    A dynamic flow $f$ is called \emph{feasible up to time $H\in\R \cup \{\infty \}$}, if it fulfills the following conditions for almost all $\theta < H$:
     \begin{enumerate}[label=(F\arabic*)]
-        \item No total outflow rate exceeds the capacity, i.e. $\forall e\in E: \outfl_e(\theta)\leq \capa_e$.
-        \item Flow traverses an edge in a FIFO-manner, i.e. \[
+        \item\label{def:feasible-flow:max-capacity} No total outflow rate exceeds the capacity, i.e. $\forall e\in E: \outfl_e(\theta)\leq \capa_e$.
+        \item\label{def:feasible-flow:deterministic-split} Flow traverses an edge in a FIFO-manner, i.e. \[
             \forall e\in E: \quad 
             \outfl_{i,e}(\theta) = \begin{cases}
                 \outfl_e(\theta) \cdot \frac{\infl_{i,e}(\xi)}{\infl_e(\xi)}, & \text{if $\infl_e(\xi) > 0$,}\\
                 0, & \text{otherwise,}
         \end{cases}
         \]
-        where $\xi\coloneqq \min \{ \xi  \mid \xi + c_e(\xi) = \theta \}$ is the earliest departure time a particle can arrive at $w$ at time $\theta$ by traversing edge $e=vw$. 
-        \item Flow conservation is preserved on intermediary nodes, i.e. \[\forall i\in I, v\in V\setminus\{ s_i, t_i \}: \quad
+        where $\xi\coloneqq \max \{ \xi  \mid \xi + c_e(\xi) = \theta \}$ is the latest departure time a particle can arrive at $w$ at time $\theta$ by traversing edge $e=vw$. 
+        \item\label{def:feasible-flow:flow-conservation} Flow conservation is preserved on intermediary nodes, i.e. \[\forall i\in I, v\in V\setminus\{ s_i, t_i \}: \quad
         \bal{i}{v}(\theta)\coloneqq \sum_{e\in\outEdges{v}}\infl_{i,e}(\theta) - \sum_{e\in\inEdges{v}} \outfl_{i,e}(\theta) = 0 \]
         and $\bal{i}{s_i}(\theta) = u_i(\theta)$ as well as $\bal{i}{t_i}(\theta) \leq 0$ for all $\theta\in\R$.
 
-        \item Edges operate at capacity, i.e. 
+        \item\label{def:feasible-flow:operate-at-capacity} Edges operate at capacity, i.e. 
         \[
             \forall e\in E: \quad \outfl_{e}(\theta) = \begin{cases}
                 \capa_e, &\text{if $\qulen_e(\theta - \transit_e)>0$,} \\
@@ -68,3 +68,7 @@ To make the dynamic flows behave like imagined above, we have to make several re
 
 We note, that for a given feasible flow the costs $c_e$ follow the FIFO-rule and hence the results from Section~\ref{sec:fifo-costs} can be applied.
 \todo{Add cite}
+
+\todo[inline]{
+    Remark, that we switched min with max
+}
