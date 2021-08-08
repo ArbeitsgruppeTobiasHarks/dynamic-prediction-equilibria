@@ -20,6 +20,9 @@ To compute these kinds of dynamic flows, we begin by setting up the data structu
     right constant inflow rates
 }
 
+
+
+
 \subsection{Data Encoding}
 
 We begin by defining the data structure used for representing partial feasible dynamic flows.
@@ -253,83 +256,14 @@ We note that in the scenario of Theorem~\ref{thm:extend-edge}, the queue $q_e$ o
 
 The difference between Case I and Case III is that in Case I, $q_e(\phi) = 0$ is allowed, and thus it is possible that $T_{\depl}$ coincides with $\phi$.
 
+The extension algorithm we are about to introduce we want to keep track of all future changes of outflow rates of any edge.
+This is done by queuing events of this type in the priority queue \code{outflow_changes}.
+In all three cases \textbf{I-III}, the outflow of $e$ changes at time $T_e(\phi)$.
+Only in case \textbf{III}, the outflow might change once again at time $T_{\depl} + \transit_e$, if during the interval $(\phi, T_{\depl})$ no other changes to the inflow of $e$ are made.
+Hence, in case~\textbf{III} we record a planned change event in the dictionary \code{depletions} for edge $e$ together with the current depletion time as well as change time.
 
-\begin{algorithm}
-    \begin{minted}[mathescape,
-        linenos,
-        numbersep=5pt,
-        framesep=5mm]{python}
-def _extend_case_ii(self, e: Edge, new_inflow: List[float]):
-    cur_queue = self.queues[e](self.phi)
-    arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
-    for i in range(n):
-        self.inflow[e][i].extend(phi, new_inflow[i])
-        new_out = min(capacity[e], acc_in) * new_inflow[i] / acc_in
-        self.outflow[e][i].extend(change_time, new_out)
-    
-    self.outflow_changes.push((e, change_time), change_time)
-
-    queue_slope = max(acc_in - capacity[e], 0)
-    self.queues[e].extend_with_slope(phi, queue_slope)
-    if self.depletions.contains(e):
-        self.depletions.pop(e)
-    \end{minted}
-\end{algorithm}
-
-
-\begin{algorithm}
-    \begin{minted}[mathescape,
-        linenos,
-        numbersep=5pt,
-        framesep=5mm]{python}
-def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
-    cur_queue = self.queues[e](self.phi)
-    arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
-    for i in range(n):
-        self.inflow[e][i].extend(self.phi, new_inflow[i])
-        new_out = capacity[e] * new_inflow[i] / acc_in
-        self.outflow[e][i].extend(change_time, new_out)
-    
-    self.outflow_changes.push((e, change_time), change_time)
-
-    queue_slope = acc_in - capacity[e]
-    self.queues[e].extend_with_slope(self.phi, queue_slope)
-    depl_time = self.phi + cur_queue / (capacity[e] - acc_in)
-    planned_change = depl_time + travel_time[e]
-    self.depletions[e] = depl_time, planned_change, new_inflow
-    \end{minted}
-\end{algorithm}
-
-\begin{algorithm}
-    \begin{minted}[mathescape,
-        linenos,
-        numbersep=5pt,
-        framesep=5mm]{python}
-def _extend_case_i(self, e: Edge):
-    cur_queue = self.queues[e](self.phi)
-    arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
-    for i in range(n):
-        self.inflow[e][i].extend(self.phi, 0)
-        self.outflow[e][i].extend(change_time, 0)
-    
-    self.outflow_changes.push((e, change_time), change_time)
-
-    queue_slope = 0 if cur_queue == 0 else -capacity[e]
-    self.queues[e].extend_with_slope(self.phi, queue_slope)
-    if cur_queue > 0:
-        depl_time = self.phi + cur_queue / capacity[e]
-        self.depletions[e] = depl_time, float('inf'), None
-    elif self.depletions.contains(e):
-        self.depletions.pop(e)
-    \end{minted}
-\end{algorithm}
-
-
-\begin{algorithm}
-    \begin{minted}[mathescape,
-        linenos,
-        numbersep=5pt,
-        framesep=5mm]{python}
+\begin{algorithm}[ht]
+    \begin{minted}[mathescape, linenos]{python}
 def extend(
   self, new_inflow: Dict[Edge, List[float]], max_alpha: float
 ) -> Set[Edge]:
@@ -350,14 +284,7 @@ def extend(
   )
   self.phi = phi + alpha
 
-  while min(d[1] for d in self.depletions.values()) <= self.phi:
-    e, d = min(self.depletions.items(), key=lambda (e,d): d[1])
-    self.depletions.pop(e)
-    self.queues[e].extend_with_slope(depl_time, 0.)
-    if d[1] is not None:
-      self.outflow_changes.add((e, d[1]), d[1])
-      for i in range(n):
-        self.outflow[e][i].extend(d[1], d[2][i])
+  self._process_depletions()
     
   changed_edges: Set[Edge] = set()
   while self.outflow_changes.min_key() <= self.phi:
@@ -366,5 +293,88 @@ def extend(
 
     \end{minted}
     \caption{Extension Procedure in \code{class MultiComFlow}}
+    \label{alg:main-extend}
+\end{algorithm}
+
+\begin{algorithm}
+    \begin{minted}[mathescape, linenos]{python}
+def _process_depletions():
+  while min(
+        depl_time for (depl_time,_,_) in self.depletions.values(),
+        default=float('inf')
+      ) <= self.phi:
+    e = min(self.depletions, key=lambda e: self.depletions[e][0])
+    (depl_time, change_time, new_outflow) = self.depletions.pop(e)
+    self.queues[e].extend_with_slope(depl_time, 0)
+    if change_time < float('inf'):
+      self.outflow_changes.add((e, change_time), change_time)
+      for i in range(n):
+        self.outflow[e][i].extend(change_time, new_outflow[i])
+\end{minted}
+\end{algorithm}
+
+
+The main procedure is shown in Algorithm~\ref{alg:main-extend}.
+
+
+\begin{algorithm}
+    \begin{minted}[mathescape, linenos]{python}
+def _extend_case_ii(self, e: Edge, new_inflow: List[float]):
+    cur_queue = self.queues[e](self.phi)
+    arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+    for i in range(n):
+        self.inflow[e][i].extend(phi, new_inflow[i])
+        new_out = min(capacity[e], acc_in) * new_inflow[i] / acc_in
+        self.outflow[e][i].extend(change_time, new_out)
+    
+    self.outflow_changes.push((e, change_time), change_time)
+
+    queue_slope = max(acc_in - capacity[e], 0)
+    self.queues[e].extend_with_slope(phi, queue_slope)
+    if e in self.depletions:
+        self.depletions.pop(e)
+    \end{minted}
+\end{algorithm}
+
+
+\begin{algorithm}
+    \begin{minted}[mathescape, linenos]{python}
+def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
+    cur_queue = self.queues[e](self.phi)
+    arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+    for i in range(n):
+        self.inflow[e][i].extend(self.phi, new_inflow[i])
+        new_out = capacity[e] * new_inflow[i] / acc_in
+        self.outflow[e][i].extend(change_time, new_out)
+    
+    self.outflow_changes.push((e, change_time), change_time)
+
+    queue_slope = acc_in - capacity[e]
+    self.queues[e].extend_with_slope(self.phi, queue_slope)
+    depl_time = self.phi + cur_queue / (capacity[e] - acc_in)
+    planned_change = depl_time + travel_time[e]
+    self.depletions[e] = depl_time, planned_change, new_inflow
+    \end{minted}
+\end{algorithm}
+
+\begin{algorithm}
+    \begin{minted}[mathescape, linenos]{python}
+def _extend_case_i(self, e: Edge):
+    cur_queue = self.queues[e](self.phi)
+    arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+    for i in range(n):
+        self.inflow[e][i].extend(self.phi, 0)
+        self.outflow[e][i].extend(change_time, 0)
+    
+    self.outflow_changes.push((e, change_time), change_time)
+
+    queue_slope = 0 if cur_queue == 0 else -capacity[e]
+    self.queues[e].extend_with_slope(self.phi, queue_slope)
+    if cur_queue > 0:
+        depl_time = self.phi + cur_queue / capacity[e]
+        self.depletions[e] = depl_time, float('inf'), None
+    elif e in self.depletions:
+        self.depletions.pop(e)
+    \end{minted}
 \end{algorithm}
 

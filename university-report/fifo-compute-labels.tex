@@ -23,10 +23,7 @@ To detect changes we also need to be able to identify whether one function is ev
 Instead of representing the constant function with value $\infty$, we can simply only add a function once it gets its first update.
 
 \begin{algorithm}[h]
-    \begin{minted}[mathescape,
-        linenos,
-        numbersep=5pt,
-        framesep=5mm]{python}
+    \begin{minted}[mathescape, linenos]{python}
 def dynamic_bellman_ford(
     sink: Node, costs: List[PiecewiseLinear], relevant_nodes: Set[Node],
     theta: float
