@@ -75,7 +75,7 @@ class DirectedGraph:
     def __init__(self):
         self.edges = []
         self.nodes = {}
-        self.reverse = False
+        self.reversed = False
         self._is_reversed = lambda: self.reversed
 
     def add_edge(self, node_from: int, node_to: int):
