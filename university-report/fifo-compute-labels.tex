@@ -25,28 +25,28 @@ Instead of representing the constant function with value $\infty$, we can simply
 \begin{algorithm}[h]
     \begin{minted}[mathescape, linenos]{python}
 def dynamic_bellman_ford(
-    sink: Node, costs: List[PiecewiseLinear], relevant_nodes: Set[Node],
-    theta: float
+  sink: Node, costs: List[PiecewiseLinear], relevant_nodes: Set[Node],
+  theta: float
 ) -> Dict[Node, PiecewiseLinear]:
-    arrivals: Dict[Node, PiecewiseLinear] = { sink: identity }
-    traversals = [cost + identity for cost in costs]
-    changed_nodes = {sink}
-    while len(changed_nodes) > 0:
-        change_detected = {}
-        for w in changed_nodes:
-            for e in w.incoming_edges:
-                v = e.node_from
-                if v not in relevant_nodes:
-                    continue
-                relaxation = arrivals[w].compose(traversals[e.id])
-                if v not in arrivals.keys():
-                    change_detected.add(v)
-                    arrivals[v] = relaxation
-                elif not arrivals[v] <= relaxation:
-                    change_detected.add(v)
-                    arrivals[v] = arrivals[v].minimum(relaxation)
-        changed_nodes = change_detected
-    return arrivals
+  arrivals: Dict[Node, PiecewiseLinear] = { sink: identity }
+  traversals = [cost + identity for cost in costs]
+  changed_nodes = {sink}
+  while len(changed_nodes) > 0:
+    change_detected = {}
+    for w in changed_nodes:
+      for e in w.incoming_edges:
+        v = e.node_from
+        if v not in relevant_nodes:
+          continue
+        relaxation = arrivals[w].compose(traversals[e.id])
+        if v not in arrivals.keys():
+          change_detected.add(v)
+          arrivals[v] = relaxation
+        elif not arrivals[v] <= relaxation:
+          change_detected.add(v)
+          arrivals[v] = arrivals[v].minimum(relaxation)
+    changed_nodes = change_detected
+  return arrivals
     \end{minted}
     \caption{Dynamic Bellman-Ford Algorithm}
     \label{alg:dynamic-bellman-ford}

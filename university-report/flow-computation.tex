@@ -1,4 +1,4 @@
-\section{Computation of Multi-Commodity Flows}
+\section{Computation of Multi-Commodity Equilibrium Flows}
 
 In this section we want to discuss how we can compute an approximated variant of DPEs.
 We recall from the definition, that in a DPE all infinitesimally small agents update their routing decision every time they arrive at an intermediate node.
@@ -16,127 +16,15 @@ This leads to the following definition:
 
 To compute these kinds of dynamic flows, we begin by setting up the data structures representing dynamic flows before we have a look at the extension of feasible flows and finally how to use the predictors and the computation of dynamic shortest paths to extend the flows following the prescript in the definition of $\varepsilon$-DPEs.
 
-\todo[inline]{
-    right constant inflow rates
-}
+Moreover, we focus on dynamic flows with right-constant flow rates only.
+This means, we assume that all network inflow rates $u_i$ are right-constant.
 
+\subsection{Extension Theorem}
 
-
-
-\subsection{Data Encoding}
-
-We begin by defining the data structure used for representing partial feasible dynamic flows.
-This is shown in Data~Structure~\ref{data:flow}.
-
-
-\begin{classdef}
-    \begin{minted}[mathescape, linenos]{python}
-class MultiComFlow
-    phi: float
-    inflow: Dict[Edge,List[RightConstant]]
-    outflow: Dict[Edge, List[RightConstant]]
-    queues: Dict[Edge, PiecewiseLinear]
-    outflow_changes: PriorityQueue[Tuple[Edge, float]]
-    depletions: Dict[Edge, Tuple[float, float, List[float]]]
-
-    #  ... (methods)
-\end{minted}
-    \caption{Partial Dynamic Flows}
-    \label{data:flow}
-\end{classdef}
-
-The horizon of such a flow is written to the attribute \code{phi}.
-The functions $\infl_{i,e}$ and $\outfl_{i,e}$ correspond to the attributes \code{inflow[e][i]} and \code{outflow[e][i]}, respectively.
-Both are objects of the class \code{RightConstant} which is discussed later.
-Although, we could compute the queue length of an edge $e$ from these two functions, we allocate 
-another attribute \code{queues[e]} for the queue lengths to speed up the extension procedure.
-This can be done using an object representing a piecewise linear function because it is the integral of piecewise constant functions.
-Next, the priority queue \code{outflow_changes} holds all upcoming events where some edge outflow will change due to an inflow change.
-It saves tuples \code{(e, change_time)} with $\code{change_time} > \code{phi}$ prioritized by \code{change_time} with the interpretation that \code{outflow[e]} will change at time \code{change_time}.
-This is useful for maintaining feasibility of the flow as we only want to extend at most as long as no edge outflow rate changes.
-Finally, we have another priority queue \code{depletions} with events where an edge will supposedly deplete its queue.
-That means, an edge \code{e} with prioritization key \code{depl_time} is contained in \code{depletions} if \code{queues[e](phi)} is positive and \code{queues[e]} reaches $0$ at time \code{depl_time}.
-
-Let us now discuss how the piecewise constant and piecewise linear functions are encoded.
-Let $f: \R \rightarrow \R$ be a piecewise function given by \[
-    f(x) \coloneqq \begin{cases}
-        f(\xi_1) +  (x - \xi_1) \cdot s_f & \text{for $x < \xi_1$,} \\
-        f(\xi_i) + (x - \xi_i) \cdot \frac{f(\xi_{i+1}) - f(\xi_i)}{\xi_{i+1} - \xi_i} & \text{for $\xi_i \leq x < \xi_{i+1}, i \in \firstN{k-1}$},\\
-        f(\xi_k) + (x - \xi_k)\cdot s_l & \text{for $x \geq \xi_k$,}
-    \end{cases}
-\]
-where $\xi_1 < \xi_2 < \cdots < \xi_k$ are the supporting points with $k\geq 1$, and $s_f$ and $s_l$ are the first and last slopes, respectively.
-Data~Structure~\ref{data:piecewise-linear} encodes this function by saving the list $[\xi_0,\xi_1,\dots,\xi_k]$ in the attribute \code{times}, $[f(\xi_0), f(\xi_1),\dots, f(\xi_k)]$ in the attribute \code{values} and $s_f$ and $s_l$ in the attributes \code{first_slope} and \code{last_slope}.
-Similarly, Data~Structure~\ref{data:right-constant} encodes a right-constant function $f:\R \rightarrow \R$ given by \[
-    f(x) \coloneqq \begin{cases}
-        v_f, & \text{if $x < \xi_1$ (or $k=0$),} \\
-        f(\xi_i), & \text{if $\xi_i \leq x < \xi_{i+1}, i \in \firstN{k-1}$},\\
-        f(\xi_k), & \text{if $x \geq \xi_k$,}
-    \end{cases}
-\]
-where $v_f$ is written to the attribute \code{first_value}.
-Here, $k=0$ is allowed.
-In both cases, an evaluation of the function can be done using a simple binary search in the \code{times} array resulting in a logarithmic complexity in the time dimension $k$.
-
-\begin{minipage}[t]{0.5\textwidth}
-\begin{classdef}[H]
-    \begin{minted}[mathescape, linenos]{python}
-class PiecewiseLinear:
-    times: List[float]
-    values: List[float]
-    first_slope: float
-    last_slope: float
-
-    #  ... (methods)
-\end{minted}
-    \caption{\\Piecewise~Linear~Functions\vphantom{Right}}%
-    \label{data:piecewise-linear}
-\end{classdef}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.5\textwidth}
-\begin{classdef}[H]
-    \begin{minted}[mathescape, linenos, stripnl=false]{python}
-class RightConstant:
-    times: List[float]
-    values: List[float]
-    first_value: float
-
-    #  ... (methods)
-
-\end{minted}
-    \vspace{.084em}
-    \caption{\\Right~Constant~Functions}%
-    \label{data:right-constant}
-\end{classdef}
-\end{minipage}
-
-
-\subsection{Extension of Feasible Flows}
-
-In this section we discuss how to extend a feasible flow for some time period given new constant inflow rates on a subset of the edges.
-
-In the beginning we usually start with an empty flow representing a feasible flow up to time $0$.
-This is an object of the class \code{MultiComFlow} initialized using the operations
-\begin{itemize}
-\setlength{\itemsep}{0em}
-\item \code{phi = 0},
-\item \code{inflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i},
-\item \code{outflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i}
-\item \code{queues[e] = PiecewiseLinear(times=[0], values=[0], first_slope=0,}\\\code{last_slope=0)} for all edges \code{e},
-\end{itemize}
-and initially empty priority queues \code{outflow_changes} and \code{depletions}.
-
-We now want to extend this initialized flow in so-called \emph{extension phases}.
-That means, given a feasible flow $f$ up to time $\phi$, we want to extend this flow to a feasible flow up to time $\phi + \alpha$ for some small $\alpha > 0$.
-During this extension interval $[\phi, \phi+\alpha)$ we keep all edge inflow and outflow rates constant.
-
-We imagine a scenario in which some external mechanism determines edge inflow rates $g\in\R_{\geq 0}^{I\times E}$ to extend $f$ by $\restrict{\infl_{i,e}}{[\phi, \phi+\alpha)} \equiv g_{i,e}$ for some small $\alpha > 0$.
-Moreover, we want to choose $\alpha$ at least so small, that no edge outflow changes within $[\phi, \phi + \alpha)$.
-That way, $\bal{i}{v}$ remains constant during this interval and once the node inflow $\sum_{e\in\inEdges{v}}\outfl_{i,e}$ changes, the external mechanism can react to these changes.
-This enables the mechanism to preserve flow conservation property~\ref{def:feasible-flow:flow-conservation} on intermediary nodes.
-
-After determining the new inflow rate $(g_{i,e})_{i\in I}$ of an edge $e$ beginning at time $\phi$, we assign $\restrict{\infl_{i,e}}{[\phi,\infty)} \coloneqq g_{i,e}$.
-Then we determine the outflow rate of $e$ beginning at $T_e(\phi) = \phi + \transit_e + q_e(\phi)/\capa_e$ according to properties~\ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity} of Definition~\ref{def:feasible-flow}:
+Before diving into an actual program, we first consider a few theoretical observations involving the feasibility of dynamic flows.
+More specifically, we want to extend partial flows with constant edge inflow rates while always preserving the feasibility properties \ref{def:feasible-flow:max-capacity}, \ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity}.
+By choosing appropriate edge inflow rates, we will later make sure that the flow conservation property~\ref{def:feasible-flow:flow-conservation} is fulfilled as well. 
+The following theorem is the building block for the algorithms introduced in the next sections.
 
 \begin{theorem}\label{thm:extend-edge}
     Let $f$ be a dynamic flow fulfilling properties~\ref{def:feasible-flow:max-capacity}, \ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity} on an edge $e\in E$ for almost all $\theta\in\R$.
@@ -147,7 +35,7 @@ Then we determine the outflow rate of $e$ beginning at $T_e(\phi) = \phi + \tran
         
         \item If $g_e > 0 \,\land\, \left( q_e(\phi) = 0 \,\lor\, g_e \geq \capa_e \right)$, we assign $\restrict{\outfl_{i,e}}{[T_e(\phi), \infty)} \colonequiv \min\{\capa_e, g_e\}\cdot \frac{g_{i,e}}{g_e}$.
         
-        \item If $g_e \in (0, \capa_e) \,\land\, q_e(\phi) > 0$ we use $T_{\depl} \coloneqq \phi + \frac{q_e(\phi)}{\capa_e - g_e}$ for assigning
+        \item If $g_e \in (0, \capa_e) \,\land\, q_e(\phi) > 0$, we use $T_{\depl} \coloneqq \phi + \frac{q_e(\phi)}{\capa_e - g_e}$ for assigning
         \begin{align*}
             \restrict{\outfl_{i,e}}{[T_e(\phi), T_{\depl} + \transit_e)}
             \colonequiv \capa_e \cdot \frac{g_{i,e}}{g_e}
@@ -173,8 +61,8 @@ Then we determine the outflow rate of $e$ beginning at $T_e(\phi) = \phi + \tran
     Let us analyze the case $\phi + \transit_e \leq \theta < T_e(\phi)$ or equivalently $\phi  \leq \theta - \transit_e < \phi + q_e(\phi) /\capa_e$.
     With~\ref{def:feasible-flow:max-capacity} we conclude \begin{align*}
         q_e^h(\theta - \transit_e)
-        &= \int_0^{\theta-\transit_e} \infl[h]_e(t) \diff t - \int_0^{\theta} \outfl[h]_e(t) \diff t
-        \geq \int_0^{\phi} \infl[h]_e(t)\diff t - \int_0^{\phi + \transit_e} \outfl[h]_e \diff t
+        &= \int_0^{\theta-\transit_e} \infl[h]_e(t) \diff t - \int_0^{\theta} \outfl[h]_e(t) \diff t \\
+        &\geq \int_0^{\phi} \infl[h]_e(t)\diff t - \int_0^{\phi + \transit_e} \outfl[h]_e \diff t
         - \capa_e\cdot (\theta - \transit_e - \phi)\\
         & = q_e(\phi) - \capa_e\cdot(\theta - \transit_e - \phi) > 0.
     \end{align*}
@@ -188,9 +76,7 @@ Then we determine the outflow rate of $e$ beginning at $T_e(\phi) = \phi + \tran
             = \int_0^\phi \infl[h]_e(t) \diff t - \int_0^{T_e(\phi)} \outfl[h]_e(t)\diff t
             = q_e(\phi) - \int_\phi^{\phi + q_e(\phi)/\capa_e} \outfl[h]_e(t + \transit_e)\diff t
         \end{align*}
-        And as property~\ref{def:feasible-flow:operate-at-capacity} already holds for $t\leq T_e(\theta)$ we conclude \(
-            q_e^h(\theta - \transit_e) = q_e(\phi) - \capa_e \cdot \frac{q_e(\phi)}{\capa_e} = 0.
-        \)
+        And as property~\ref{def:feasible-flow:operate-at-capacity} holds for $t\leq T_e(\theta)$, we infer $q_e^h(\theta - \transit_e) = q_e(\phi) - \capa_e \cdot \frac{q_e(\phi)}{\capa_e} = 0$.
         Together with $\outfl[h]_e(\theta) = 0 = \infl[h]_e(\theta - \transit_e)$ this yields the claim.
 
         \item We have $g_e > 0 \,\land\, \left( q_e(\phi) = 0 \,\lor\, g_e \geq \capa_e \right)$.
@@ -256,6 +142,156 @@ We note that in the scenario of Theorem~\ref{thm:extend-edge}, the queue $q_e$ o
 
 The difference between Case I and Case III is that in Case I, $q_e(\phi) = 0$ is allowed, and thus it is possible that $T_{\depl}$ coincides with $\phi$.
 
+
+\subsection{Encoding Right Constant and Piecewise Linear Functions}
+
+Let us now discuss how the piecewise constant and piecewise linear functions are encoded.
+Let $f: \R \rightarrow \R$ be a piecewise function given by \[
+    f(x) \coloneqq \begin{cases}
+        f(\xi_1) +  (x - \xi_1) \cdot s_f & \text{for $x < \xi_1$,} \\
+        f(\xi_i) + (x - \xi_i) \cdot \frac{f(\xi_{i+1}) - f(\xi_i)}{\xi_{i+1} - \xi_i} & \text{for $\xi_i \leq x < \xi_{i+1}, i \in \firstN{k-1}$},\\
+        f(\xi_k) + (x - \xi_k)\cdot s_l & \text{for $x \geq \xi_k$,}
+    \end{cases}
+\]
+where $\xi_1 < \xi_2 < \cdots < \xi_k$ are the supporting points with $k\geq 1$, and $s_f$ and $s_l$ are the first and last slopes, respectively.
+Data~Structure~\ref{data:piecewise-linear} encodes this function by saving the list $[\xi_0,\xi_1,\dots,\xi_k]$ in the attribute \code{times}, $[f(\xi_0), f(\xi_1),\dots, f(\xi_k)]$ in the attribute \code{values} and $s_f$ and $s_l$ in the attributes \code{first_slope} and \code{last_slope}.
+Similarly, Data~Structure~\ref{data:right-constant} encodes a right-constant function $f:\R \rightarrow \R$ given by \[
+    f(x) \coloneqq \begin{cases}
+        v_f, & \text{if $x < \xi_1$ (or $k=0$),} \\
+        f(\xi_i), & \text{if $\xi_i \leq x < \xi_{i+1}, i \in \firstN{k-1}$},\\
+        f(\xi_k), & \text{if $x \geq \xi_k$,}
+    \end{cases}
+\]
+where $v_f$ is written to the attribute \code{first_value}.
+Here, $k=0$ is allowed.
+In both cases, an evaluation of the function can be done using a simple binary search in the \code{times} array resulting in a logarithmic complexity in the time dimension $k$.
+
+\vspace{-1em}\begin{minipage}[t]{0.5\textwidth}
+\begin{classdef}[H]
+    \begin{minted}[mathescape, linenos]{python}
+class PiecewiseLinear:
+  times: List[float]
+  values: List[float]
+  first_slope: float
+  last_slope: float
+
+  #  ... (methods)
+\end{minted}
+    \caption{\\Piecewise~Linear~Functions\vphantom{Right}}%
+    \label{data:piecewise-linear}
+\end{classdef}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.5\textwidth}
+\begin{classdef}[H]
+    \begin{minted}[mathescape, linenos, stripnl=false]{python}
+class RightConstant:
+  times: List[float]
+  values: List[float]
+  first_value: float
+
+  #  ... (methods)
+
+\end{minted}
+    \vspace{.084em}
+    \caption{\\Right~Constant~Functions}%
+    \label{data:right-constant}
+\end{classdef}
+\end{minipage}\vspace{1em}
+
+
+In the next section, we will need the following operations on these functions.
+First, we want to be able to extend a piecewise linear function $f$ beginning at some time $\theta \geq \max_{i\in\firstN{k}} \xi_i$ by some slope $s$.
+This translates to Algorithm~\ref{alg:extend-piecewise-linear}.
+
+\begin{algorithm}
+  \begin{minted}[mathescape, linenos]{python}
+def extend_with_slope(self, time: float, slope: float):
+  if time > self.times[-1]:
+    val = self.values[-1] + (time - self.times[-1]) * last_slope
+    self.values.append(val)
+    self.times.append(time)
+  self.last_slope = slope
+  \end{minted}
+  \caption{Extension Procedure in \code{class PiecewiseLinear}}
+  \label{alg:extend-piecewise-linear}
+\end{algorithm}
+
+Secondly, right constant functions should be extendable beginning from time $\theta \in\R$ with $\theta \geq \sup_{i\in\firstN{k}} \xi_i$ by some value $v\in\R$.
+The corresponding procedure is shown in Algorithm~\ref{alg:extend-right-constant}.
+\begin{algorithm}
+  \begin{minted}[mathescape, linenos]{python}
+def extend(self, time: float, value: float):
+  if len(times) > 0 and time == self.times[-1]:
+    self.values[-1] = value
+  else:
+    self.values.append(value)
+    self.times.append(time)
+  \end{minted}
+  \caption{Extension Procedure in \code{class RightConstant}}
+  \label{alg:extend-right-constant}
+\end{algorithm}
+
+We conclude this section by mentioning that these extension procedures only use constant time.
+
+\subsection{Encoding Feasible Flows}
+
+We now discuss the data structure used for representing and extending partial dynamic flows as defined in Data~Structure~\ref{data:flow}.
+
+\begin{classdef}
+    \begin{minted}[mathescape, linenos]{python}
+class MultiComFlow
+  phi: float
+  inflow: Dict[Edge,List[RightConstant]]
+  outflow: Dict[Edge, List[RightConstant]]
+  queues: Dict[Edge, PiecewiseLinear]
+  outflow_changes: PriorityQueue[Tuple[Edge, float]]
+  depletions: Dict[Edge, Tuple[float, float, List[float]]]
+
+  #  ... (methods)
+\end{minted}
+    \caption{Partial Dynamic Flows}
+    \label{data:flow}
+\end{classdef}
+
+The horizon of such a flow is written to the attribute \code{phi}.
+The functions $\infl_{i,e}$ and $\outfl_{i,e}$ correspond to the attributes \code{inflow[e][i]} and \code{outflow[e][i]}, respectively, both of which are objects of the class \code{RightConstant}.
+Although, we could compute the queue length of an edge $e$ from these two functions, we allocate 
+another attribute \code{queues[e]} for the queue lengths to speed up the extension procedure.
+This can be done using an object representing a piecewise linear function because it is the integral of piecewise constant functions.
+Next, the priority queue \code{outflow_changes} holds all upcoming events later than \code{phi} where some edge outflow will definitely change.
+It saves tuples $(e, \theta)$ with $\theta > \code{phi}$ interpreted as ``\code{outflow[e]} changes at time $\theta$''.
+This helps us extend at most as long as no edge outflow rate changes.
+Finally, we have a dictionary \code{depletions} which contains an edge $e$ if there is an upcoming queue depletion at time $T_{\depl} > \phi$.
+In that case, $\code{depletions[e]}$ is a tuple $(T_{\depl}, T_{\depl}+ \transit_e, (g_{i,e})_{i\in I})$ where $(g_{i,e})_{i\in I}$ is the new outflow $\outfl_{i,e}$ starting from time $T_{\depl} + \transit_e$.
+
+
+\subsection{Extension of Feasible Flows}
+
+In this section we discuss how to extend a feasible flow for some time period given new constant inflow rates on a subset of the edges.
+
+In the beginning we usually start with an empty flow representing a feasible flow up to time $0$.
+This is an object of the class \code{MultiComFlow} initialized using the operations
+\begin{itemize}
+\setlength{\itemsep}{0em}
+\item \code{phi = 0},
+\item \code{inflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i},
+\item \code{outflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i}
+\item \code{queues[e] = PiecewiseLinear(times=[0], values=[0], first_slope=0,}\\\code{last_slope=0)} for all edges \code{e},
+\end{itemize}
+with an empty priority queue \code{outflow_changes} and an empty dictionary \code{depletions}.
+
+We now want to extend this initialized flow in so-called \emph{extension phases}.
+That means, given a feasible flow $f$ up to time $\phi$, we want to extend this flow to a feasible flow up to time $\phi + \alpha$ for some small $\alpha > 0$.
+During this extension interval $[\phi, \phi+\alpha)$ we keep all edge inflow and outflow rates constant.
+
+We imagine a scenario in which some external mechanism determines edge inflow rates $g\in\R_{\geq 0}^{I\times E}$ to extend $f$ by $\restrict{\infl_{i,e}}{[\phi, \phi+\alpha)} \equiv g_{i,e}$ for some small $\alpha > 0$.
+Moreover, we want to choose $\alpha$ at least so small, that no edge outflow changes within $[\phi, \phi + \alpha)$.
+That way $\bal{i}{v}$ remains constant during this interval and once the node inflow $\sum_{e\in\inEdges{v}}\outfl_{i,e}$ changes, the external mechanism can react to these changes.
+This enables the mechanism to preserve the flow conservation property~\ref{def:feasible-flow:flow-conservation} on intermediary nodes.
+
+After determining the new inflow rates $(g_{i,e})_{i\in I}$ of an edge $e$ beginning at time $\phi$, we assign $\restrict{\infl_{i,e}}{[\phi,\infty)} \coloneqq g_{i,e}$.
+Then we determine the outflow rate of $e$ beginning at $T_e(\phi) = \phi + \transit_e + q_e(\phi)/\capa_e$ according to properties~\ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity} of Definition~\ref{def:feasible-flow}:
+
 The extension algorithm we are about to introduce we want to keep track of all future changes of outflow rates of any edge.
 This is done by queuing events of this type in the priority queue \code{outflow_changes}.
 In all three cases \textbf{I-III}, the outflow of $e$ changes at time $T_e(\phi)$.
@@ -276,13 +312,14 @@ def extend(
     else:
       self._extend_case_iii(e, new_inflow)
 
-  alpha = min(
-    min(d[1] for d in self.depletions.values(),
-        default=float('inf')) - self.phi
-    self.outflow_changes.min_key() - self.phi,
-    max_alpha
+  self.phi = min(
+    min(
+      change_time for (_,change_time,_) in self.depletions.values(),
+      default=float('inf')
+    ),
+    self.outflow_changes.min_key(),
+    self.phi + max_alpha
   )
-  self.phi = phi + alpha
 
   self._process_depletions()
     
@@ -300,9 +337,9 @@ def extend(
     \begin{minted}[mathescape, linenos]{python}
 def _process_depletions():
   while min(
-        depl_time for (depl_time,_,_) in self.depletions.values(),
-        default=float('inf')
-      ) <= self.phi:
+          depl_time for (depl_time,_,_) in self.depletions.values(),
+          default=float('inf')
+        ) <= self.phi:
     e = min(self.depletions, key=lambda e: self.depletions[e][0])
     (depl_time, change_time, new_outflow) = self.depletions.pop(e)
     self.queues[e].extend_with_slope(depl_time, 0)
@@ -320,19 +357,19 @@ The main procedure is shown in Algorithm~\ref{alg:main-extend}.
 \begin{algorithm}
     \begin{minted}[mathescape, linenos]{python}
 def _extend_case_ii(self, e: Edge, new_inflow: List[float]):
-    cur_queue = self.queues[e](self.phi)
-    arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
-    for i in range(n):
-        self.inflow[e][i].extend(phi, new_inflow[i])
-        new_out = min(capacity[e], acc_in) * new_inflow[i] / acc_in
-        self.outflow[e][i].extend(change_time, new_out)
+  cur_queue = self.queues[e](self.phi)
+  arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+  for i in range(n):
+    self.inflow[e][i].extend(phi, new_inflow[i])
+    new_out = min(capacity[e], acc_in) * new_inflow[i] / acc_in
+    self.outflow[e][i].extend(change_time, new_out)
     
-    self.outflow_changes.push((e, change_time), change_time)
+  self.outflow_changes.push((e, change_time), change_time)
 
-    queue_slope = max(acc_in - capacity[e], 0)
-    self.queues[e].extend_with_slope(phi, queue_slope)
-    if e in self.depletions:
-        self.depletions.pop(e)
+  queue_slope = max(acc_in - capacity[e], 0)
+  self.queues[e].extend_with_slope(phi, queue_slope)
+  if e in self.depletions:
+    self.depletions.pop(e)
     \end{minted}
 \end{algorithm}
 
@@ -340,41 +377,41 @@ def _extend_case_ii(self, e: Edge, new_inflow: List[float]):
 \begin{algorithm}
     \begin{minted}[mathescape, linenos]{python}
 def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
-    cur_queue = self.queues[e](self.phi)
-    arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
-    for i in range(n):
-        self.inflow[e][i].extend(self.phi, new_inflow[i])
-        new_out = capacity[e] * new_inflow[i] / acc_in
-        self.outflow[e][i].extend(change_time, new_out)
+  cur_queue = self.queues[e](self.phi)
+  arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+  for i in range(n):
+    self.inflow[e][i].extend(self.phi, new_inflow[i])
+    new_out = capacity[e] * new_inflow[i] / acc_in
+    self.outflow[e][i].extend(change_time, new_out)
     
-    self.outflow_changes.push((e, change_time), change_time)
+  self.outflow_changes.push((e, change_time), change_time)
 
-    queue_slope = acc_in - capacity[e]
-    self.queues[e].extend_with_slope(self.phi, queue_slope)
-    depl_time = self.phi + cur_queue / (capacity[e] - acc_in)
-    planned_change = depl_time + travel_time[e]
-    self.depletions[e] = depl_time, planned_change, new_inflow
-    \end{minted}
+  queue_slope = acc_in - capacity[e]
+  self.queues[e].extend_with_slope(self.phi, queue_slope)
+  depl_time = self.phi + cur_queue / (capacity[e] - acc_in)
+  planned_change = depl_time + travel_time[e]
+  self.depletions[e] = depl_time, planned_change, new_inflow
+\end{minted}
 \end{algorithm}
 
 \begin{algorithm}
     \begin{minted}[mathescape, linenos]{python}
 def _extend_case_i(self, e: Edge):
-    cur_queue = self.queues[e](self.phi)
-    arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
-    for i in range(n):
-        self.inflow[e][i].extend(self.phi, 0)
-        self.outflow[e][i].extend(change_time, 0)
+  cur_queue = self.queues[e](self.phi)
+  arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+  for i in range(n):
+    self.inflow[e][i].extend(self.phi, 0)
+    self.outflow[e][i].extend(change_time, 0)
     
-    self.outflow_changes.push((e, change_time), change_time)
+  self.outflow_changes.push((e, change_time), change_time)
 
-    queue_slope = 0 if cur_queue == 0 else -capacity[e]
-    self.queues[e].extend_with_slope(self.phi, queue_slope)
-    if cur_queue > 0:
-        depl_time = self.phi + cur_queue / capacity[e]
-        self.depletions[e] = depl_time, float('inf'), None
-    elif e in self.depletions:
-        self.depletions.pop(e)
-    \end{minted}
+  queue_slope = 0 if cur_queue == 0 else -capacity[e]
+  self.queues[e].extend_with_slope(self.phi, queue_slope)
+  if cur_queue > 0:
+      depl_time = self.phi + cur_queue / capacity[e]
+      self.depletions[e] = depl_time, float('inf'), None
+  elif e in self.depletions:
+      self.depletions.pop(e)
+\end{minted}
 \end{algorithm}
 
