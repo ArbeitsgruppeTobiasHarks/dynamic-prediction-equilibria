@@ -40,7 +40,7 @@ def eval_network(network_path: str, demands_path: str, output_folder: str, check
 def network_results_from_file_to_tikz():
     directory = "../../out/"
     files = os.listdir(directory)
-    times = [[], [], [], []]  # Zero, LinearRegression, Linear, RegularizedLinear
+    times = [[], [], [], [], []]  # Zero, LinearRegression, Linear, RegularizedLinear, Optimal
     means = [0, 0, 0, 0, 0]
     num = 0
     for file_path in files:

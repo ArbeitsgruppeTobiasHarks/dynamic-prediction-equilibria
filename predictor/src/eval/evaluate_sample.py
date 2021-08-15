@@ -8,7 +8,7 @@ def eval_sample():
     max_demand = 30.
     demand = 0.
     step_size = 0.25
-    avg_times = [[], [], [], [], []]
+    avg_times = [[], [], [], [], [], []]
     while demand < max_demand:
         network = build_sample_network()
         network.add_commodity(0, 2, demand, 0)

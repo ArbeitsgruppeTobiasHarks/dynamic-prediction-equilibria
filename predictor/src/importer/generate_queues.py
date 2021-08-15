@@ -1,6 +1,5 @@
 import os
 import pickle
-import random
 
 import numpy as np
 
@@ -8,7 +7,6 @@ import numpy as np
 def generate_queues(past_timesteps: int, future_timesteps: int, flows_folder: str, out_folder: str):
     os.makedirs(out_folder, exist_ok=True)
     horizon = 100
-    step_size = 1.
 
     files = [file for file in os.listdir(flows_folder) if file.endswith(".flow.pickle")]
 
