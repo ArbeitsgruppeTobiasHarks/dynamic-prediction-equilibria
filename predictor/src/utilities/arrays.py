@@ -1,5 +1,7 @@
 from typing import List, Iterable
 
+from core.machine_precision import eps
+
 
 def arg_min(list: Iterable, key=lambda x: x):
     minimum = None
@@ -54,7 +56,7 @@ def elem_lrank(arr: List[float], x: float) -> int:
 
 def merge_sorted(arr1: List[float], arr2: List[float]) -> List[float]:
     """
-    Merge two sorted arrays into a sorted array without duplicates
+    Merge two sorted arrays into a sorted array without duplicates (up to eps)
     """
     merged = []
 
@@ -62,20 +64,20 @@ def merge_sorted(arr1: List[float], arr2: List[float]) -> List[float]:
     ind2 = 0
     while ind1 < len(arr1) and ind2 < len(arr2):
         if arr1[ind1] < arr2[ind2]:
-            if len(merged) == 0 or merged[-1] < arr1[ind1]:
+            if len(merged) == 0 or merged[-1] < arr1[ind1] - eps:
                 merged.append(arr1[ind1])
             ind1 += 1
         else:
-            if len(merged) == 0 or merged[-1] < arr2[ind2]:
+            if len(merged) == 0 or merged[-1] < arr2[ind2] - eps:
                 merged.append(arr2[ind2])
             ind2 += 1
 
     while ind1 < len(arr1):
-        if len(merged) == 0 or merged[-1] < arr1[ind1]:
+        if len(merged) == 0 or merged[-1] < arr1[ind1] - eps:
             merged.append(arr1[ind1])
         ind1 += 1
     while ind2 < len(arr2):
-        if len(merged) == 0 or merged[-1] < arr2[ind2]:
+        if len(merged) == 0 or merged[-1] < arr2[ind2] - eps:
             merged.append(arr2[ind2])
         ind2 += 1
 
