@@ -48,10 +48,12 @@ class RightConstant:
 
     def extend(self, start_time: float, value: float):
         assert start_time >= self.times[-1] - eps
-        if start_time <= self.times[-1] + eps:
+        if abs(self.values[-1] - value) <= eps:
+            return
+        if abs(start_time - self.times[-1]) <= eps:
             #  Simply replace the last value
             self.values[-1] = value
-        elif self.values[-1] != value:
+        else:
             self.times.append(start_time)
             self.values.append(value)
 
@@ -75,9 +77,12 @@ class RightConstant:
         return self.__radd__(other)
 
     def integral(self) -> PiecewiseLinear:
+        """
+        Returns the integral starting from self.times[0] to x of self.
+        """
         assert self.times[0] == self.domain[0] and self.domain[1] >= self.times[-1] + 1
-        times = self.times + [self.times[-1] + 1]
+        times = self.times
         values = [0.] * len(times)
         for i in range(len(times) - 1):
             values[i + 1] = values[i] + self.values[i] * (times[i + 1] - times[i])
-        return PiecewiseLinear(times, values, self.domain)
+        return PiecewiseLinear(times, values, self.values[0], self.values[-1], self.domain)

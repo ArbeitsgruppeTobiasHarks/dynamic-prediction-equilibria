@@ -4,13 +4,14 @@ from core.graph import DirectedGraph, Edge, Node
 
 from utilities.piecewise_linear import PiecewiseLinear
 
-identity = PiecewiseLinear([0., 1.], [0.,1.])
+identity = PiecewiseLinear([0.], [0.], 1., 1.)
+
 
 def backward_search(
     costs: List[Callable[[float], float]], arrivals: Dict[Node, float],
     source: Node, sink: Node
 ) -> Set[Edge]:
-    active_edges = []
+    active_edges = set()
     queue: List[Node] = [sink]
     nodes_enqueued: Set[Node] = {sink}
     while len(queue) > 0:
@@ -21,7 +22,7 @@ def backward_search(
                 continue
             if arrivals[v] + costs[e.id](arrivals[v]) <= arrivals[w]:
                 if v == source:
-                    active_edges.append(e)
+                    active_edges.add(e)
                 if v not in nodes_enqueued:
                     queue.append(v)
                     nodes_enqueued.add(v)
@@ -32,16 +33,16 @@ def get_active_edges(
     costs: List[PiecewiseLinear], theta: float, source: Node, sink: Node,
     relevant_nodes: Set[Node], graph: DirectedGraph, strong_fifo: bool
 ) -> Set[Edge]:
-    if len(e for e in source.outgoing_edges if e.node_to in relevant_nodes) <= 1:
+    if len([e for e in source.outgoing_edges if e.node_to in relevant_nodes]) <= 1:
         return source.outgoing_edges
-    arrivals = dynamic_dijkstra(
+    arrivals, _ = dynamic_dijkstra(
         theta, source, sink, relevant_nodes, costs
     )
     if strong_fifo:
         return backward_search(costs, arrivals, source, sink)
-    else: # Second run of Dijkstra on the reverse graph.
+    else:  # Second run of Dijkstra on the reverse graph.
         graph.reverse()
-        traversals = [cost + identity for cost in costs]
+        traversals = [cost.plus(identity) for cost in costs]
         new_costs: List[Callable[[float], float]] = [
             lambda t: -trav.reversal(-t) - t for trav in traversals
         ]
@@ -49,8 +50,8 @@ def get_active_edges(
             arrivals[sink], sink, source, relevant_nodes, new_costs
         )
         graph.reverse()
-        active_edges = []
+        active_edges = set()
         for e in source.outgoing_edges:
             if traversals[e.id](theta) <= -neg_departures[e.node_to]:
-                active_edges.append(e)
+                active_edges.add(e)
         return active_edges

@@ -109,6 +109,9 @@ class PriorityQueue(Generic[T]):
     def __len__(self) -> int:
         return self._data.__len__()
 
+    def __contains__(self, item):
+        return self.has(item)
+
     def has(self, item: T) -> bool:
         return item in self._index_dict.keys()
 
@@ -120,6 +123,12 @@ class PriorityQueue(Generic[T]):
         else:
             self._data[index] = (new_key, self._data[index][1], item)
             self._siftup(index)
+
+    def set(self, item: T, new_key: float):
+        if self.has(item):
+            self.update(item, new_key)
+        else:
+            self.push(item, new_key)
 
     def increase_key(self, item: T, new_key: float):
         assert self.has(item)

@@ -25,5 +25,5 @@ class ZeroPredictor(Predictor):
 
     def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> \
             List[PiecewiseLinear]:
-        zero_fct = PiecewiseLinear([phi, phi + 1], [0., 0.])
+        zero_fct = PiecewiseLinear([phi], [0.], 0., 0.)
         return [zero_fct for _ in old_queues]

@@ -69,6 +69,8 @@ class MultiComFlowBuilder:
                         PiecewiseLinear(
                             prediction[e].times,
                             [travel_time[e] + value / capacity[e] for value in prediction[e].values],
+                            prediction[e].first_slope / capacity[e],
+                            prediction[e].last_slope / capacity[e],
                             (flow.phi, float('inf'))
                         )
                         for e in range(m)

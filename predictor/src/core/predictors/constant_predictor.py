@@ -25,9 +25,9 @@ class ConstantPredictor(Predictor):
     def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> \
             List[PiecewiseLinear]:
         queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
-        times = [phi, phi + 1]
+        times = [phi]
         for i, queue in enumerate(old_queues):
             curr_queue = queue(phi)
-            queues[i] = PiecewiseLinear(times, [curr_queue, curr_queue])
+            queues[i] = PiecewiseLinear(times, [curr_queue], 0., 0.)
 
         return queues

@@ -14,7 +14,7 @@ def bellman_ford(
         interesting_nodes: Set[Node],
         phi: float
 ) -> Dict[Node, PiecewiseLinear]:
-    identity = PiecewiseLinear([phi, phi + 1], [phi, phi + 1], (phi, float('inf')))
+    identity = PiecewiseLinear([phi], [phi], 1., 1., (phi, float('inf')))
     g: Dict[Node, PiecewiseLinear] = {
         sink: identity
     }
@@ -28,10 +28,10 @@ def bellman_ford(
             assert new_values[i] <= new_values[i + 1] + eps
             new_values[i + 1] = max(new_values[i], new_values[i + 1], traversal.times[i + 1])
 
-        new_traversal = PiecewiseLinear(traversal.times, new_values, traversal.domain)
-        if new_traversal.gradient(len(new_traversal.times) - 1) < 1:
-            new_traversal.values.append(new_traversal.values[-1] + 1 + eps)
-            new_traversal.times.append(new_traversal.times[-1] + 1)
+        new_traversal = PiecewiseLinear(traversal.times, new_values, traversal.first_slope, traversal.last_slope,
+                                        traversal.domain)
+        if new_traversal.last_slope < 1:
+            new_traversal.last_slope = 1
         return new_traversal
 
     edge_arrival_times = [get_fifo_arrival_time(identity.plus(cost)).simplify() for cost in costs]
