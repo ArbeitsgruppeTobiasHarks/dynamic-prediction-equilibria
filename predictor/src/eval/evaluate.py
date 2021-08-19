@@ -26,11 +26,11 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
 
     prediction_horizon = 10.
     predictors = [
-        ConstantPredictor(network),
         ZeroPredictor(network),
-        LinearRegressionPredictor(network),
+        ConstantPredictor(network),
         LinearPredictor(network, prediction_horizon),
         RegularizedLinearPredictor(network, prediction_horizon, delta=5.),
+        LinearRegressionPredictor(network),
     ]
 
     commodity = network.commodities[focused_commodity]
