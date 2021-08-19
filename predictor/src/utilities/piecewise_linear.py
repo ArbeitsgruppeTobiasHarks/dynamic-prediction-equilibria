@@ -40,7 +40,7 @@ class PiecewiseLinear:
         """
         new_times = [self.times[0]]
         new_values = [self.values[0]]
-        for i in range(0, len(self.times) - 2):
+        for i in range(0, len(self.times) - 1):
             # Add i+1, if it's necessary.
             if abs(self.gradient(i) - self.gradient(i + 1)) >= 1000 * eps:
                 new_times.append(self.times[i + 1])
@@ -178,17 +178,13 @@ class PiecewiseLinear:
     def outer_minimum(self, other: PiecewiseLinear) -> PiecewiseLinear:
         minimum = self.minimum(other)
         if self.domain[0] < minimum.domain[0] - eps:
-            assert self(minimum.domain[0]) <= other(minimum.domain[0]) + eps
             minimum = minimum.left_extend(self)
         elif other.domain[0] < minimum.domain[0] - eps:
-            assert other(minimum.domain[0]) <= self(minimum.domain[0]) + eps
             minimum = minimum.left_extend(other)
 
         if self.domain[1] > minimum.domain[1] + eps:
-            assert self(minimum.domain[1]) >= other(minimum.domain[1]) - eps
             minimum = minimum.right_extend(self)
         elif other.domain[1] > minimum.domain[1] + eps:
-            assert other(minimum.domain[1]) >= self(minimum.domain[1]) - eps
             minimum = minimum.right_extend(other)
 
         return minimum
@@ -423,7 +419,9 @@ class PiecewiseLinear:
         rnk = elem_rank(other.times, self.domain[1]) + 1
         new_times = self.times
         new_values = self.values
-        if new_times[-1] >= other.times[rnk] - eps:
+        if rnk >= len(other.times):
+            pass
+        elif new_times[-1] >= other.times[rnk] - eps:
             new_times += other.times[rnk + 1:]
             new_values += other.values[rnk + 1:]
         else:

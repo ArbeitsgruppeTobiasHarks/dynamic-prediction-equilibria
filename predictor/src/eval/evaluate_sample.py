@@ -15,7 +15,7 @@ def eval_sample():
         times = evaluate_single_run(network,
                                     flow_id=None,
                                     focused_commodity=0,
-                                    split=True, horizon=100, reroute_interval=0.25,
+                                    split=True, horizon=100., reroute_interval=0.25,
                                     suppress_log=True,
                                     output_folder=None)
         for i, val in enumerate(times):
@@ -45,4 +45,4 @@ def sample_from_file_to_tikz():
 
 
 if __name__ == '__main__':
-    eval_sample()
+    sample_from_file_to_tikz()

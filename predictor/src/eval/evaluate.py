@@ -56,7 +56,7 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             [network.travel_time[e] + v / network.capacity[e] for v in flow.queues[e].values],
             flow.queues[e].first_slope / network.capacity[e],
             flow.queues[e].last_slope / network.capacity[e],
-            domain=(0., flow.phi)
+            domain=(0., horizon)
         ).simplify() for e in range(len(flow.queues))]
     labels = bellman_ford(
         commodity.sink,

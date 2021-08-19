@@ -58,5 +58,5 @@ def bellman_ford(
                 elif not g[v].smaller_equals(relaxation):
                     if not changes_detected_at.has(v):
                         changes_detected_at.push(v, node_distance[v])
-                    g[v] = g[v].minimum(relaxation).simplify()
+                    g[v] = g[v].outer_minimum(relaxation).simplify()
     return g
