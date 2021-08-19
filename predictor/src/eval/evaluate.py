@@ -55,20 +55,22 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             flow.queues[e].times,
             [network.travel_time[e] + v / network.capacity[e] for v in flow.queues[e].values],
             flow.queues[e].first_slope / network.capacity[e],
-            flow.queues[e].last_slope / network.capacity[e]
+            flow.queues[e].last_slope / network.capacity[e],
+            domain=(0., flow.phi)
         ).simplify() for e in range(len(flow.queues))]
     labels = bellman_ford(
         commodity.sink,
         costs,
         network.graph.get_nodes_reaching(commodity.sink).intersection(
             network.graph.get_reachable_nodes(commodity.source)),
-        0.
+        0.,
+        horizon
     )
 
     def integrate(label: PiecewiseLinear):
         assert label.is_monotone()
         travel_time = label.plus(PiecewiseLinear([0],[0.], -1, -1))
-        h = label.max_t_below_bound(horizon)
+        h = label.max_t_below(horizon)
         avg_travel_time = (travel_time.integrate(0, h) + (horizon - h)**2 / 2) / horizon
         return avg_travel_time
 

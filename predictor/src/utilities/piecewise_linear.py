@@ -135,7 +135,7 @@ class PiecewiseLinear:
         g = self
         # We calculate g ⚬ f
         assert f.is_monotone(), "Composition g ⚬ f only implemented for monotone incr. function f"
-        assert g.domain[0] <= f.image()[0] and g.domain[1] >= f.image()[1], \
+        assert g.domain[0] <= f.image()[0] + eps and g.domain[1] >= f.image()[1] - eps, \
             "The domains do not match for composition!"
 
         times = []
@@ -174,6 +174,24 @@ class PiecewiseLinear:
         last_slope = g.gradient(i_g - 1) * f.last_slope
 
         return PiecewiseLinear(times, values, first_slope, last_slope, f.domain)
+
+    def outer_minimum(self, other: PiecewiseLinear) -> PiecewiseLinear:
+        minimum = self.minimum(other)
+        if self.domain[0] < minimum.domain[0] - eps:
+            assert self(minimum.domain[0]) <= other(minimum.domain[0]) + eps
+            minimum = minimum.left_extend(self)
+        elif other.domain[0] < minimum.domain[0] - eps:
+            assert other(minimum.domain[0]) <= self(minimum.domain[0]) + eps
+            minimum = minimum.left_extend(other)
+
+        if self.domain[1] > minimum.domain[1] + eps:
+            assert self(minimum.domain[1]) >= other(minimum.domain[1]) - eps
+            minimum = minimum.right_extend(self)
+        elif other.domain[1] > minimum.domain[1] + eps:
+            assert other(minimum.domain[1]) >= self(minimum.domain[1]) - eps
+            minimum = minimum.right_extend(other)
+
+        return minimum
 
     def minimum(self, otherf: PiecewiseLinear) -> PiecewiseLinear:
         # Calculate the pointwise minimum of self and otherf.
@@ -249,9 +267,18 @@ class PiecewiseLinear:
         return self(self.domain[0]), self(self.domain[1])
 
     def reversal(self, at: float):
-        return self.max_t_below_bound(at)
+        return self.max_t_below(at)
 
-    def max_t_below_bound(self, bound: float, default: Optional[float] = None):
+    def min_t_above(self, bound: float):
+        """
+        Returns min t s.t. self(t) >= bound
+        """
+        assert self.is_monotone(), "Only implemented for monotone functions"
+        assert self(self.domain[1]) >= bound
+        rnk = elem_rank(self.values, bound)
+        return max(self.domain[0], self.inverse(bound, rnk))
+
+    def max_t_below(self, bound: float, default: Optional[float] = None):
         """
         Returns max t s.t. self(t) <= bound
         If such a t does not exist, we return default if is given.
@@ -288,19 +315,23 @@ class PiecewiseLinear:
     def smaller_equals(self, other: PiecewiseLinear) -> bool:
         """
         Returns whether self is smaller or equal to other everywhere.
+        Assumes value "inf" where undefined.
         """
-        assert self.domain == other.domain
-        assert self.times[0] == self.domain[0] == other.times[0] and self.domain[1] == float('inf')
+        assert self.times[0] == self.domain[0] == other.times[0] == other.domain[0]
+
         f = self
         g = other
+
+        if f.domain[1] < g.domain[1] - eps:
+            return False
 
         ind_f, ind_g = 0, 0
         if f.values[0] > g.values[0] + eps:
             return False
 
         while ind_f < len(f.times) - 1 or ind_g < len(g.times) - 1:
-            next_time_f = f.times[ind_f + 1] if ind_f < len(f.times) - 1 else float('inf')
-            next_time_g = g.times[ind_g + 1] if ind_g < len(g.times) - 1 else float('inf')
+            next_time_f = f.times[ind_f + 1] if ind_f < len(f.times) - 1 else f.domain[1]
+            next_time_g = g.times[ind_g + 1] if ind_g < len(g.times) - 1 else g.domain[1]
 
             next_time = min(next_time_f, next_time_g)
             if f._eval_with_rank(next_time, ind_f) > g._eval_with_rank(next_time, ind_g) + eps:
@@ -309,8 +340,13 @@ class PiecewiseLinear:
                 ind_f += 1
             if next_time_g == next_time:
                 ind_g += 1
+            if next_time == g.domain[1]:
+                break
 
-        return f.gradient(len(f.times) - 1) <= g.gradient(len(g.times) - 1) + eps
+        if g.domain[1] < float('inf'):
+            return f(g.domain[1]) <= g(g.domain[1]) + eps
+        else:
+            return f.gradient(len(f.times) - 1) <= g.gradient(len(g.times) - 1) + eps
 
     def extend_with_slope(self, time, slope):
         assert time >= self.times[-1] - eps
@@ -324,6 +360,23 @@ class PiecewiseLinear:
         #  Empty caches
         self.gradient.cache_clear()
         self.compose.cache_clear()
+
+    def restrict(self, domain: Tuple[float, float]):
+        assert self.domain[0] <= domain[0] <= domain[1] <= self.domain[1]
+        # assert any(t for t in self.times if domain[0] <= t <= domain[1])
+
+        first_ind = elem_rank(self.times, domain[0]) + 1
+        last_ind = elem_lrank(self.times, domain[1])
+
+        first_slope = self.gradient(first_ind - 1)
+        last_slope = self.gradient(last_ind)
+        if first_ind < last_ind + 1:
+            times = self.times[first_ind: last_ind + 1]
+            values = self.values[first_ind: last_ind + 1]
+        else:
+            times = [domain[0]]
+            values = self(times[0])
+        return PiecewiseLinear(times, values, first_slope, last_slope, domain)
 
     def equals(self, other):
         if not isinstance(other, PiecewiseLinear):
@@ -350,6 +403,34 @@ class PiecewiseLinear:
 
         value += (self(end) + self.values[rnk]) / 2 * (end - self.times[rnk])
         return value
+
+    def left_extend(self, other):
+        assert self.domain[0] > other.domain[0] + eps
+        rnk = elem_rank(other.times, self.domain[0])
+        new_times = other.times[:rnk + 1]
+        new_values = other.values[:rnk + 1]
+        if self.times[0] < new_times[-1] - eps:
+            new_times += self.times[1:]
+            new_values += self.values[1:]
+        else:
+            new_times += self.times
+            new_values += self.values
+        return PiecewiseLinear(new_times, new_values, other.first_slope, self.last_slope,
+                               (other.domain[0], self.domain[1]))
+
+    def right_extend(self, other):
+        assert self.domain[1] < other.domain[1] - eps
+        rnk = elem_rank(other.times, self.domain[1]) + 1
+        new_times = self.times
+        new_values = self.values
+        if new_times[-1] >= other.times[rnk] - eps:
+            new_times += other.times[rnk + 1:]
+            new_values += other.values[rnk + 1:]
+        else:
+            new_times += other.times[rnk:]
+            new_values += other.values[rnk:]
+        return PiecewiseLinear(new_times, new_values, self.first_slope, other.last_slope,
+                               (self.domain[0], other.domain[1]))
 
 
 identity = PiecewiseLinear([0.], [0.], 1., 1.)

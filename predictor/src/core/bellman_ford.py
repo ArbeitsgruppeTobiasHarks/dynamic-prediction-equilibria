@@ -12,15 +12,15 @@ def bellman_ford(
         sink: Node,
         costs: List[PiecewiseLinear],
         interesting_nodes: Set[Node],
-        phi: float
+        phi: float,
+        horizon: float = float('inf')
 ) -> Dict[Node, PiecewiseLinear]:
-    identity = PiecewiseLinear([phi], [phi], 1., 1., (phi, float('inf')))
-    g: Dict[Node, PiecewiseLinear] = {
-        sink: identity
-    }
-    node_distance: Dict[Node, int] = {
-        sink: 0
-    }
+    """
+    Calculates the earliest arrival time at `sink` as functions (l_v).
+    """
+    identity = PiecewiseLinear([phi], [phi], 1., 1., (phi, horizon))
+    g: Dict[Node, PiecewiseLinear] = {sink: identity}
+    node_distance: Dict[Node, int] = {sink: 0}
 
     def get_fifo_arrival_time(traversal: PiecewiseLinear):
         new_values = traversal.values.copy()
@@ -47,10 +47,12 @@ def bellman_ford(
                 v = edge.node_from
                 if v not in interesting_nodes:
                     continue
-                relaxation = g[w].compose(edge_arrival_times[edge.id])
+                T = edge_arrival_times[edge.id]
+                restr_domain = (T.min_t_above(g[w].domain[0]), T.max_t_below(g[w].domain[1]))
+                relaxation = g[w].compose(T.restrict(restr_domain))
                 if v not in g.keys():
                     node_distance[v] = node_distance[w] + 1
-                    if not changes_detected_at.has(v):
+                    if v not in changes_detected_at:
                         changes_detected_at.push(v, node_distance[v])
                     g[v] = relaxation.simplify()
                 elif not g[v].smaller_equals(relaxation):

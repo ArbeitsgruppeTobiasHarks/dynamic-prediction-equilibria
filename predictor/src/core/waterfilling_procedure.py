@@ -27,7 +27,7 @@ def waterfilling_procedure(inflow: float,
         # compute sum_{i=0,...,r}  max { z | h_i(z) <= beta[r] }
         beta_rp1 = beta[perm[r]]
         max_z_rp1 = [
-            h[perm[i]].max_t_below_bound(beta_rp1)
+            h[perm[i]].max_t_below(beta_rp1)
             for i in range(r + 1)
         ]
         if sum(max_z_rp1) > inflow:

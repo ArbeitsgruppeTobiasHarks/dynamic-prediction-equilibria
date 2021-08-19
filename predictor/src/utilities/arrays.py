@@ -16,7 +16,7 @@ def arg_min(list: Iterable, key=lambda x: x):
 
 def elem_rank(arr: List[float], x: float) -> int:
     """
-    Assume arr to be strictly increasing.
+    Assume arr is increasing.
     Returns the rank of the element x in arr:
     The rank is the minimal number i in -1, ..., len(arr)-1,
     such that arr[i] < x <= arr[i+1] (with the interpretation arr[-1] = -inf and arr[len(arr)] = inf)

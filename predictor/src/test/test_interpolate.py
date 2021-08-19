@@ -117,7 +117,7 @@ class TestLinearlyInterpolatedFunction(unittest.TestCase):
 
     def test_max_before_bound(self):
         f = PiecewiseLinear([0, 2.0, 3.0], [1.0, 1.0, 1.5], 0., 3., (0, float('inf')))
-        self.assertEqual(f.max_t_below_bound(0., default=0.), 0.)
+        self.assertEqual(f.max_t_below(0., default=0.), 0.)
 
 
 def plot(f: PiecewiseLinear):
@@ -130,10 +130,13 @@ def plot(f: PiecewiseLinear):
 
 
 def plot_many(fs: List[PiecewiseLinear]):
-    for f in fs:
-        left = max(f.domain[0], f.times[0]-1)
-        right = min(f.domain[1], f.times[-1]+1)
+    max_times = max(f.times[-1] for f in fs)
+    min_times = min(f.times[0] for f in fs)
+    for (i,f) in enumerate(fs):
+        left = max(f.domain[0], min_times - 1)
+        right = min(f.domain[1], max_times + 1)
         plt.plot([left] + f.times + [right],
-                 [f(left)] + f.values + [f(right)])
+                 [f(left)] + f.values + [f(right)], label=str(i))
     plt.grid(which='both', axis='both')
+    plt.legend()
     plt.show()
