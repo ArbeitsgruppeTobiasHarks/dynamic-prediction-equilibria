@@ -65,6 +65,6 @@ def network_results_from_file_to_tikz():
 
 
 if __name__ == '__main__':
-    network_path = "/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.arcs"
-    demands_path = "/home/michael/Nextcloud/Universität/2021-SS/softwareproject/data/from-kostas/tokyo_tiny.demands"
-    eval_network(network_path, demands_path, "../../out/lol")
+    network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.arcs"
+    demands_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.demands"
+    eval_network(network_path, demands_path, "../../out/lol", check_for_optimizations=False)

@@ -4,6 +4,7 @@ from typing import List, Dict, Set, Tuple, Optional
 
 import numpy as np
 
+from core.machine_precision import eps
 from core.network import Network
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
@@ -180,6 +181,8 @@ class MultiComPartialDynamicFlow:
         capacity = self._network.capacity
 
         for e in new_inflow.keys():
+            if all(new_inflow[e][i] == self.inflow[e][i].values[-1] for i in range(len(self._network.commodities))):
+                continue
             acc_in, cur_queue = sum(new_inflow[e]), max(self.queues[e](self.phi), 0.)
 
             if acc_in == 0.:
@@ -198,7 +201,7 @@ class MultiComPartialDynamicFlow:
         self._process_depletions()
 
         changed_edges: Set[int] = set()
-        while self.outflow_changes.min_key() <= self.phi:
+        while self.outflow_changes.min_key() <= self.phi + eps:
             changed_edges.add(self.outflow_changes.pop()[0])
         return changed_edges
 

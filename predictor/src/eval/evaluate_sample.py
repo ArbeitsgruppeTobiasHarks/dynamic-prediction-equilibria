@@ -6,8 +6,8 @@ from test.sample_network import build_sample_network
 
 def eval_sample():
     max_demand = 30.
-    demand = 0.
     step_size = 0.25
+    demand = 0. + step_size
     avg_times = [[], [], [], [], [], []]
     while demand < max_demand:
         network = build_sample_network()
