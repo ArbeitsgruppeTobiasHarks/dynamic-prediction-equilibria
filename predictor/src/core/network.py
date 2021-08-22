@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
+import numpy
 import numpy as np
+from numpy import ndarray
 
 from core.graph import DirectedGraph, Node, Edge
 from utilities.right_constant import RightConstant
@@ -131,3 +133,17 @@ class Network:
         print(f"Maximum outdegree: {max_out_degree}")
         print(f"Maximum degree: {max_degree}")
 
+    def to_file(self, file_path: str):
+        from_ids = np.asarray([e.node_from.id for e in self.graph.edges])
+        to_ids = np.asarray([e.node_to.id for e in self.graph.edges])
+        data = np.column_stack(from_ids, to_ids, self.travel_time, self.capacity)
+        data.tofile(file_path)
+
+    @staticmethod
+    def from_file(file_path: str):
+        data: ndarray = numpy.fromfile(file_path)
+        assert data.shape[1] == 4
+        network = Network()
+        for i in range(data.shape[0]):
+            network.add_edge(data[i, 0], data[i, 1], data[i, 2], data[i, 3])
+        return network
