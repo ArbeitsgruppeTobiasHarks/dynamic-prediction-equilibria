@@ -66,19 +66,27 @@ def merge_sorted(arr1: List[float], arr2: List[float]) -> List[float]:
         if arr1[ind1] < arr2[ind2]:
             if len(merged) == 0 or merged[-1] < arr1[ind1] - eps:
                 merged.append(arr1[ind1])
+            elif len(merged) > 0 and arr1[ind1] - eps <= merged[-1] < arr1[ind1]:
+                merged[-1] = arr1[ind1]
             ind1 += 1
         else:
             if len(merged) == 0 or merged[-1] < arr2[ind2] - eps:
                 merged.append(arr2[ind2])
+            elif len(merged) > 0 and arr2[ind2] - eps <= merged[-1] < arr2[ind2]:
+                merged[-1] = arr2[ind2]
             ind2 += 1
 
     while ind1 < len(arr1):
         if len(merged) == 0 or merged[-1] < arr1[ind1] - eps:
             merged.append(arr1[ind1])
+        elif len(merged) > 0 and arr1[ind1] - eps <= merged[-1] < arr1[ind1]:
+            merged[-1] = arr1[ind1]
         ind1 += 1
     while ind2 < len(arr2):
         if len(merged) == 0 or merged[-1] < arr2[ind2] - eps:
             merged.append(arr2[ind2])
+        elif len(merged) > 0 and arr2[ind2] - eps <= merged[-1] < arr2[ind2]:
+            merged[-1] = arr2[ind2]
         ind2 += 1
 
     return merged
