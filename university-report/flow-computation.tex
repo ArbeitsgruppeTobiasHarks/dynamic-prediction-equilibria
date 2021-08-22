@@ -207,7 +207,7 @@ This translates to Algorithm~\ref{alg:extend-piecewise-linear}.
   \begin{minted}[mathescape, linenos]{python}
 def extend_with_slope(self, time: float, slope: float):
   if time > self.times[-1]:
-    val = self.values[-1] + (time - self.times[-1]) * last_slope
+    val = self.values[-1] + (time - self.times[-1]) * self.last_slope
     self.values.append(val)
     self.times.append(time)
   self.last_slope = slope
@@ -308,9 +308,9 @@ def extend(
     if acc_in == 0:
       self._extend_case_i(e)
     elif self.queues[e](self.phi) == 0 or acc_in > capacity[e]:
-      self._extend_case_ii(e, new_inflow)
+      self._extend_case_ii(e, new_inflow[e])
     else:
-      self._extend_case_iii(e, new_inflow)
+      self._extend_case_iii(e, new_inflow[e])
 
   self.phi = min(
     min(
@@ -362,9 +362,9 @@ def _extend_case_ii(self, e: Edge, new_inflow: List[float]):
   for i in range(n):
     self.inflow[e][i].extend(phi, new_inflow[i])
     new_out = min(capacity[e], acc_in) * new_inflow[i] / acc_in
-    self.outflow[e][i].extend(change_time, new_out)
+    self.outflow[e][i].extend(arrival, new_out)
     
-  self.outflow_changes.push((e, change_time), change_time)
+  self.outflow_changes.push((e, arrival), arrival)
 
   queue_slope = max(acc_in - capacity[e], 0)
   self.queues[e].extend_with_slope(phi, queue_slope)
@@ -382,9 +382,9 @@ def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
   for i in range(n):
     self.inflow[e][i].extend(self.phi, new_inflow[i])
     new_out = capacity[e] * new_inflow[i] / acc_in
-    self.outflow[e][i].extend(change_time, new_out)
+    self.outflow[e][i].extend(arrival, new_out)
     
-  self.outflow_changes.push((e, change_time), change_time)
+  self.outflow_changes.push((e, arrival), arrival)
 
   queue_slope = acc_in - capacity[e]
   self.queues[e].extend_with_slope(self.phi, queue_slope)
@@ -401,9 +401,9 @@ def _extend_case_i(self, e: Edge):
   arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
   for i in range(n):
     self.inflow[e][i].extend(self.phi, 0)
-    self.outflow[e][i].extend(change_time, 0)
+    self.outflow[e][i].extend(arrival, 0)
     
-  self.outflow_changes.push((e, change_time), change_time)
+  self.outflow_changes.push((e, arrival), arrival)
 
   queue_slope = 0 if cur_queue == 0 else -capacity[e]
   self.queues[e].extend_with_slope(self.phi, queue_slope)
