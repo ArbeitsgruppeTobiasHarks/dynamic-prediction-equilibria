@@ -6,13 +6,14 @@ from typing import List
 import numpy as np
 
 from core.graph import DirectedGraph, Node, Edge
+from utilities.right_constant import RightConstant
 
 
 @dataclass
 class Commodity:
     source: Node
     sink: Node
-    demand: float
+    net_inflow: RightConstant
     predictor: int
 
 
@@ -33,11 +34,11 @@ class Network:
         self.travel_time = np.append(self.travel_time, travel_time)
         self.capacity = np.append(self.capacity, capacity)
 
-    def add_commodity(self, source: int, sink: int, demand: float, predictor_id: int):
+    def add_commodity(self, source: int, sink: int, net_inflow: RightConstant, predictor_id: int):
         nodes = self.graph.nodes
         assert source in nodes.keys(), f"No node with id#{sink} in the graph!"
         assert sink in nodes.keys(), f"No node with id#{sink} in the graph!"
-        self.commodities.append(Commodity(nodes[source], nodes[sink], demand, predictor_id))
+        self.commodities.append(Commodity(nodes[source], nodes[sink], net_inflow, predictor_id))
 
     def _remove_edge(self, edge: Edge):
         edge.node_to.incoming_edges.remove(edge)

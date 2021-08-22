@@ -2,6 +2,7 @@ import json
 
 from eval.evaluate import evaluate_single_run
 from test.sample_network import build_sample_network
+from utilities.right_constant import RightConstant
 
 
 def eval_sample():
@@ -11,12 +12,14 @@ def eval_sample():
     avg_times = [[], [], [], [], [], []]
     while demand < max_demand:
         network = build_sample_network()
-        network.add_commodity(0, 2, demand, 0)
+        net_inflow = RightConstant([0., 24.], [demand, 0.], (0, float('inf')))
+        network.add_commodity(0, 2, net_inflow, 0)
         times = evaluate_single_run(network,
                                     flow_id=None,
                                     focused_commodity=0,
                                     split=True, horizon=100., reroute_interval=0.25,
                                     suppress_log=True,
+                                    opt_net_inflow=net_inflow,
                                     output_folder=None)
         for i, val in enumerate(times):
             avg_times[i].append(val)
@@ -30,6 +33,8 @@ def eval_sample():
         json.dump(avg_times, file)
 
     print("Successfully saved these travel times in ./avg_times_sample.json")
+    print()
+    sample_from_file_to_tikz()
 
 
 def sample_from_file_to_tikz():

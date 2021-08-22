@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from functools import reduce
 from typing import Generator, Optional, Dict, List, Set
 
 import numpy as np
-from functools import reduce
 
 from core.dijkstra import dijkstra, dynamic_dijkstra
 from core.distributor import Distributor
@@ -12,6 +12,7 @@ from core.machine_precision import eps
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
+from utilities.arrays import elem_lrank
 from utilities.piecewise_linear import PiecewiseLinear
 
 
@@ -33,6 +34,14 @@ class MultiComFlowBuilder:
         self.reroute_interval = reroute_interval
         self.distributor = distributor
 
+    def calc_next_inflow_change(self, phi: float):
+        next_change = float('inf')
+        for c in self.network.commodities:
+            rnk = elem_lrank(c.net_inflow.times, phi) + 1
+            if rnk < len(c.net_inflow.times) and c.net_inflow.times[rnk] < next_change:
+                next_change = c.net_inflow.times[rnk]
+        return next_change
+
     def build_flow(self) -> Generator[MultiComPartialDynamicFlow, None, None]:
         flow = MultiComPartialDynamicFlow(self.network)
         graph = self.network.graph
@@ -51,6 +60,7 @@ class MultiComFlowBuilder:
         assert all(c.source in important_nodes[i] for i, c in enumerate(self.network.commodities))
 
         next_reroute_time = flow.phi
+        next_net_inflow_change = self.calc_next_inflow_change(flow.phi)
         costs = []
         labels: Dict[int, Dict[Node, PiecewiseLinear]] = {}
         const_labels = {}
@@ -60,6 +70,8 @@ class MultiComFlowBuilder:
 
         yield flow
         while flow.phi < float('inf'):
+            if flow.phi >= next_net_inflow_change:
+                next_net_inflow_change = self.calc_next_inflow_change(flow.phi)
             if self.reroute_interval is None or flow.phi >= next_reroute_time - eps:
                 # PREDICT NEW QUEUES
                 self._active_edges = [{} for _ in range(n)]
@@ -138,7 +150,7 @@ class MultiComFlowBuilder:
                     for v in important_nodes[i].intersection(handle_nodes)
                 }
                 if commodity.source in handle_nodes:
-                    node_inflow[commodity.source] += commodity.demand
+                    node_inflow[commodity.source] += commodity.net_inflow(flow.phi)
 
                 new_inflow_i = self.distribute(i, next_reroute_time - self.reroute_interval, node_inflow,
                                                commodity.sink,
@@ -170,7 +182,7 @@ class MultiComFlowBuilder:
                 ]) for e in all_keys
             }
 
-            max_ext_length = next_reroute_time - flow.phi
+            max_ext_length = min(next_reroute_time - flow.phi, next_net_inflow_change - flow.phi)
             changed_edges = flow.extend(new_inflow, max_ext_length)
 
             yield flow

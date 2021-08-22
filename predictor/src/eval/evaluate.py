@@ -14,11 +14,15 @@ from core.predictors.zero_predictor import ZeroPredictor
 from core.uniform_distributor import UniformDistributor
 from utilities.build_with_times import build_with_times
 from utilities.piecewise_linear import PiecewiseLinear
+from utilities.right_constant import RightConstant
 
 
 def evaluate_single_run(network: Network, focused_commodity: int, split: bool, horizon: float,
-                        reroute_interval: float, flow_id: Optional[int] = None, output_folder: Optional[str] = None,
+                        reroute_interval: float, opt_net_inflow: RightConstant, flow_id: Optional[int] = None, output_folder: Optional[str] = None,
                         suppress_log: bool = False):
+    assert opt_net_inflow.domain == (0, float('inf'))
+    assert len(opt_net_inflow.values) == 2
+    assert opt_net_inflow.values[0] > 0 and opt_net_inflow.values[1] == 0.
     if output_folder is not None and flow_id is None:
         raise ValueError("You specified an output folder, but no flow_id. Specify flow_id to save the flow.")
     if output_folder is not None:
@@ -36,9 +40,13 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
     commodity = network.commodities[focused_commodity]
     if split:
         network.commodities.remove(commodity)
-        demand_per_comm = commodity.demand / len(predictors)
+        demand_per_comm = RightConstant(
+            commodity.net_inflow.times,
+            [v / len(predictors) for v in commodity.net_inflow.values],
+            commodity.net_inflow.domain
+        )
     else:
-        demand_per_comm = 0.125
+        demand_per_comm = RightConstant([-1.,0.],[0.,0.125])
 
     new_commodities = range(len(network.commodities), len(network.commodities) + len(predictors))
     for i in range(len(predictors)):
@@ -67,15 +75,20 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         horizon
     )
 
-    def integrate(label: PiecewiseLinear):
+    def integrate_opt(label: PiecewiseLinear):
         assert label.is_monotone()
         travel_time = label.plus(PiecewiseLinear([0],[0.], -1, -1))
-        h = label.max_t_below(horizon)
-        avg_travel_time = (travel_time.integrate(0, h) + (horizon - h)**2 / 2) / horizon
+        # Last time h for starting at source to arrive at sink before horizon.
+        h = min(opt_net_inflow.times[1], label.max_t_below(horizon))
+        inflow_until = min(horizon, opt_net_inflow.times[1])
+        integral_travel_time = travel_time.integrate(0, h)
+        if h < inflow_until:
+            integral_travel_time += horizon * (inflow_until - h) - (inflow_until ** 2 - h ** 2) / 2
+        avg_travel_time = integral_travel_time / inflow_until
         return avg_travel_time
 
     travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities] + \
-        [integrate(labels[commodity.source])]
+        [integrate_opt(labels[commodity.source])]
     save_dict = {
         "prediction_horizon": prediction_horizon,
         "horizon": horizon,
