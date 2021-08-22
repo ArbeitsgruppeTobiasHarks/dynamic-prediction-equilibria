@@ -393,7 +393,7 @@ class PiecewiseLinear:
 
         value += (self.values[rnk + 1] + self(start)) / 2 * (self.times[rnk + 1] - start)
         rnk += 1
-        while rnk < len(self.times) - 1 and self.times[rnk + 1] >= end:
+        while rnk < len(self.times) - 1 and self.times[rnk + 1] <= end:
             value += (self.values[rnk + 1] + self.values[rnk]) / 2 * (self.times[rnk + 1] - self.times[rnk])
             rnk += 1
 
