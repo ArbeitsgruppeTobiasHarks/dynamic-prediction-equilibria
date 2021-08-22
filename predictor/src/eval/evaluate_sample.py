@@ -35,19 +35,50 @@ def eval_sample():
     print("Successfully saved these travel times in ./avg_times_sample.json")
     print()
     sample_from_file_to_tikz()
+    print("A tikz diagram was saved to ./avg_times_sample.tikz.")
 
 
 def sample_from_file_to_tikz():
+    configs = [
+        {"label": "$\\hat q^{\\text{Z}}$", "color": "blue"},
+        {"label": "$\\hat q^{\\text{C}}$", "color": "red"},
+        {"label": "$\\hat q^{\\text{L}}$", "color": "{rgb,255:red,0; green,128; blue,0}"},
+        {"label": "$\\hat q^{\\text{RL}}$", "color": "orange"},
+        {"label": "$\\hat q^{\\text{ML}}$", "color": "black"},
+        {"label": "$\\hat q^{\\text{OPT}}$", "color": "purple", "dashed": True},
+    ]
     with open("./avg_times_sample.json", "r") as file:
         avg_times = json.load(file)
-    for values in avg_times:
-        tikz = ""
+    tikz = """\\begin{tikzpicture}
+    \\begin{axis}[
+        xlabel={Total Inflow $\\sum_i u_i$},
+        ylabel={Average Travel Time $T^{\\text{avg}}_i$},
+        legend entries={
+    """
+    for c in configs:
+        tikz += c["label"] + ",\n"
+    tikz += """},
+        legend pos=south east,
+    ]
+    """
+
+    for c, values in enumerate(avg_times):
+        tikz += "\n\\addplot[color=" + configs[c]["color"]
+        if "dashed" in configs[c]:
+            tikz += ", dashed"
+        tikz += "]\n  coordinates { \n"
+
         for i, y in enumerate(values):
             x = i * 0.25
             tikz += f"({x}, {y})"
 
-        print(tikz)
+        tikz += "\n};\n"
+
+    tikz += "\\end{axis}\n\\end{tikzpicture}"
+
+    with open("./avg_times_sample.tikz", "w") as file:
+        file.write(tikz)
 
 
 if __name__ == '__main__':
-    sample_from_file_to_tikz()
+    eval_sample()

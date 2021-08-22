@@ -46,7 +46,7 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             commodity.net_inflow.domain
         )
     else:
-        demand_per_comm = RightConstant([-1.,0.],[0.,0.125])
+        demand_per_comm = RightConstant([-1., 0.], [0., 0.125])
 
     new_commodities = range(len(network.commodities), len(network.commodities) + len(predictors))
     for i in range(len(predictors)):
@@ -77,7 +77,7 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
 
     def integrate_opt(label: PiecewiseLinear):
         assert label.is_monotone()
-        travel_time = label.plus(PiecewiseLinear([0],[0.], -1, -1))
+        travel_time = label.plus(PiecewiseLinear([0], [0.], -1, -1))
         # Last time h for starting at source to arrive at sink before horizon.
         h = min(opt_net_inflow.times[1], label.max_t_below(horizon))
         inflow_until = min(horizon, opt_net_inflow.times[1])

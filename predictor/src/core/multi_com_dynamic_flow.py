@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import List, Dict, Set, Tuple, Optional
 
-import numpy as np
-
 from core.machine_precision import eps
 from core.network import Network
 from utilities.piecewise_linear import PiecewiseLinear
@@ -166,12 +164,14 @@ class MultiComPartialDynamicFlow:
         while self.depletions.min_depletion() <= self.phi:
             (e, depl_time, change_event) = self.depletions.pop_by_depletion()
             self.queues[e].extend_with_slope(depl_time, 0.)
+            assert abs(self.queues[e].values[-1]) < eps
+            self.queues[e].values[-1] = 0.
             if change_event is not None:
                 self.outflow_changes.set((e, change_event[0]), change_event[0])
                 for i in range(len(self._network.commodities)):
                     self.outflow[e][i].extend(change_event[0], change_event[1][i])
 
-    def extend(self, new_inflow: Dict[int, np.ndarray], max_extension_length: float) -> Set[int]:
+    def extend(self, new_inflow: Dict[int, List[float]], max_extension_length: float) -> Set[int]:
         """
         Extends the flow with constant inflows new_inflow until some edge outflow changes.
         Edge inflows not in new_inflow are extended with their previous values.

@@ -47,6 +47,7 @@ class PiecewiseLinear:
                 new_values.append(self.values[i + 1])
         return PiecewiseLinear(new_times, new_values, self.first_slope, self.last_slope, self.domain)
 
+    @lru_cache
     def _eval_with_rank(self, at: float, rnk: int):
         assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         assert -1 <= rnk <= len(self.times)
@@ -355,6 +356,7 @@ class PiecewiseLinear:
         self.last_slope = slope
         #  Empty caches
         self.gradient.cache_clear()
+        self._eval_with_rank.cache_clear()
         self.compose.cache_clear()
 
     def restrict(self, domain: Tuple[float, float]):

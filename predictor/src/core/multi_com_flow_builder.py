@@ -68,6 +68,8 @@ class MultiComFlowBuilder:
         while flow.phi < float('inf'):
             if flow.phi >= next_net_inflow_change:
                 next_net_inflow_change = self.calc_next_inflow_change(flow.phi)
+                for i in self.network.commodities:
+                    handle_nodes.add(i.source)
             if self.reroute_interval is None or flow.phi >= next_reroute_time - eps:
                 # PREDICT NEW QUEUES
                 self._active_edges = [{} for _ in range(n)]

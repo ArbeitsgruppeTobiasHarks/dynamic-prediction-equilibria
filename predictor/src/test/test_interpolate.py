@@ -132,7 +132,7 @@ def plot(f: PiecewiseLinear):
 def plot_many(fs: List[PiecewiseLinear]):
     max_times = max(f.times[-1] for f in fs)
     min_times = min(f.times[0] for f in fs)
-    for (i,f) in enumerate(fs):
+    for (i, f) in enumerate(fs):
         left = max(f.domain[0], min_times - 1)
         right = min(f.domain[1], max_times + 1)
         plt.plot([left] + f.times + [right],
