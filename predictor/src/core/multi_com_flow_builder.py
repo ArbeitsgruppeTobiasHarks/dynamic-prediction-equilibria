@@ -62,11 +62,7 @@ class MultiComFlowBuilder:
         next_reroute_time = flow.phi
         next_net_inflow_change = self.calc_next_inflow_change(flow.phi)
         costs = []
-        labels: Dict[int, Dict[Node, PiecewiseLinear]] = {}
-        const_labels = {}
-        const_costs = {}
         handle_nodes = set(self.network.graph.nodes.values())
-        queues = None
 
         yield flow
         while flow.phi < float('inf'):
@@ -114,35 +110,11 @@ class MultiComFlowBuilder:
                                     active_edges.append(e)
                             assert len(active_edges) > 0
                             self._active_edges[i][v] = active_edges
-                # for i, commodity in enumerate(self.network.commodities):
-                #     if isinstance(self.predictors[commodity.predictor], ConstantPredictor):
-                #         # Handle constant predictor separately for better performance
-                #         if const_costs is None:
-                #             const_costs = travel_time + pred_queues_list[commodity.predictor][0, :] / capacity
-                #         const_labels[i] = dijkstra(commodity.sink, const_costs)
-                #         if self.distributor.supports_const():
-                #             continue
-                #
-                #         labels[i] = {
-                #             v: LinearlyInterpolatedFunction([flow.phi, flow.phi + 1], [label, label],
-                #                                             (flow.phi, float('inf')))
-                #             for v, label in const_labels[i].items()
-                #         }
-                #     elif isinstance(self.predictors[commodity.predictor], LinearRegressionPredictor):
-                #         # We have an own distributor which cares about finding shortest paths.
-                #         pass
-                #     else:
-                #         labels[i] = bellman_ford(
-                #             commodity.sink, costs[commodity.predictor], important_nodes[i], flow.phi
-                #         )
 
                 next_reroute_time += self.reroute_interval
                 handle_nodes = set(self.network.graph.nodes.values())
 
             # DETERMINE OUTFLOW SPLIT
-            # if self.distributor.needs_queues():
-            #    queues = np.asarray([queue(flow.phi) for queue in flow.queues])
-
             inflow_per_comm: List[Dict[int, float]] = []
             for i, commodity in enumerate(self.network.commodities):
                 node_inflow: Dict[Node, float] = {
@@ -156,22 +128,6 @@ class MultiComFlowBuilder:
                                                commodity.sink,
                                                important_nodes[i], costs[commodity.predictor])
                 inflow_per_comm.append(new_inflow_i)
-
-                # if isinstance(self.predictors[commodity.predictor], ConstantPredictor) and \
-                #         self.distributor.supports_const():
-                #     new_inflow_i = self.distributor.distribute_const(
-                #         flow.phi, node_inflow, commodity.sink, queues, const_labels[i], const_costs
-                #     )
-                #     inflow_per_comm.append(new_inflow_i)
-                # elif isinstance(self.predictors[commodity.predictor], LinearRegressionPredictor):
-                #     new_inflow_i = self.distribute(next_reroute_time - self.reroute_interval, node_inflow,
-                #                                            commodity.sink, important_nodes[i],
-                #                                            costs[commodity.predictor])
-                #     inflow_per_comm.append(new_inflow_i)
-                # else:
-                #     new_inflow_i = self.distributor.distribute(flow.phi, node_inflow, commodity.sink, queues, labels[i],
-                #                                                costs[commodity.predictor])
-                #     inflow_per_comm.append(new_inflow_i)
             all_keys = reduce(lambda acc, item: acc.union(item.keys()), inflow_per_comm, set())
             new_inflow = {
                 e: np.asarray([
