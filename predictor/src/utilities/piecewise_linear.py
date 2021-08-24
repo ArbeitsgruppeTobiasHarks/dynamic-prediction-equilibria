@@ -283,7 +283,7 @@ class PiecewiseLinear:
         """
         assert self.is_monotone(), "Only implemented for monotone functions"
         assert default is not None or self(self.domain[0]) <= bound
-        if self(self.domain[0]) > bound:
+        if self(self.domain[0]) > bound + eps:
             return default
         index = None
         for index_j in range(len(self.times)):

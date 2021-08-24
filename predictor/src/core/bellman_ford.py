@@ -19,6 +19,7 @@ def bellman_ford(
     Calculates the earliest arrival time at `sink` as functions (l_v).
     """
     identity = PiecewiseLinear([phi], [phi], 1., 1., (phi, horizon))
+    # g_v(t) = earliest arrival at sink when starting in v at time t
     g: Dict[Node, PiecewiseLinear] = {sink: identity}
     node_distance: Dict[Node, int] = {sink: 0}
 
@@ -49,6 +50,8 @@ def bellman_ford(
                     continue
                 T = edge_arrival_times[edge.id]
                 restr_domain = (T.min_t_above(g[w].domain[0]), T.max_t_below(g[w].domain[1]))
+                if restr_domain[0] is None or restr_domain[1] is None:
+                    continue
                 relaxation = g[w].compose(T.restrict(restr_domain))
                 if v not in g.keys():
                     node_distance[v] = node_distance[w] + 1
