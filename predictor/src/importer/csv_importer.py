@@ -2,7 +2,10 @@ import random
 from typing import Optional, Tuple, List
 
 from numpy import genfromtxt
+
 from core.network import Network
+from core.predictors.predictor_type import PredictorType
+from utilities.right_constant import RightConstant
 
 
 def network_from_csv(path: str) -> Network:
@@ -48,8 +51,19 @@ def add_demands_to_network(network: Network, demands_path: str, use_default_dema
                 demand = 20 + (row[2] - 10) / 20. * 80. if upscale else row[2]
             else:
                 demand = random.randint(20, 100)
-            network.add_commodity(row[0], row[1], demand, 0)
+            network.add_commodity(row[0], row[1], RightConstant([0.], [demand], (0, float('inf'))),
+                                  PredictorType.CONSTANT)
 
     if not suppress_log and removed_rows:
         print(f"Did not add the following commodities as their source cannot reach their sink #row(source, sink):")
         print(", ".join(map(lambda t: f"#{t[0]}({t[1]}, {t[2]})", removed_rows)))
+
+
+if __name__ == '__main__':
+    network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.arcs"
+    demands_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.demands"
+    network = network_from_csv(network_path)
+    add_demands_to_network(network, demands_path, use_default_demands=True, upscale=True, suppress_log=False)
+    network.remove_unnecessary_nodes()
+    network.print_info()
+    network.to_file("/home/michael/Nextcloud/Universität/2021/softwareproject/data/tokyo_tiny/default_demands.pickle")

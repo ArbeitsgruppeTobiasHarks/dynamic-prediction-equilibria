@@ -1,6 +1,7 @@
 import datetime
+from typing import Optional, Iterable
+
 import time
-from typing import List, Optional, Iterable
 
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.multi_com_flow_builder import MultiComFlowBuilder

@@ -1,5 +1,6 @@
 import json
 
+from core.predictors.predictor_type import PredictorType
 from eval.evaluate import evaluate_single_run
 from test.sample_network import build_sample_network
 from utilities.right_constant import RightConstant
@@ -13,7 +14,7 @@ def eval_sample():
     while demand < max_demand:
         network = build_sample_network()
         net_inflow = RightConstant([0., 24.], [demand, 0.], (0, float('inf')))
-        network.add_commodity(0, 2, net_inflow, 0)
+        network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
         times = evaluate_single_run(network,
                                     flow_id=None,
                                     focused_commodity=0,

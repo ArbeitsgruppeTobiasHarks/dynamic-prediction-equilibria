@@ -1,6 +1,7 @@
-import datetime
 import json
 import os
+import pickle
+from pathlib import Path
 from typing import Optional
 
 from core.bellman_ford import bellman_ford
@@ -9,6 +10,7 @@ from core.network import Network, Commodity
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.linear_regression_predictor import LinearRegressionPredictor
+from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from core.uniform_distributor import UniformDistributor
@@ -18,8 +20,8 @@ from utilities.right_constant import RightConstant
 
 
 def evaluate_single_run(network: Network, focused_commodity: int, split: bool, horizon: float,
-                        reroute_interval: float, opt_net_inflow: RightConstant, flow_id: Optional[int] = None, output_folder: Optional[str] = None,
-                        suppress_log: bool = False):
+                        reroute_interval: float, opt_net_inflow: RightConstant, flow_id: Optional[int] = None,
+                        output_folder: Optional[str] = None, suppress_log: bool = False):
     assert opt_net_inflow.domain == (0, float('inf'))
     assert len(opt_net_inflow.values) == 2
     assert opt_net_inflow.values[0] > 0 and opt_net_inflow.values[1] == 0.
@@ -27,15 +29,20 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         raise ValueError("You specified an output folder, but no flow_id. Specify flow_id to save the flow.")
     if output_folder is not None:
         os.makedirs(output_folder, exist_ok=True)
+        pickle_path = os.path.join(output_folder, f"{flow_id}.pickle")
+        json_path = os.path.join(output_folder, f"{flow_id}.json")
+    else:
+        pickle_path = None
+        json_path = None
 
     prediction_horizon = 10.
-    predictors = [
-        ZeroPredictor(network),
-        ConstantPredictor(network),
-        LinearPredictor(network, prediction_horizon),
-        RegularizedLinearPredictor(network, prediction_horizon, delta=5.),
-        LinearRegressionPredictor(network),
-    ]
+    predictors = {
+        PredictorType.ZERO: ZeroPredictor(network),
+        PredictorType.CONSTANT: ConstantPredictor(network),
+        PredictorType.LINEAR: LinearPredictor(network, prediction_horizon),
+        PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, prediction_horizon, delta=5.),
+        PredictorType.MACHINE_LEARNING: LinearRegressionPredictor(network),
+    }
 
     commodity = network.commodities[focused_commodity]
     if split:
@@ -46,18 +53,26 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             commodity.net_inflow.domain
         )
     else:
-        demand_per_comm = RightConstant([-1., 0.], [0., 0.125])
+        demand_per_comm = RightConstant([0.], [0.125], (0., float('inf')))
 
     new_commodities = range(len(network.commodities), len(network.commodities) + len(predictors))
-    for i in range(len(predictors)):
+    for i in predictors:
         network.commodities.append(Commodity(commodity.source, commodity.sink, demand_per_comm, i))
 
-    distributor = UniformDistributor(network)
-    flow_builder = MultiComFlowBuilder(network, predictors, distributor, reroute_interval)
+    if output_folder is not None and Path(pickle_path).exists():
+        with open(pickle_path, "rb") as file:
+            flow = pickle.load(file)
+        flow._network = network
+    else:
+        distributor = UniformDistributor(network)
+        flow_builder = MultiComFlowBuilder(network, predictors, distributor, reroute_interval)
+        flow = build_with_times(flow_builder, flow_id, reroute_interval, horizon, new_commodities, suppress_log)
 
-    flow = build_with_times(flow_builder, flow_id, reroute_interval, horizon, new_commodities, suppress_log)
+        if pickle_path is not None:
+            with open(pickle_path, "wb") as file:
+                pickle.dump(flow, file)
 
-    # Calculating optimal predictor travel times
+    #  Calculating optimal predictor travel times
     costs = [
         PiecewiseLinear(
             flow.queues[e].times,
@@ -79,8 +94,12 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         assert label.is_monotone()
         travel_time = label.plus(PiecewiseLinear([0], [0.], -1, -1))
         # Last time h for starting at source to arrive at sink before horizon.
-        h = min(opt_net_inflow.times[1], label.max_t_below(horizon))
-        inflow_until = min(horizon, opt_net_inflow.times[1])
+        if len(opt_net_inflow.times) == 2:
+            h = min(opt_net_inflow.times[1], label.max_t_below(horizon))
+            inflow_until = min(horizon, opt_net_inflow.times[1])
+        else:
+            h = label.max_t_below(horizon)
+            inflow_until = horizon
         integral_travel_time = travel_time.integrate(0, h)
         if h < inflow_until:
             integral_travel_time += horizon * (inflow_until - h) - (inflow_until ** 2 - h ** 2) / 2
@@ -88,7 +107,7 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         return avg_travel_time
 
     travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities] + \
-        [integrate_opt(labels[commodity.source])]
+                   [integrate_opt(labels[commodity.source])]
     save_dict = {
         "prediction_horizon": prediction_horizon,
         "horizon": horizon,
@@ -100,8 +119,7 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         print(f"The following average travel times were computed for flow#{flow_id}:")
         print(travel_times)
 
-    if output_folder is not None:
-        now = datetime.datetime.now()
-        with open(os.path.join(output_folder, f"{flow_id}.{str(now).replace(':', '-')}.json"), "w") as file:
+    if json_path is not None:
+        with open(json_path, "w") as file:
             json.dump(save_dict, file)
     return travel_times

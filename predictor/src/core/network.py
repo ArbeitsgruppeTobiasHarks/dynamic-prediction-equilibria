@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import pickle
 from dataclasses import dataclass
 from typing import List
 
-import numpy
 import numpy as np
-from numpy import ndarray
 
 from core.graph import DirectedGraph, Node, Edge
+from core.predictors.predictor_type import PredictorType
 from utilities.right_constant import RightConstant
 
 
@@ -16,7 +16,7 @@ class Commodity:
     source: Node
     sink: Node
     net_inflow: RightConstant
-    predictor: int
+    predictor_type: PredictorType
 
 
 class Network:
@@ -31,16 +31,40 @@ class Network:
         self.travel_time = np.array([])
         self.commodities = []
 
+    def __getstate__(self):
+        return {
+            "graph": self.graph,
+            "capacity": self.capacity,
+            "travel_time": self.travel_time,
+            "commodities": [
+                {
+                    "source": c.source.id,
+                    "sink": c.sink.id,
+                    "net_inflow": c.net_inflow,
+                    "predictor_type": c.predictor_type
+                }
+                for c in self.commodities
+            ]
+        }
+
+    def __setstate__(self, state):
+        self.graph = state["graph"]
+        self.capacity = state["capacity"]
+        self.travel_time = state["travel_time"]
+        self.commodities = []
+        for c in state["commodities"]:
+            self.add_commodity(c["source"], c["sink"], c["net_inflow"], c["predictor_type"])
+
     def add_edge(self, node_from: int, node_to: int, travel_time: float, capacity: float):
         self.graph.add_edge(node_from, node_to)
         self.travel_time = np.append(self.travel_time, travel_time)
         self.capacity = np.append(self.capacity, capacity)
 
-    def add_commodity(self, source: int, sink: int, net_inflow: RightConstant, predictor_id: int):
+    def add_commodity(self, source: int, sink: int, net_inflow: RightConstant, predictor_type: PredictorType):
         nodes = self.graph.nodes
         assert source in nodes.keys(), f"No node with id#{sink} in the graph!"
         assert sink in nodes.keys(), f"No node with id#{sink} in the graph!"
-        self.commodities.append(Commodity(nodes[source], nodes[sink], net_inflow, predictor_id))
+        self.commodities.append(Commodity(nodes[source], nodes[sink], net_inflow, predictor_type))
 
     def _remove_edge(self, edge: Edge):
         edge.node_to.incoming_edges.remove(edge)
@@ -48,7 +72,7 @@ class Network:
         del self.graph.edges[edge.id]
         self.capacity = np.delete(self.capacity, edge.id)
         self.travel_time = np.delete(self.travel_time, edge.id)
-        for i in range(edge.id, len(self.graph.edges)):
+        for i in range(len(self.graph.edges)):
             self.graph.edges[i].id = i
 
     def compress_lonely_nodes(self):
@@ -87,9 +111,11 @@ class Network:
 
         print(f"\rRemoving {len(remove_nodes)} unnecessary nodes.", end="\r")
         for v in remove_nodes:
-            for edge in v.outgoing_edges:
+            to_remove = v.outgoing_edges.copy()
+            for edge in to_remove:
                 self._remove_edge(edge)
-            for edge in v.incoming_edges:
+            to_remove = v.incoming_edges.copy()
+            for edge in to_remove:
                 self._remove_edge(edge)
             self.graph.nodes.pop(v.id)
         print(f"\rRemoved {len(remove_nodes)} unnecessary nodes.")
@@ -134,16 +160,10 @@ class Network:
         print(f"Maximum degree: {max_degree}")
 
     def to_file(self, file_path: str):
-        from_ids = np.asarray([e.node_from.id for e in self.graph.edges])
-        to_ids = np.asarray([e.node_to.id for e in self.graph.edges])
-        data = np.column_stack(from_ids, to_ids, self.travel_time, self.capacity)
-        data.tofile(file_path)
+        with open(file_path, "wb") as file:
+            pickle.dump(self, file)
 
     @staticmethod
     def from_file(file_path: str):
-        data: ndarray = numpy.fromfile(file_path)
-        assert data.shape[1] == 4
-        network = Network()
-        for i in range(data.shape[0]):
-            network.add_edge(data[i, 0], data[i, 1], data[i, 2], data[i, 3])
-        return network
+        with open(file_path, "rb") as file:
+            return pickle.load(file)

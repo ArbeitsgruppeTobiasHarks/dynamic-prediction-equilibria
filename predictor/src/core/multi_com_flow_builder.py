@@ -12,20 +12,21 @@ from core.machine_precision import eps
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 from core.network import Network
 from core.predictor import Predictor
+from core.predictors.predictor_type import PredictorType
 from utilities.arrays import elem_lrank
 from utilities.piecewise_linear import PiecewiseLinear
 
 
 class MultiComFlowBuilder:
     network: Network
-    predictors: List[Predictor]
+    predictors: Dict[PredictorType, Predictor]
     distributor: Distributor
     reroute_interval: Optional[float]
     _active_edges: List[Dict[Node, List[Edge]]]
 
     def __init__(self,
                  network: Network,
-                 predictors: List[Predictor],
+                 predictors: Dict[PredictorType, Predictor],
                  distributor: Distributor,
                  reroute_interval: Optional[float]  # None means rerouting every time some outflow changes
                  ):
@@ -73,9 +74,12 @@ class MultiComFlowBuilder:
             if self.reroute_interval is None or flow.phi >= next_reroute_time - eps:
                 # PREDICT NEW QUEUES
                 self._active_edges = [{} for _ in range(n)]
-                predictions = [predictor.predict_from_fcts(flow.queues, flow.phi) for predictor in self.predictors]
-                costs = [
-                    [
+                predictions = {
+                    key: predictor.predict_from_fcts(flow.queues, flow.phi)
+                    for (key, predictor) in self.predictors.items()
+                }
+                costs = {
+                    key: [
                         PiecewiseLinear(
                             prediction[e].times,
                             [travel_time[e] + value / capacity[e] for value in prediction[e].values],
@@ -85,21 +89,21 @@ class MultiComFlowBuilder:
                         )
                         for e in range(m)
                     ]
-                    for prediction in predictions
-                ]
+                    for (key, prediction) in predictions.items()
+                }
 
                 const_costs = {}
-                for k, predictor in enumerate(self.predictors):
+                for key, predictor in self.predictors.items():
                     if predictor.is_constant():
-                        const_costs[k] = [cost.values[0] for cost in costs[k]]
+                        const_costs[key] = [cost.values[0] for cost in costs[key]]
 
                 # CALCULATE NEW SHORTEST PATHS
                 """
                 PRECALCULATE FOR CONSTANT PREDICTORS
                 """
                 for i, commodity in enumerate(self.network.commodities):
-                    if self.predictors[commodity.predictor].is_constant():
-                        const_labels = dijkstra(commodity.sink, const_costs[commodity.predictor])
+                    if self.predictors[commodity.predictor_type].is_constant():
+                        const_labels = dijkstra(commodity.sink, const_costs[commodity.predictor_type])
                         for v in important_nodes[i]:
                             if v == commodity.sink:
                                 continue
@@ -108,7 +112,8 @@ class MultiComFlowBuilder:
                                 w = e.node_to
                                 if w not in const_labels.keys():
                                     continue
-                                if const_costs[commodity.predictor][e.id] + const_labels[w] <= const_labels[v] + eps:
+                                if const_costs[commodity.predictor_type][e.id] + const_labels[w] <= const_labels[
+                                    v] + eps:
                                     active_edges.append(e)
                             assert len(active_edges) > 0
                             self._active_edges[i][v] = active_edges
@@ -128,7 +133,7 @@ class MultiComFlowBuilder:
 
                 new_inflow_i = self.distribute(i, next_reroute_time - self.reroute_interval, node_inflow,
                                                commodity.sink,
-                                               important_nodes[i], costs[commodity.predictor])
+                                               important_nodes[i], costs[commodity.predictor_type])
                 inflow_per_comm.append(new_inflow_i)
             all_keys = reduce(lambda acc, item: acc.union(item.keys()), inflow_per_comm, set())
             new_inflow = {

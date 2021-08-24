@@ -1,29 +1,29 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Set
+from typing import Dict, List, Set
 
 
 class Edge:
     _node_from: Node
     _node_to: Node
-    _is_reversed: Callable[[], bool]
+    _graph: DirectedGraph
     id: int
 
     def __init__(
-        self, node_from: Node, node_to: Node, id: int, is_reversed: Callable[[], bool]
-        ):
+            self, node_from: Node, node_to: Node, id: int, graph: DirectedGraph
+    ):
         self._node_from = node_from
         self._node_to = node_to
         self.id = id
-        self._is_reversed = is_reversed
+        self._graph = graph
 
     @property
     def node_from(self) -> Node:
-        return self._node_from if not self._is_reversed() else self._node_to
+        return self._node_from if not self._graph.reversed else self._node_to
 
     @property
     def node_to(self) -> Node:
-        return self._node_to if not self._is_reversed() else self._node_from
+        return self._node_to if not self._graph.reversed else self._node_from
 
     def __str__(self):
         return str(self.id)
@@ -33,31 +33,32 @@ class Node:
     id: int
     _incoming_edges: List[Edge]
     _outgoing_edges: List[Edge]
-    _is_reversed: Callable[[], bool]
+    _graph: DirectedGraph
 
-    def __init__(self, id: int, is_reversed: Callable[[], bool]):
+    def __init__(self, id: int, graph: DirectedGraph):
         self.id = id
         self._incoming_edges = []
         self._outgoing_edges = []
-        self._is_reversed = is_reversed
+        self._graph = graph
 
-    
     @property
     def incoming_edges(self):
-        return self._incoming_edges if not self._is_reversed() else self._outgoing_edges
+        return self._incoming_edges if not self._graph.reversed else self._outgoing_edges
+
     @incoming_edges.setter
     def incoming_edges(self, value: List[Edge]):
-        if not self._is_reversed():
+        if not self._graph.reversed:
             self._incoming_edges = value
         else:
             self._outgoing_edges = value
-    
+
     @property
     def outgoing_edges(self):
-        return self._outgoing_edges if not self._is_reversed() else self._incoming_edges
+        return self._outgoing_edges if not self._graph.reversed else self._incoming_edges
+
     @outgoing_edges.setter
     def outgoing_edges(self, value: List[Edge]):
-        if not self._is_reversed():
+        if not self._graph.reversed:
             self._outgoing_edges = value
         else:
             self._incoming_edges = value
@@ -70,21 +71,34 @@ class DirectedGraph:
     edges: List[Edge]
     nodes: Dict[int, Node]
     reversed: bool
-    _is_reversed: Callable[[], bool]
 
     def __init__(self):
         self.edges = []
         self.nodes = {}
         self.reversed = False
-        self._is_reversed = lambda: self.reversed
+
+    def __setstate__(self, state):
+        self.reversed = state["reversed"]
+        self.edges = []
+        self.nodes = {}
+        for [node_from, node_to] in state["edges"]:
+            self.add_edge(node_from, node_to)
+
+    def __getstate__(self):
+        return {
+            "edges": [
+                [e.node_from.id, e.node_to.id] for e in self.edges
+            ],
+            "reversed": self.reversed
+        }
 
     def add_edge(self, node_from: int, node_to: int):
         if node_from not in self.nodes.keys():
-            self.nodes[node_from] = Node(node_from, self._is_reversed)
+            self.nodes[node_from] = Node(node_from, self)
         if node_to not in self.nodes.keys():
-            self.nodes[node_to] = Node(node_to, self._is_reversed)
+            self.nodes[node_to] = Node(node_to, self)
         index = len(self.edges)
-        edge = Edge(self.nodes[node_from], self.nodes[node_to], index, self._is_reversed)
+        edge = Edge(self.nodes[node_from], self.nodes[node_to], index, self)
         self.edges.append(edge)
         self.nodes[node_from].outgoing_edges.append(edge)
         self.nodes[node_to].incoming_edges.append(edge)
