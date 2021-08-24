@@ -23,8 +23,8 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
                         reroute_interval: float, opt_net_inflow: RightConstant, flow_id: Optional[int] = None,
                         output_folder: Optional[str] = None, suppress_log: bool = False):
     assert opt_net_inflow.domain == (0, float('inf'))
-    assert len(opt_net_inflow.values) == 2
-    assert opt_net_inflow.values[0] > 0 and opt_net_inflow.values[1] == 0.
+    assert 1 <= len(opt_net_inflow.values) <= 2
+    assert opt_net_inflow.values[0] > 0 and (len(opt_net_inflow.values) == 1 or opt_net_inflow.values[1] == 0.)
     if output_folder is not None and flow_id is None:
         raise ValueError("You specified an output folder, but no flow_id. Specify flow_id to save the flow.")
     if output_folder is not None:

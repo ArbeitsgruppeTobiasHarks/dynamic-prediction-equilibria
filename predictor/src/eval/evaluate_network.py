@@ -36,12 +36,13 @@ def eval_network(network_path: str, output_folder: str, check_for_optimizations:
         selected_commodity = network.remove_unnecessary_commodities(original_commodity)
         opt_net_inflow = RightConstant([0.], [1.], (0, float('inf')))
         evaluate_single_run(network, flow_id=original_commodity, opt_net_inflow=opt_net_inflow,
-                            focused_commodity=selected_commodity, horizon=100., reroute_interval=2.5,
+                            focused_commodity=selected_commodity, horizon=100., reroute_interval=1,
                             split=False, output_folder=output_folder)
 
+    network_results_from_file_to_tikz(output_folder)
 
-def network_results_from_file_to_tikz():
-    directory = "../../out/lol"
+
+def network_results_from_file_to_tikz(directory: str):
     files = os.listdir(directory)
     times = [[], [], [], [], []]  # Zero, Constant, Linear, RegularizedLinear, ML
     means = [0, 0, 0, 0, 0]
@@ -70,5 +71,6 @@ def network_results_from_file_to_tikz():
 
 
 if __name__ == '__main__':
-    network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/tokyo_tiny/default_demands.pickle"
-    eval_network(network_path, "../../out/lol", check_for_optimizations=False)
+    # network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/tokyo_tiny/default_demands.pickle"
+    network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/random-demands.pickle"
+    eval_network(network_path, "../../out/sioux-falls-2", check_for_optimizations=False)
