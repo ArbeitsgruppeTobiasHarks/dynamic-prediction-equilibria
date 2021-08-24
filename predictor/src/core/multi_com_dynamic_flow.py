@@ -201,7 +201,7 @@ class MultiComPartialDynamicFlow:
         self._process_depletions()
 
         changed_edges: Set[int] = set()
-        while self.outflow_changes.min_key() <= self.phi + eps:
+        while self.outflow_changes.min_key() <= self.phi:
             changed_edges.add(self.outflow_changes.pop()[0])
         return changed_edges
 
