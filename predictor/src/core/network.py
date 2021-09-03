@@ -164,6 +164,6 @@ class Network:
             pickle.dump(self, file)
 
     @staticmethod
-    def from_file(file_path: str):
+    def from_file(file_path: str) -> Network:
         with open(file_path, "rb") as file:
             return pickle.load(file)
