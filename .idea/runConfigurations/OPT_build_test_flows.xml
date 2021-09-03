@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="OPT evaluate_network" type="PythonConfigurationType" factoryName="Python" singleton="false">
+  <configuration default="false" name="OPT build_test_flows" type="PythonConfigurationType" factoryName="Python">
     <module name="predictor" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -7,12 +7,12 @@
       <env name="PYTHONOPTIMIZE" value="TRUE" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/.local/share/virtualenvs/predicted-dynamic-flows-d1fmh7US/bin/python" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/predictor/src/eval" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/predictor/src/importer" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/predictor/src/eval/evaluate_network.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/predictor/src/gnn/build_test_flows.py" />
     <option name="PARAMETERS" value="" />
     <option name="SHOW_COMMAND_LINE" value="true" />
     <option name="EMULATE_TERMINAL" value="false" />
