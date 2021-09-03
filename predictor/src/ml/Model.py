@@ -4,11 +4,11 @@ import dgl
 import numpy as np
 import torch
 import torch.nn as nn
-from dgl.nn.pytorch import GraphConv, GATConv
+from dgl.nn.pytorch import GraphConv
 from torch.utils.data import DataLoader
 
-from gnn.DataLoader import QueueDataset
 from importer.csv_importer import network_from_csv
+from ml.DataLoader import QueueDataset
 
 
 class Model(nn.Module):

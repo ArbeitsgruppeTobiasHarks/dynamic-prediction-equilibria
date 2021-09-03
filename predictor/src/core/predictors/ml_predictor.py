@@ -9,7 +9,7 @@ from dgl._deprecate.graph import DGLGraph
 
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
-from gnn.Model import Model
+from ml.Model import Model
 from utilities.piecewise_linear import PiecewiseLinear
 
 
