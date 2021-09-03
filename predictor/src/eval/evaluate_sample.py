@@ -13,7 +13,7 @@ def eval_sample():
     avg_times = [[], [], [], [], [], []]
     while demand < max_demand:
         network = build_sample_network()
-        net_inflow = RightConstant([0.], [demand], (0, float('inf')))
+        net_inflow = RightConstant([0., 12.], [demand, 0.], (0, float('inf')))
         network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
         times = evaluate_single_run(network,
                                     flow_id=None,

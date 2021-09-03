@@ -2,11 +2,12 @@ import json
 import os
 import pickle
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Callable
 
 from core.bellman_ford import bellman_ford
 from core.multi_com_flow_builder import MultiComFlowBuilder
 from core.network import Network, Commodity
+from core.predictor import Predictor
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.linear_regression_predictor import LinearRegressionPredictor
@@ -19,9 +20,24 @@ from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
 
 
+def _build_default_predictors(network: Network) -> Dict[PredictorType, Predictor]:
+    prediction_horizon = 10.
+    return {
+        PredictorType.ZERO: ZeroPredictor(network),
+        PredictorType.CONSTANT: ConstantPredictor(network),
+        PredictorType.LINEAR: LinearPredictor(network, prediction_horizon),
+        PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, prediction_horizon, delta=5.),
+        PredictorType.MACHINE_LEARNING: LinearRegressionPredictor(network),
+    }
+
+
+PredictorBuilder = Callable[[Network], Dict[PredictorType, Predictor]]
+
+
 def evaluate_single_run(network: Network, focused_commodity: int, split: bool, horizon: float,
                         reroute_interval: float, opt_net_inflow: RightConstant, flow_id: Optional[int] = None,
-                        output_folder: Optional[str] = None, suppress_log: bool = False):
+                        output_folder: Optional[str] = None, suppress_log: bool = False,
+                        build_predictors: PredictorBuilder = _build_default_predictors):
     assert opt_net_inflow.domain == (0, float('inf'))
     assert 1 <= len(opt_net_inflow.values) <= 2
     assert opt_net_inflow.values[0] > 0 and (len(opt_net_inflow.values) == 1 or opt_net_inflow.values[1] == 0.)
@@ -35,14 +51,7 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         pickle_path = None
         json_path = None
 
-    prediction_horizon = 10.
-    predictors = {
-        PredictorType.ZERO: ZeroPredictor(network),
-        PredictorType.CONSTANT: ConstantPredictor(network),
-        PredictorType.LINEAR: LinearPredictor(network, prediction_horizon),
-        PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, prediction_horizon, delta=5.),
-        PredictorType.MACHINE_LEARNING: LinearRegressionPredictor(network),
-    }
+    predictors = build_predictors(network)
 
     commodity = network.commodities[focused_commodity]
     if split:
@@ -109,7 +118,6 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
     travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities] + \
                    [integrate_opt(labels[commodity.source])]
     save_dict = {
-        "prediction_horizon": prediction_horizon,
         "horizon": horizon,
         "original_commodity": flow_id,
         "avg_travel_times": travel_times

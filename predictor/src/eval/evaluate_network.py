@@ -1,12 +1,14 @@
 import json
 import os
+from typing import Optional
 
 from core.network import Network
-from eval.evaluate import evaluate_single_run
+from eval.evaluate import evaluate_single_run, PredictorBuilder
 from utilities.right_constant import RightConstant
 
 
-def eval_network(network_path: str, output_folder: str, check_for_optimizations: bool = True):
+def eval_network(network_path: str, output_folder: str, check_for_optimizations: bool = True,
+                 build_predictors: Optional[PredictorBuilder] = None):
     if check_for_optimizations:
         assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
     print("Evaluating the network for all (possible) commodities given in the demands file.")
@@ -18,26 +20,31 @@ def eval_network(network_path: str, output_folder: str, check_for_optimizations:
           "You can start multiple processes with this command to speed up the evaluation. " +
           "Make sure to delete the file next_commodity.txt if you want to do another round of evaluations.")
     print()
-    while True:
+    num_commodities = len(Network.from_file(network_path).commodities)
+    os.makedirs(output_folder, exist_ok=True)
+    for k in range(num_commodities):
+        eval_path = os.path.join(output_folder, f"{k}.json")
+        lock_path = os.path.join(output_folder, f".lock.{k}.json")
+        if os.path.exists(eval_path):
+            print(f"Commodity {k} already evaluated. Skipping...")
+            continue
+        elif os.path.exists(lock_path):
+            print(f"Detected lock file for commodity {k}. Skipping...")
+            continue
+
+        with open(lock_path, "w") as file:
+            file.write("")
+
         network = Network.from_file(network_path)
 
-        if os.path.exists("./next_commodity.txt"):
-            with open("./next_commodity.txt", "r") as file:
-                original_commodity = int(file.read())
-        else:
-            original_commodity = 0
-        with open("./next_commodity.txt", "w") as file:
-            file.write(str(original_commodity + 1))
-        if original_commodity >= len(network.commodities):
-            break
-
         print()
-        print(f"Computing Flow#{original_commodity}...")
-        selected_commodity = network.remove_unnecessary_commodities(original_commodity)
+        print(f"Evaluating Commodity {k}...")
+        selected_commodity = network.remove_unnecessary_commodities(k)
         opt_net_inflow = RightConstant([0.], [1.], (0, float('inf')))
-        evaluate_single_run(network, flow_id=original_commodity, opt_net_inflow=opt_net_inflow,
-                            focused_commodity=selected_commodity, horizon=100., reroute_interval=1,
-                            split=False, output_folder=output_folder)
+        evaluate_single_run(network, flow_id=k, opt_net_inflow=opt_net_inflow,
+                            focused_commodity=selected_commodity, horizon=200., reroute_interval=1,
+                            split=False, output_folder=output_folder, build_predictors=build_predictors)
+        os.remove(lock_path)
 
     network_results_from_file_to_tikz(output_folder)
 
@@ -45,9 +52,11 @@ def eval_network(network_path: str, output_folder: str, check_for_optimizations:
 def network_results_from_file_to_tikz(directory: str):
     files = os.listdir(directory)
     times = [[], [], [], [], []]  # Zero, Constant, Linear, RegularizedLinear, ML
-    means = [0, 0, 0, 0, 0]
+    means = [0, 0, 0, 0, 0, 0]
     num = 0
     for file_path in files:
+        if file_path.startswith(".lock"):
+            raise ValueError("Detected lock file. Will not create tikz file.")
         if not file_path.endswith(".json"):
             continue
         with open(os.path.join(directory, file_path), "r") as file:
@@ -59,11 +68,45 @@ def network_results_from_file_to_tikz(directory: str):
                 for j in range(len(means)):
                     means[j] += travel_times[j]
                 num += 1
+    configs = [
+        {"label": "$\\hat q^{\\text{Z}}$", "color": "blue"},
+        {"label": "$\\hat q^{\\text{C}}$", "color": "red"},
+        {"label": "$\\hat q^{\\text{L}}$", "color": "{rgb,255:red,0; green,128; blue,0}"},
+        {"label": "$\\hat q^{\\text{RL}}$", "color": "orange"},
+        {"label": "$\\hat q^{\\text{ML}}$", "color": "black"},
+    ]
+    tikz = """\\begin{tikzpicture}
+        \\begin{axis}
+  [
+  width=.5\\textwidth,
+  boxplot/draw direction = y,
+  ylabel = {$T_i^{\\mathrm{avg}} / T^{\\mathrm{avg}}_{\\text{OPT}}$},
+  xtick = {1, 2, 3, 4, 5},
+  xticklabels = {""" + ",".join([c["label"] for c in configs]) + """},
+  every axis plot/.append style = {fill, fill opacity = .1},
+  ]
+    """
     for i in range(len(times)):
-        tikz = "data \\\\\n"
+        tikz += """\\addplot + [
+          mark = *,
+          boxplot,
+          color="""
+        tikz += configs[i]["color"]
+        tikz += """]
+          table [row sep = \\\\, y index = 0] {
+        data \\\\
+        """
         for y in times[i]:
             tikz += f"{y}\\\\\n"
-        print(tikz)
+        tikz += "};\n"
+
+    tikz += """\\end{axis}
+    \\end{tikzpicture}
+    """
+
+    with open(os.path.join(directory, "boxplot.tikz"), "w") as file:
+        file.write(tikz)
+    print("Successfully saved a tikz boxplot in the output directory.")
 
     print("Means:")
     for j in range(len(means)):
@@ -71,6 +114,12 @@ def network_results_from_file_to_tikz(directory: str):
 
 
 if __name__ == '__main__':
-    # network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/tokyo_tiny/default_demands.pickle"
-    network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/random-demands.pickle"
-    eval_network(network_path, "../../out/sioux-falls-2", check_for_optimizations=False)
+    def main():
+        # network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/tokyo_tiny/default_demands.pickle"
+        network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/random-demands.pickle"
+        Network.from_file(network_path).print_info()
+        # eval_network(network_path, "../../out/sioux-falls-3", check_for_optimizations=False)
+        # network_results_from_file_to_tikz("../../out/sioux-falls-3")
+
+
+    main()
