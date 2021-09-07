@@ -9,19 +9,26 @@ from utilities.right_constant import RightConstant
 def eval_sample():
     max_demand = 30.
     step_size = 0.25
+    inflow_horizon = 25.
+    reroute_interval = 0.25
+    horizon = 100.
     demand = 0. + step_size
     avg_times = [[], [], [], [], [], []]
     while demand < max_demand:
         network = build_sample_network()
-        net_inflow = RightConstant([0., 12.], [demand, 0.], (0, float('inf')))
+        net_inflow = RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf')))
         network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
-        times = evaluate_single_run(network,
-                                    flow_id=None,
-                                    focused_commodity=0,
-                                    split=True, horizon=100., reroute_interval=0.25,
-                                    suppress_log=True,
-                                    opt_net_inflow=net_inflow,
-                                    output_folder=None)
+        times = evaluate_single_run(
+            network,
+            flow_id=None,
+            focused_commodity=0,
+            split=True,
+            horizon=horizon,
+            reroute_interval=reroute_interval,
+            suppress_log=True,
+            inflow_horizon=inflow_horizon,
+            output_folder=None
+        )
         for i, val in enumerate(times):
             avg_times[i].append(val)
         print(f"Calculated for demand={demand}. times={times}")
@@ -46,13 +53,13 @@ def sample_from_file_to_tikz():
         {"label": "$\\hat q^{\\text{L}}$", "color": "{rgb,255:red,0; green,128; blue,0}"},
         {"label": "$\\hat q^{\\text{RL}}$", "color": "orange"},
         {"label": "$\\hat q^{\\text{ML}}$", "color": "black"},
-        {"label": "$\\hat q^{\\text{OPT}}$", "color": "purple", "dashed": True},
+        {"label": "$\\text{OPT}$", "color": "purple", "dashed": True},
     ]
     with open("./avg_times_sample.json", "r") as file:
         avg_times = json.load(file)
     tikz = """\\begin{tikzpicture}
     \\begin{axis}[
-        xlabel={Total Inflow $\\sum_i u_i$},
+        xlabel={Total Inflow $\\sum_i \\bar u_i$},
         ylabel={Average Travel Time $T^{\\text{avg}}_i$},
         legend entries={
     """
