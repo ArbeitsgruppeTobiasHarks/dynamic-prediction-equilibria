@@ -33,6 +33,7 @@ class QueueDataset(Dataset):
                 queues = torch.from_numpy(np.genfromtxt(file)).float()
                 max_queues = torch.maximum(max_queues, torch.amax(queues, dim=1))
                 self._queues.append(queues)
+                self.samples_per_flow = queues.shape[1] - past_timesteps - future_timesteps
             print("Done reading dataset.")
             self.test_mask = torch.tensor([max_queue > 0 for max_queue in max_queues]).to(torch_mode)
             np.savetxt("../../out/mask.txt", self.test_mask)
@@ -48,8 +49,8 @@ class QueueDataset(Dataset):
             queues = torch.from_numpy(np.genfromtxt(self._queue_files[flow_id])).float()
         stride = (queues.shape[1] - self._past_timesteps - self._future_timesteps) // self.samples_per_flow
         phi = stride * sample_id + self._past_timesteps
-        past_queues = queues[:, stride * sample_id : phi]
-        future_queues = queues[:, phi : phi + self._future_timesteps]
+        past_queues = queues[:, stride * sample_id: phi]
+        future_queues = queues[:, phi: phi + self._future_timesteps]
         return past_queues.to(self._torch_mode)[self.test_mask], future_queues.to(self._torch_mode)[self.test_mask]
 
     def __len__(self):

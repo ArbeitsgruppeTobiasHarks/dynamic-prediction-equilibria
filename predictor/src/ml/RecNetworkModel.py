@@ -9,15 +9,18 @@ from core.network import Network
 from ml.DataLoader import QueueDataset
 
 
-class FullNetworkModel(nn.Module):
-    def __init__(self, in_features: int, num_edges: int, out_features: int):
-        super(FullNetworkModel, self).__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(in_features * num_edges, out_features * num_edges)
-        )
+class RNNModel(nn.Module):
+    def __init__(self, num_edges: int):
+        super(RNNModel, self).__init__()
+        hidden_layer_size = num_edges * 10
+        self.rnn = nn.RNN(num_edges, hidden_layer_size, nonlinearity='relu', batch_first=True)
+        self.hidden_state = None
+        self.linear = nn.Linear(hidden_layer_size, num_edges)
+        self.relu = nn.ReLU()
 
     def forward(self, input):
-        return self.layers(input)
+        out, self.hidden_state = self.rnn(input, self.hidden_state)
+        return self.relu(self.linear(out[:, -1, :]))
 
 
 def train_model():
@@ -25,19 +28,19 @@ def train_model():
     out_folder = '../../out/aaai-sioux-falls'
     network_path = os.path.join(out_folder, 'network.pickle')
     network: Network = Network.from_file(network_path)
-    past_timesteps, future_timesteps = 20, 20
+    past_timesteps, future_timesteps = 20, 1
     queue_folder_path = os.path.join(out_folder, 'queues')
 
     queue_dataset = QueueDataset(queue_folder_path, past_timesteps, future_timesteps, network, False, torch_mode)
     num_edges = torch.count_nonzero(queue_dataset.test_mask).item()
-    model = FullNetworkModel(past_timesteps, num_edges, future_timesteps).to(torch_mode)
+    model = RNNModel(num_edges).to(torch_mode)
 
-    checkpoints_dir = os.path.join(out_folder, "full-net-model")
+    checkpoints_dir = os.path.join(out_folder, "rnn-model")
     os.makedirs(checkpoints_dir, exist_ok=True)
 
     def collate(samples):
-        input = torch.stack([sample[0] for sample in samples])
-        label = torch.stack([sample[1] for sample in samples])
+        input = torch.stack([torch.swapaxes(sample[0], 0, 1) for sample in samples])
+        label = torch.stack([torch.swapaxes(sample[1], 0, 1) for sample in samples])
         return input, label
 
     batch_size = 64
@@ -52,15 +55,18 @@ def train_model():
         epoch_loss = 0
         k = 0
         for k, (input, label) in enumerate(data_loader):
-            prediction = model(torch.flatten(input, start_dim=1))
-            reshaped = torch.reshape(prediction, (input.shape[0], num_edges, future_timesteps))
+            assert future_timesteps == 1
+            label = torch.reshape(label, (label.shape[0], num_edges))
+            prediction = model(input)
+            model.hidden_state = None
             optimizer.zero_grad()
-            loss = loss_fct(reshaped, label)
+            loss = loss_fct(prediction, label)
             loss.backward()
             optimizer.step()
             epoch_loss += loss.detach().item()
-            max_difference = torch.max(torch.abs(label - reshaped))
-            rel_l1_error = torch.mean(torch.abs((label-reshaped) / torch.maximum(label, torch.full(label.shape, 1e-12))))
+            max_difference = torch.max(torch.abs(label - prediction))
+            rel_l1_error = torch.mean(
+                torch.abs((label - prediction) / torch.maximum(label, torch.full(label.shape, 1e-12))))
 
             print(
                 f".. batch {k}, loss {loss:.4f}, rel_l1_err: {rel_l1_error:.4f}, max_diff {max_difference:.4f}, rolling avg: {epoch_loss / (k + 1):.4f}")
@@ -73,7 +79,7 @@ def train_model():
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': epoch_loss
-        }, f"../../out/aaai-sioux-falls/full-net-model/{time}-{epoch}-{epoch_loss:.2f}.chk")
+        }, os.path.join(checkpoints_dir, f"{time}-{epoch}-{epoch_loss:.2f}.chk"))
         epoch_losses.append(epoch_loss)
 
 
