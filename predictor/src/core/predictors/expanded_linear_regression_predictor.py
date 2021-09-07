@@ -46,7 +46,7 @@ class ExpandedLinearRegressionPredictor(Predictor):
                 d = self._coefficients[f"e[{i}]"]
                 new_values[i] = sum(
                     inputs[key] * value for (key, value) in d.items() if key in inputs
-                )
+                ) + d["c"]
             queues[e_id] = PiecewiseLinear(
                 times,
                 new_values,
