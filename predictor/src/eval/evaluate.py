@@ -35,12 +35,9 @@ PredictorBuilder = Callable[[Network], Dict[PredictorType, Predictor]]
 
 
 def evaluate_single_run(network: Network, focused_commodity: int, split: bool, horizon: float,
-                        reroute_interval: float, opt_net_inflow: RightConstant, flow_id: Optional[int] = None,
+                        reroute_interval: float, inflow_horizon: float, flow_id: Optional[int] = None,
                         output_folder: Optional[str] = None, suppress_log: bool = False,
                         build_predictors: PredictorBuilder = _build_default_predictors):
-    assert opt_net_inflow.domain == (0, float('inf'))
-    assert 1 <= len(opt_net_inflow.values) <= 2
-    assert opt_net_inflow.values[0] > 0 and (len(opt_net_inflow.values) == 1 or opt_net_inflow.values[1] == 0.)
     if output_folder is not None and flow_id is None:
         raise ValueError("You specified an output folder, but no flow_id. Specify flow_id to save the flow.")
     if output_folder is not None:
@@ -62,7 +59,7 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             commodity.net_inflow.domain
         )
     else:
-        demand_per_comm = RightConstant([0.], [0.125], (0., float('inf')))
+        demand_per_comm = RightConstant([0., 50.], [0.125, 0.], (0., float('inf')))
 
     new_commodities = range(len(network.commodities), len(network.commodities) + len(predictors))
     for i in predictors:
@@ -103,9 +100,9 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         assert label.is_monotone()
         travel_time = label.plus(PiecewiseLinear([0], [0.], -1, -1))
         # Last time h for starting at source to arrive at sink before horizon.
-        if len(opt_net_inflow.times) == 2:
-            h = min(opt_net_inflow.times[1], label.max_t_below(horizon))
-            inflow_until = min(horizon, opt_net_inflow.times[1])
+        if inflow_horizon < float('inf'):
+            h = min(inflow_horizon, label.max_t_below(horizon))
+            inflow_until = min(horizon, inflow_horizon)
         else:
             h = label.max_t_below(horizon)
             inflow_until = horizon
