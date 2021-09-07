@@ -12,20 +12,19 @@ from utilities.build_with_times import build_with_times
 from utilities.right_constant import RightConstant
 
 
-def generate_network_demands(network: Network, random_seed: int, horizon: float, span: Tuple[float, float]):
+def generate_network_demands(network: Network, random_seed: int, inflow_horizon: float,
+                             demands_range: Tuple[float, float]):
     random.seed(random_seed)
     for commodity in network.commodities:
-        demand = span[0] + (span[1] - span[0]) * random.random()
-        if horizon < float('inf'):
-            commodity.net_inflow = RightConstant([0., horizon], [demand, 0.], (0., float('inf')))
+        demand = random.uniform(*demands_range)
+        if inflow_horizon < float('inf'):
+            commodity.net_inflow = RightConstant([0., inflow_horizon], [demand, 0.], (0., float('inf')))
         else:
             commodity.net_inflow = RightConstant([0.], [demand], (0., float('inf')))
 
 
 def build_flows(network_path: str, out_directory: str, number_flows: int, horizon: float, reroute_interval: float,
-                check_for_optimizations: bool = True):
-    if check_for_optimizations:
-        assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster generation."
+                demands_range: Tuple[float, float], check_for_optimizations: bool = True):
     os.makedirs(out_directory, exist_ok=True)
     print()
     print("You can start multiple processes with this command to speed up the generation.\n"
@@ -45,9 +44,10 @@ def build_flows(network_path: str, out_directory: str, number_flows: int, horizo
             file.write("")
 
         network = Network.from_file(network_path)
-        generate_network_demands(network, flow_id, float('inf'),
-                                 (0.9 * min(network.capacity), max(network.capacity)))
+        generate_network_demands(network, flow_id, float('inf'), demands_range)
         print(f"Generating flow with seed {flow_id}...")
+        if check_for_optimizations:
+            assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster generation."
 
         predictors = {PredictorType.CONSTANT: ConstantPredictor(network)}
         distributor = UniformDistributor(network)
@@ -66,5 +66,10 @@ def build_flows(network_path: str, out_directory: str, number_flows: int, horizo
 if __name__ == '__main__':
     def main():
         network_path = '/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/random-demands.pickle'
-        build_flows(network_path, "../../out/sioux-flows", number_flows=200, horizon=200, reroute_interval=1.)
+        network = Network.from_file(network_path)
+        demands_range = (0.9 * min(network.capacity), max(network.capacity))
+        build_flows(network_path, "../../out/sioux-flows", number_flows=200, horizon=200, reroute_interval=1.,
+                    demands_range=demands_range)
+
+
     main()
