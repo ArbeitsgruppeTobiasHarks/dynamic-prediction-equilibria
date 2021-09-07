@@ -4,10 +4,9 @@ from typing import Optional
 
 from core.network import Network
 from eval.evaluate import evaluate_single_run, PredictorBuilder
-from utilities.right_constant import RightConstant
 
 
-def eval_network(network_path: str, output_folder: str, check_for_optimizations: bool = True,
+def eval_network(network_path: str, output_folder: str, inflow_horizon: float, check_for_optimizations: bool = True,
                  build_predictors: Optional[PredictorBuilder] = None):
     if check_for_optimizations:
         assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
@@ -16,9 +15,8 @@ def eval_network(network_path: str, output_folder: str, check_for_optimizations:
           "with small inflow rate.")
     print("All other commodities will run the constant predictor.")
     print()
-    print("Will save the next working step in ./next_commodity.txt. " +
-          "You can start multiple processes with this command to speed up the evaluation. " +
-          "Make sure to delete the file next_commodity.txt if you want to do another round of evaluations.")
+    print("You can start multiple processes with this command to speed up the evaluation. " +
+          "Make sure to delete the output folder if you want to do another round of evaluations.")
     print()
     num_commodities = len(Network.from_file(network_path).commodities)
     os.makedirs(output_folder, exist_ok=True)
@@ -40,8 +38,7 @@ def eval_network(network_path: str, output_folder: str, check_for_optimizations:
         print()
         print(f"Evaluating Commodity {k}...")
         selected_commodity = network.remove_unnecessary_commodities(k)
-        opt_net_inflow = RightConstant([0.], [1.], (0, float('inf')))
-        evaluate_single_run(network, flow_id=k, opt_net_inflow=opt_net_inflow,
+        evaluate_single_run(network, flow_id=k, inflow_horizon=inflow_horizon,
                             focused_commodity=selected_commodity, horizon=200., reroute_interval=1,
                             split=False, output_folder=output_folder, build_predictors=build_predictors)
         os.remove(lock_path)
