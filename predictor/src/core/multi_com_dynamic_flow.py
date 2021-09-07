@@ -103,6 +103,7 @@ class MultiComPartialDynamicFlow:
         if cur_queue > 0:
             if accum_edge_inflow < capacity[edge]:
                 depletion_time = phi + cur_queue / (capacity[edge] - accum_edge_inflow)
+                assert self.queues[edge](depletion_time) < 1000 * eps
                 self.depletions.set(edge, depletion_time, depletion_time + travel_time[edge])
             elif edge in self.depletions:
                 self.depletions.remove(edge)
@@ -121,6 +122,7 @@ class MultiComPartialDynamicFlow:
         self.queues[e].extend_with_slope(self.phi, queue_slope)
         if cur_queue > 0:
             depl_time = self.phi + cur_queue / capacity
+            assert self.queues[e](depl_time) < 1000 * eps
             self.depletions.set(e, depl_time)
         elif e in self.depletions:
             self.depletions.remove(e)
@@ -138,7 +140,6 @@ class MultiComPartialDynamicFlow:
 
         queue_slope = max(acc_in - capacity, 0.)
         self.queues[e].extend_with_slope(self.phi, queue_slope)
-
         if e in self.depletions:
             self.depletions.remove(e)
 
@@ -158,13 +159,14 @@ class MultiComPartialDynamicFlow:
 
         depl_time = self.phi - cur_queue / queue_slope
         planned_change = depl_time + travel_time
+        assert self.queues[e](depl_time) < 1000 * eps
         self.depletions.set(e, depl_time, (planned_change, new_inflow))
 
     def _process_depletions(self):
         while self.depletions.min_depletion() <= self.phi:
             (e, depl_time, change_event) = self.depletions.pop_by_depletion()
             self.queues[e].extend_with_slope(depl_time, 0.)
-            assert abs(self.queues[e].values[-1]) < eps
+            assert abs(self.queues[e].values[-1]) < 1000 * eps
             self.queues[e].values[-1] = 0.
             if change_event is not None:
                 self.outflow_changes.set((e, change_event[0]), change_event[0])
