@@ -13,10 +13,10 @@ from utilities.right_constant import RightConstant
 
 
 def generate_network_demands(network: Network, random_seed: int, inflow_horizon: float,
-                             demands_range: Tuple[float, float]):
+                             demands_range: Tuple[float, float], sigma: float):
     random.seed(random_seed)
     for commodity in network.commodities:
-        demand = random.uniform(*demands_range)
+        demand = max(0., random.gauss(commodity.net_inflow.values[0], sigma))
         if inflow_horizon < float('inf'):
             commodity.net_inflow = RightConstant([0., inflow_horizon], [demand, 0.], (0., float('inf')))
         else:
@@ -44,7 +44,7 @@ def build_flows(network_path: str, out_directory: str, number_flows: int, horizo
             file.write("")
 
         network = Network.from_file(network_path)
-        generate_network_demands(network, flow_id, float('inf'), demands_range)
+        generate_network_demands(network, flow_id, float('inf'), demands_range, sigma=min(network.capacity) / 1000.)
         print(f"Generating flow with seed {flow_id}...")
         if check_for_optimizations:
             assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster generation."

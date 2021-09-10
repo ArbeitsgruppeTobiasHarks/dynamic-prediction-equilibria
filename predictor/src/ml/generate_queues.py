@@ -61,7 +61,8 @@ def expanded_queues_from_flows(network_path: str, past_timesteps: int, step_leng
                         d[f"i{k}[{t}]"] = flow.queues[ie.id](phi - step_length * t)
                 for t in range(-past_timesteps, future_timesteps + 1):
                     d[f"e[{t}]"] = flow.queues[edge.id](phi - step_length * t)
-                samples.append(d)
+                if any(v != 0. for v in d.values()):
+                    samples.append(d)
     df = pd.DataFrame(samples, columns=
     [f"i{e}[{t}]" for e in range(5) for t in range(-past_timesteps, 1)]
     + [f"e[{t}]" for t in range(-past_timesteps, future_timesteps + 1)])
@@ -72,7 +73,7 @@ def expanded_queues_from_flows(network_path: str, past_timesteps: int, step_leng
 
 def expanded_queues_from_flows_per_edge(network_path: str, past_timesteps: int, step_length: float,
                                         future_timesteps: int, flows_folder: str, out_folder: str, horizon: int,
-                                        sample_step: int):
+                                        sample_step: int, average: bool):
     os.makedirs(out_folder, exist_ok=True)
     network = Network.from_file(network_path)
     flows = None
@@ -91,7 +92,8 @@ def expanded_queues_from_flows_per_edge(network_path: str, past_timesteps: int, 
 
         if flows is None:
             flows = []
-            flow_files = [file for file in os.listdir(flows_folder) if file.endswith(".flow.pickle")]
+            flow_files = [file for file in os.listdir(flows_folder)
+                          if file.endswith(".flow.pickle") and not file.startswith(".lock")]
             for flow_path in flow_files:
                 with open(os.path.join(flows_folder, flow_path), "rb") as file:
                     flow: MultiComPartialDynamicFlow = pickle.load(file)
@@ -106,14 +108,20 @@ def expanded_queues_from_flows_per_edge(network_path: str, past_timesteps: int, 
                 for ie in e.node_from.incoming_edges:
                     for t in range(-past_timesteps + 1, 1):
                         d[f"{ie.id}[{t}]"] = flow.queues[ie.id].integrate(phi - step_length * (t + 1),
-                                                                          phi - step_length * t)
+                                                                          phi - step_length * t) \
+                            if average else \
+                            flow.queues[ie.id](phi - step_length * t)
                 for oe in e.node_to.outgoing_edges:
                     for t in range(-past_timesteps + 1, 1):
                         d[f"{oe.id}[{t}]"] = flow.queues[oe.id].integrate(phi - step_length * (t + 1),
-                                                                          phi - step_length * t)
+                                                                          phi - step_length * t) \
+                            if average else \
+                            flow.queues[oe.id](phi - step_length * t)
                 for t in range(-past_timesteps + 1, future_timesteps + 1):
                     d[f"{e.id}[{t}]"] = flow.queues[e.id].integrate(phi - step_length * (t + 1),
-                                                                    phi - step_length * t)
+                                                                    phi - step_length * t) \
+                        if average else \
+                        flow.queues[e.id](phi - step_length * t)
                 samples.append(d)
         df = pd.DataFrame(samples, columns=samples[0].keys())
         df.to_csv(out_path)

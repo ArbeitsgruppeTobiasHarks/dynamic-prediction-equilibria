@@ -43,7 +43,7 @@ def import_sioux_falls(file_path: str, out_file_path: str, inflow_horizon: float
     #  columns: init_node, term_node, capacity, length, free_flow_time, b, power, speed, toll, link_type
     for _, e in net.iterrows():
         network.add_edge(e["init_node"], e["term_node"], e["free_flow_time"], e["capacity"])
-    random.seed(0)
+    random.seed(-3)
     _generate_commodities(network, len(network.graph.nodes) // 2, inflow_horizon, demands_range_builder(network))
     network.remove_unnecessary_nodes()
     network.print_info()

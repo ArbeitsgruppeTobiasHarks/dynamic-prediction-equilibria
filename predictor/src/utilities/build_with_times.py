@@ -20,13 +20,14 @@ def build_with_times(
     ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
     if not suppress_log:
         print(f"Flow#{flow_id} built until phi={flow.phi}; Started At={start_date_time}")
-    milestone = reroute_interval
+    milestone_interval = reroute_interval * 8
+    milestone = milestone_interval
     while flow.phi < horizon:
         flow = next(generator)
         if flow.phi >= milestone:
             new_milestone_time = time.time()
             elapsed = new_milestone_time - start_time
-            remaining_time = (horizon - flow.phi) * (new_milestone_time - last_milestone_time) / reroute_interval
+            remaining_time = (horizon - flow.phi) * (new_milestone_time - last_milestone_time) / milestone_interval
             finish_time = (
                     datetime.datetime(1970, 1, 1) +
                     datetime.timedelta(seconds=round(new_milestone_time + remaining_time))
@@ -40,7 +41,7 @@ def build_with_times(
                           f" TravelTimes={[flow.avg_travel_time(i, flow.phi) for i in observe_commodities]};"
                           if observe_commodities is not None else "")
                       )
-            milestone += reroute_interval
+            milestone += milestone_interval
             last_milestone_time = new_milestone_time
 
     return flow

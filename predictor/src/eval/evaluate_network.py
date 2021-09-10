@@ -1,13 +1,18 @@
 import json
 import os
+import random
 from typing import Optional
 
-from core.network import Network
+from core.network import Network, Commodity
+from core.predictors.predictor_type import PredictorType
 from eval.evaluate import evaluate_single_run, PredictorBuilder
+from utilities.right_constant import RightConstant
 
 
-def eval_network(network_path: str, output_folder: str, inflow_horizon: float, check_for_optimizations: bool = True,
-                 build_predictors: Optional[PredictorBuilder] = None):
+def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
+                 reroute_interval: float, horizon: float, split: bool = False,
+                 random_commodities: bool = False,
+                 build_predictors: Optional[PredictorBuilder] = None, check_for_optimizations: bool = True):
     if check_for_optimizations:
         assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
     print("Evaluating the network for all (possible) commodities given in the demands file.")
@@ -37,10 +42,24 @@ def eval_network(network_path: str, output_folder: str, inflow_horizon: float, c
 
         print()
         print(f"Evaluating Commodity {k}...")
-        selected_commodity = network.remove_unnecessary_commodities(k)
+        if random_commodities:
+            nodes = list(network.graph.nodes.values())
+            random.seed(-k)
+            while True:
+                source = random.choice(nodes)
+                sink = random.choice(nodes)
+                if sink in network.graph.get_reachable_nodes(source):
+                    break
+            commodity = Commodity(source, sink,
+                                  net_inflow=RightConstant([0, inflow_horizon], [1, 0], (0, float('inf'))),
+                                  predictor_type=PredictorType.CONSTANT)
+            network.commodities.append(commodity)
+            selected_commodity = network.remove_unnecessary_commodities(len(network.commodities) - 1)
+        else:
+            selected_commodity = network.remove_unnecessary_commodities(k)
         evaluate_single_run(network, flow_id=k, inflow_horizon=inflow_horizon,
-                            focused_commodity=selected_commodity, horizon=200., reroute_interval=1,
-                            split=False, output_folder=output_folder, build_predictors=build_predictors)
+                            focused_commodity=selected_commodity, horizon=horizon, reroute_interval=reroute_interval,
+                            split=split, output_folder=output_folder, build_predictors=build_predictors)
         os.remove(lock_path)
 
     network_results_from_file_to_tikz(output_folder)
