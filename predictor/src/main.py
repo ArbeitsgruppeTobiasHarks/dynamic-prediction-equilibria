@@ -1,11 +1,9 @@
-import os
-
 import click
 
 import eval.evaluate_network
 import eval.evaluate_sample
-from ml.build_test_flows import build_flows
-from ml.generate_queues import generate_queues
+import sioux_falls.sioux_falls_scenario
+import tokyo.tokyo_scenario
 
 
 @click.group()
@@ -13,38 +11,31 @@ def main():
     pass
 
 
-@click.command(name='generate_flows', help="Generate flows using the constant predictor and random inflow rates.")
-@click.argument("network_path", type=click.Path(exists=True, dir_okay=False))
-@click.argument("commodities_path", type=click.Path(exists=True, dir_okay=False))
-@click.argument("output_folder", type=click.Path(exists=True, file_okay=False))
-def generate_flows(network_path: str, commodities_path: str, output_folder: str):
-    print("Generating 200 Flows with random inflow between 20 and 100.")
-    print("This might use up storage of ~22 GB")
-    build_flows(network_path, os.path.join(output_folder, "flows"), 200, 100, 2.5)
-
-
-@click.command(name='take_samples', help="Generate training data from generated flows.")
-@click.argument("output_folder", type=click.Path(exists=True, file_okay=False))
-def take_samples(output_folder: str):
-    generate_queues(5, os.path.join(output_folder, "flows"), os.path.join(output_folder, "queues"), 1, 1)
-
-
 @click.command(name='evaluate_sample', help="Evaluate the sample graph using demands in (0, 30)")
 def evaluate_sample():
     eval.evaluate_sample.eval_sample()
 
 
-@click.command(name='evaluate_network', help="Evaluate a network from file.")
-@click.argument("network_path", type=click.Path(exists=True, dir_okay=False))
+@click.command(name='run_tokyo',
+               help="Run the Tokyo Scenario: Build training data, train and evaluate.")
+@click.argument("arcs_path", type=click.Path(exists=True, dir_okay=False))
+@click.argument("demands_path", type=click.Path(exists=True, dir_okay=False))
 @click.argument("output_folder", type=click.Path(exists=True, file_okay=False))
-def evaluate_network(network_path: str, output_folder: str):
-    eval.evaluate_network.eval_network(network_path, output_folder)
+def run_tokyo_scenario(arcs_path: str, demands_path: str, output_folder: str):
+    tokyo.tokyo_scenario.run_scenario(arcs_path, demands_path, output_folder)
 
 
-main.add_command(generate_flows)
-main.add_command(take_samples)
+@click.command(name='run_sioux_falls',
+               help="Run the Sioux Falls Scenario: Build training data, train and evaluate.")
+@click.argument("tntp_path", type=click.Path(exists=True, dir_okay=False))
+@click.argument("output_folder", type=click.Path(exists=True, file_okay=False))
+def run_sioux_falls_scenario(tntp_path: str, output_folder: str):
+    sioux_falls.sioux_falls_scenario.run_scenario(tntp_path, output_folder)
+
+
 main.add_command(evaluate_sample)
-main.add_command(evaluate_network)
+main.add_command(run_sioux_falls_scenario)
+main.add_command(run_tokyo_scenario)
 
 if __name__ == '__main__':
     main()
