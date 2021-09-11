@@ -20,7 +20,7 @@ def build_with_times(
     ).replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).time()
     if not suppress_log:
         print(f"Flow#{flow_id} built until phi={flow.phi}; Started At={start_date_time}")
-    milestone_interval = reroute_interval * 8
+    milestone_interval = reroute_interval
     milestone = milestone_interval
     while flow.phi < horizon:
         flow = next(generator)

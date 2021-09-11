@@ -28,8 +28,9 @@ def network_from_csv(path: str) -> Network:
     return network
 
 
-def add_demands_to_network(network: Network, demands_path: str, use_default_demands: bool = False,
-                           random_seed: Optional[int] = None, upscale: bool = True, suppress_log: bool = False) -> None:
+def add_demands_to_network(network: Network, demands_path: str, inflow_horizon: float,
+                           use_default_demands: bool = False, random_seed: Optional[int] = None, upscale: bool = True,
+                           suppress_log: bool = False) -> None:
     if random_seed is None and not use_default_demands:
         raise ValueError("Please either provide a random_seed or set use_default_demands to true.")
     if random_seed is not None and use_default_demands:
@@ -51,7 +52,7 @@ def add_demands_to_network(network: Network, demands_path: str, use_default_dema
                 demand = 20 + (row[2] - 10) / 20. * 80. if upscale else row[2]
             else:
                 demand = random.randint(20, 100)
-            network.add_commodity(row[0], row[1], RightConstant([0.], [demand], (0, float('inf'))),
+            network.add_commodity(row[0], row[1], RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf'))),
                                   PredictorType.CONSTANT)
 
     if not suppress_log and removed_rows:
@@ -63,7 +64,8 @@ if __name__ == '__main__':
     network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.arcs"
     demands_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.demands"
     network = network_from_csv(network_path)
-    add_demands_to_network(network, demands_path, use_default_demands=True, upscale=True, suppress_log=False)
+    add_demands_to_network(network, demands_path, use_default_demands=True, upscale=True, suppress_log=False,
+                           inflow_horizon=25.)
     network.remove_unnecessary_nodes()
     network.print_info()
     network.to_file("/home/michael/Nextcloud/Universität/2021/softwareproject/data/tokyo_tiny/default_demands.pickle")

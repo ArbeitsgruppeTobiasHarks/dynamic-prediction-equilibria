@@ -113,7 +113,11 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         return avg_travel_time
 
     travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities] + \
-                   [integrate_opt(labels[commodity.source])]
+                   [
+                       integrate_opt(labels[commodity.source])
+                       if commodity.source in labels
+                       else inflow_horizon*horizon - inflow_horizon**2 / 2
+                   ]
     save_dict = {
         "horizon": horizon,
         "original_commodity": flow_id,
