@@ -11,7 +11,7 @@ from utilities.piecewise_linear import PiecewiseLinear
 class LinearRegressionPredictor(Predictor):
 
     def type(self) -> str:
-        return "Constant Predictor"
+        return "Linear Regression Predictor"
 
     def is_constant(self) -> bool:
         return False

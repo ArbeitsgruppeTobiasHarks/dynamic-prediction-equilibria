@@ -8,7 +8,7 @@ from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate_network import eval_network
 from importer.sioux_falls_importer import import_sioux_falls, DemandsRangeBuilder
-from ml.SKLearnLinRegPerEdgeModel import train_per_edge_model
+from ml.per_edge_model import train_per_edge_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import expanded_queues_from_flows_per_edge
 
@@ -28,10 +28,8 @@ def run_scenario(tntp_path: str, scenario_dir: str):
     future_timesteps = 20
     pred_horizon = 20.
 
-    network = import_sioux_falls(tntp_path, network_path, inflow_horizon, demands_range_builder)
-    demands_range = demands_range_builder(network)
-    build_flows(network_path, flows_dir, number_flows=50, horizon=horizon, reroute_interval=reroute_interval,
-                demands_range=demands_range)
+    import_sioux_falls(tntp_path, network_path, inflow_horizon, demands_range_builder)
+    build_flows(network_path, flows_dir, number_flows=50, horizon=horizon, reroute_interval=reroute_interval)
 
     expanded_queues_from_flows_per_edge(network_path, past_timesteps, 1., future_timesteps, flows_dir,
                                         expanded_per_edge_dir, horizon, average=False, sample_step=1)
@@ -57,11 +55,3 @@ def run_scenario(tntp_path: str, scenario_dir: str):
                 average=False
             )
         })
-
-
-if __name__ == "__main__":
-    def main():
-        tntp_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_net.tntp"
-        run_scenario(tntp_path, "../../out/aaai-sioux-falls")
-
-    main()

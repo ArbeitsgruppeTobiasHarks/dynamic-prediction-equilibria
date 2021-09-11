@@ -14,14 +14,14 @@ from core.predictor import Predictor, PredictionResult
 from utilities.piecewise_linear import PiecewiseLinear
 
 
-class ExpandedLinearRegressionPredictor(Predictor):
+class SingleLinearRegressionPredictor(Predictor):
 
     def __init__(self, predict: Callable[[List[PiecewiseLinear], float], List[PiecewiseLinear]], network: Network):
         super().__init__(network)
         self._predict = predict
 
     def type(self) -> str:
-        return "Expanded Linear Regression Predictor"
+        return "Single Linear Regression Predictor"
 
     def is_constant(self) -> bool:
         return False
@@ -80,7 +80,7 @@ class ExpandedLinearRegressionPredictor(Predictor):
                 )
             return queues
 
-        return ExpandedLinearRegressionPredictor(predict, network)
+        return SingleLinearRegressionPredictor(predict, network)
 
     @staticmethod
     def from_scikit_model(network: Network, model_path: str, past_timesteps: int, future_timesteps: int):
@@ -110,4 +110,4 @@ class ExpandedLinearRegressionPredictor(Predictor):
                     queues[e.id] = PiecewiseLinear([phi], [0.], 0., 0.)
             return queues
 
-        return ExpandedLinearRegressionPredictor(predict, network)
+        return SingleLinearRegressionPredictor(predict, network)

@@ -9,8 +9,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 
 
-def train_expanded_model(expanded_queues_file: str, out_folder: str, past_timesteps: int,
-                         future_timesteps: int):
+def train_single_model(expanded_queues_file: str, out_folder: str, past_timesteps: int,
+                       future_timesteps: int):
     os.makedirs(out_folder, exist_ok=True)
 
     df = pd.read_csv(expanded_queues_file)

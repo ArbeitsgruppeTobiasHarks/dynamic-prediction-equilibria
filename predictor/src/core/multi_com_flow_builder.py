@@ -6,7 +6,6 @@ from typing import Generator, Optional, Dict, List, Set
 import numpy as np
 
 from core.dijkstra import dijkstra, dynamic_dijkstra
-from core.distributor import Distributor
 from core.graph import Node, Edge
 from core.machine_precision import eps
 from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
@@ -20,20 +19,17 @@ from utilities.piecewise_linear import PiecewiseLinear
 class MultiComFlowBuilder:
     network: Network
     predictors: Dict[PredictorType, Predictor]
-    distributor: Distributor
     reroute_interval: Optional[float]
     _active_edges: List[Dict[Node, List[Edge]]]
 
     def __init__(self,
                  network: Network,
                  predictors: Dict[PredictorType, Predictor],
-                 distributor: Distributor,
                  reroute_interval: Optional[float]  # None means rerouting every time some outflow changes
                  ):
         self.network = network
         self.predictors = predictors
         self.reroute_interval = reroute_interval
-        self.distributor = distributor
 
     def calc_next_inflow_change(self, phi: float):
         next_change = float('inf')
