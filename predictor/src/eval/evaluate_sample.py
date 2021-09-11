@@ -2,7 +2,7 @@ import json
 
 from core.predictors.predictor_type import PredictorType
 from eval.evaluate import evaluate_single_run
-from test.sample_network import build_sample_network
+from eval.sample_network import build_sample_network
 from utilities.right_constant import RightConstant
 
 
