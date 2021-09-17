@@ -129,13 +129,13 @@ The following theorem is the building block for the algorithms introduced in the
 
 We note that in the scenario of Theorem~\ref{thm:extend-edge}, the queue $q_e$ of the transformed flow is giving for $\theta \geq \phi$ as follows:
 \begin{enumerate}[wide=0.5em]
-    \item[\textbf{Case I and III.}] We denote the depletion time by $T_{\depl} \coloneqq \phi + q_e(\phi) / (\capa_e - g_e)$ and get \[
+    \item[\textbf{Cases I and III.}] If we denote the depletion time by $T_{\depl} \coloneqq \phi + q_e(\phi) / (\capa_e - g_e)$, the queue lengths can be determined using \[
         q_e(\theta) = \begin{cases}
             q_e(\phi) - (\theta - \phi)\cdot (\capa_e - g_e), & \text{for $\theta \leq T_{\depl}$,}\\
             0, & \text{for $\theta \geq T_{\depl}$.}
         \end{cases}
     \]
-    \item[\textbf{Case II.}] Here, no depletion occurs and for all $\theta \geq \phi$ we have \[
+    \item[\textbf{Case II.}] Here, no queue depletion occurs and for all $\theta \geq \phi$ we have \[
         q_e(\theta) = q_e(\phi) + (\theta - \phi)\cdot \max\{g_e - \capa_e, 0\}.
     \]
 \end{enumerate}
@@ -253,16 +253,19 @@ class MultiComFlow
     \label{data:flow}
 \end{classdef}
 
-The horizon of such a flow is written to the attribute \code{phi}.
+The horizon of such a flow, i.e. the time up to which the flow has been computed, is written to the attribute \code{phi}.
 The functions $\infl_{i,e}$ and $\outfl_{i,e}$ correspond to the attributes \code{inflow[e][i]} and \code{outflow[e][i]}, respectively, both of which are objects of the class \code{RightConstant}.
-Although, we could compute the queue length of an edge $e$ from these two functions, we allocate 
+
+Although, we could compute the queue length of an edge $e$ from these two functions on demand, we allocate 
 another attribute \code{queues[e]} for the queue lengths to speed up the extension procedure.
 This can be done using an object representing a piecewise linear function because it is the integral of piecewise constant functions.
+
 Next, the priority queue \code{outflow_changes} holds all upcoming events later than \code{phi} where some edge outflow will definitely change.
 It saves tuples $(e, \theta)$ with $\theta > \code{phi}$ interpreted as ``\code{outflow[e]} changes at time $\theta$''.
 This helps us extend at most as long as no edge outflow rate changes.
-Finally, we have a dictionary \code{depletions} which contains an edge $e$ if there is an upcoming queue depletion at time $T_{\depl} > \phi$.
-In that case, $\code{depletions[e]}$ is a tuple $(T_{\depl}, T_{\depl}+ \transit_e, (g_{i,e})_{i\in I})$ where $(g_{i,e})_{i\in I}$ is the new outflow $\outfl_{i,e}$ starting from time $T_{\depl} + \transit_e$.
+
+Finally, we have a dictionary \code{depletions} which contains an edge $e$ if there is an upcoming queue depletion at some time $T_{\depl} > \phi$.
+In that case, $\code{depletions[e]}$ is a tuple $(T_{\depl}, T_{\depl}+ \transit_e, (g_{i,e})_{i\in I})$ where $(g_{i,e})_{i\in I}$ is the new outflow $(\outfl_{i,e})_{i\in I}$ starting from time $T_{\depl} + \transit_e$.
 
 
 \subsection{Extension of Feasible Flows}
@@ -285,56 +288,69 @@ That means, given a feasible flow $f$ up to time $\phi$, we want to extend this 
 During this extension interval $[\phi, \phi+\alpha)$ we keep all edge inflow and outflow rates constant.
 
 We imagine a scenario in which some external mechanism determines edge inflow rates $g\in\R_{\geq 0}^{I\times E}$ to extend $f$ by $\restrict{\infl_{i,e}}{[\phi, \phi+\alpha)} \equiv g_{i,e}$ for some small $\alpha > 0$.
-Moreover, we want to choose $\alpha$ at least so small, that no edge outflow changes within $[\phi, \phi + \alpha)$.
+Moreover, we want to choose $\alpha$ at least so small, that no edge outflow rate changes within $[\phi, \phi + \alpha)$.
 That way $\bal{i}{v}$ remains constant during this interval and once the node inflow $\sum_{e\in\inEdges{v}}\outfl_{i,e}$ changes, the external mechanism can react to these changes.
 This enables the mechanism to preserve the flow conservation property~\ref{def:feasible-flow:flow-conservation} on intermediary nodes.
 
 After determining the new inflow rates $(g_{i,e})_{i\in I}$ of an edge $e$ beginning at time $\phi$, we assign $\restrict{\infl_{i,e}}{[\phi,\infty)} \coloneqq g_{i,e}$.
 Then we determine the outflow rate of $e$ beginning at $T_e(\phi) = \phi + \transit_e + q_e(\phi)/\capa_e$ according to properties~\ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity} of Definition~\ref{def:feasible-flow}:
 
-The extension algorithm we are about to introduce we want to keep track of all future changes of outflow rates of any edge.
+In the extension method we are about to introduce we want to keep track of all future changes of outflow rates of any edge.
 This is done by queuing events of this type in the priority queue \code{outflow_changes}.
 In all three cases \textbf{I-III}, the outflow of $e$ changes at time $T_e(\phi)$.
 Only in case \textbf{III}, the outflow might change once again at time $T_{\depl} + \transit_e$, if during the interval $(\phi, T_{\depl})$ no other changes to the inflow of $e$ are made.
 Hence, in case~\textbf{III} we record a planned change event in the dictionary \code{depletions} for edge $e$ together with the current depletion time as well as change time.
 
 \begin{algorithm}[ht]
-    \begin{minted}[mathescape, linenos]{python}
+    \begin{minted}[linenos, escapeinside=||]{python}
 def extend(
   self, new_inflow: Dict[Edge, List[float]], max_alpha: float
 ) -> Set[Edge]:
-  for e in new_inflow.keys():
+  for e in new_inflow.keys(): |\label{line:extendcases:0}|
     acc_in = sum(new_inflow)
     if acc_in == 0:
       self._extend_case_i(e)
     elif self.queues[e](self.phi) == 0 or acc_in > capacity[e]:
       self._extend_case_ii(e, new_inflow[e])
     else:
-      self._extend_case_iii(e, new_inflow[e])
+      self._extend_case_iii(e, new_inflow[e]) |\label{line:extendcases:1}|
 
-  self.phi = min(
+  self.phi = min( |\label{line:extendalpha:0}|
+    self.outflow_changes.min_key(),
     min(
       change_time for (_,change_time,_) in self.depletions.values(),
       default=float('inf')
     ),
-    self.outflow_changes.min_key(),
     self.phi + max_alpha
-  )
+  ) |\label{line:extendalpha:1}|
 
   self._process_depletions()
     
-  changed_edges: Set[Edge] = set()
+  changed_edges: Set[Edge] = set() |\label{line:returnedges:0}|
   while self.outflow_changes.min_key() <= self.phi:
       changed_edges.add(self.outflow_changes.pop()[0])
-  return changed_edges
+  return changed_edges |\label{line:returnedges:1}|
 
     \end{minted}
     \caption{Extension Procedure in \code{class MultiComFlow}}
     \label{alg:main-extend}
 \end{algorithm}
 
+
+The main procedure is shown in Algorithm~\ref{alg:main-extend}.
+We handle the main three cases \textbf{I}, \textbf{II} and \textbf{III} in different functions, that are called in the  lines~\ref{line:extendcases:0}-\ref{line:extendcases:1}.
+These functions extend the queue function \code{queues[e]} and the inflow functions \code{inflow[e][i]} starting from time \code{phi} as well as the outflow functions \code{outflow[e]} starting from time $T_{\code{e}}(\code{phi})$ for all commodities $i$.
+Furthermore, they add an event to the queue \code{outflow_changes} to remember that the outflow of edge \code{e} changes at $T_{\code{e}}(\code{phi})$.
+Additionally, they update the entry of $\code{e}$ in the dictionary \code{depletions} to reflect whether an upcoming queue depletion will occur with the new edge inflow rate.
+
+
+Once this is done, we can determine the maximum extension span $\alpha$ and thus the new flow horizon \code{phi} as described in lines~\ref{line:extendalpha:0}-\ref{line:extendalpha:1}.
+As we only want to extend at most as long as no edge outflow changes, we take the minimum of such change events.
+As queue depletions induced by case~\textbf{III} may also cause outflow rate changes, we also need to consider entries of the dictionary \code{depletions} here.
+Finally, we also give the external mechanism the possibility to limit this extension time using the parameter \code{max_alpha}.
+
 \begin{algorithm}
-    \begin{minted}[mathescape, linenos]{python}
+    \begin{minted}[linenos]{python}
 def _process_depletions():
   while min(
           depl_time for (depl_time,_,_) in self.depletions.values(),
@@ -348,10 +364,46 @@ def _process_depletions():
       for i in range(n):
         self.outflow[e][i].extend(change_time, new_outflow[i])
 \end{minted}
+\caption{Procedure for Processing Queue Depletions in \code{class MultiComFlow}}
+\label{alg:process-depletions}
 \end{algorithm}
 
+After determining the extension length and the new flow horizon \code{phi}, we need to process all queue depletions that happen before or at time \code{phi}.
+This procedure is depicted in Algorithm~\ref{alg:process-depletions}.
+For such a queue depletion of an edge $e$, we need to update the queue function \code{queues[e]} which will attain $0$ at its depletion time and should be extended by a $0$ slope.
+Furthermore, if the queue depletion induces a change of the edge outflow rate, an appropriate event is added to the priority queue \code{outflow_changes} and the outflow functions \code{outflow[e][i]} are updated for all commodities \code{i}.
 
-The main procedure is shown in Algorithm~\ref{alg:main-extend}.
+After processing all queue depletions, all edge outflow changes that will occur up to the new time horizon \code{phi} have an appropriate entry in \code{outflow_changes}.
+Thus, in the main procedure in Algorithm~\ref{alg:main-extend} we can collect all edges whose outflow has changed in the returned set~\code{changed_edges}.
+This is described in lines~\ref{line:returnedges:0}-\ref{line:returnedges:1}.
+
+For completeness, we describe the extension procedures for the three cases \textbf{I}-\textbf{III} in more detail.
+Their corresponding implementations are displayed in Algorithms~\ref{alg:extend-case-i},~\ref{alg:extend-case-ii} and~\ref{alg:extend-case-iii}.
+
+
+
+\begin{algorithm}
+  \begin{minted}[mathescape, linenos]{python}
+def _extend_case_i(self, e: Edge):
+  cur_queue = self.queues[e](self.phi)
+  arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+  for i in range(n):
+    self.inflow[e][i].extend(self.phi, 0)
+    self.outflow[e][i].extend(arrival, 0)
+    
+  self.outflow_changes.push((e, arrival), arrival)
+
+  queue_slope = 0 if cur_queue == 0 else -capacity[e]
+  self.queues[e].extend_with_slope(self.phi, queue_slope)
+  if cur_queue > 0:
+    depl_time = self.phi + cur_queue / capacity[e]
+    self.depletions[e] = depl_time, float('inf'), None
+  elif e in self.depletions:
+    self.depletions.pop(e)
+\end{minted}
+\caption{Extension Procedure for Case~\textbf{I} in \code{class MultiComFlow}}
+\label{alg:extend-case-i}
+\end{algorithm}
 
 
 \begin{algorithm}
@@ -371,6 +423,8 @@ def _extend_case_ii(self, e: Edge, new_inflow: List[float]):
   if e in self.depletions:
     self.depletions.pop(e)
     \end{minted}
+\caption{Extension Procedure for Case~\textbf{II} in \code{class MultiComFlow}}
+\label{alg:extend-case-ii}
 \end{algorithm}
 
 
@@ -392,26 +446,7 @@ def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
   planned_change = depl_time + travel_time[e]
   self.depletions[e] = depl_time, planned_change, new_inflow
 \end{minted}
-\end{algorithm}
-
-\begin{algorithm}
-    \begin{minted}[mathescape, linenos]{python}
-def _extend_case_i(self, e: Edge):
-  cur_queue = self.queues[e](self.phi)
-  arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
-  for i in range(n):
-    self.inflow[e][i].extend(self.phi, 0)
-    self.outflow[e][i].extend(arrival, 0)
-    
-  self.outflow_changes.push((e, arrival), arrival)
-
-  queue_slope = 0 if cur_queue == 0 else -capacity[e]
-  self.queues[e].extend_with_slope(self.phi, queue_slope)
-  if cur_queue > 0:
-      depl_time = self.phi + cur_queue / capacity[e]
-      self.depletions[e] = depl_time, float('inf'), None
-  elif e in self.depletions:
-      self.depletions.pop(e)
-\end{minted}
+\caption{Extension Procedure for Case~\textbf{III} in \code{class MultiComFlow}}
+\label{alg:extend-case-iii}
 \end{algorithm}
 
