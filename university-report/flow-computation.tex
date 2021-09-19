@@ -297,7 +297,7 @@ Then we determine the outflow rate of $e$ beginning at $T_e(\phi) = \phi + \tran
 
 In the extension method we are about to introduce we want to keep track of all future changes of outflow rates of any edge.
 This is done by queuing events of this type in the priority queue \code{outflow_changes}.
-In all three cases \textbf{I-III}, the outflow of $e$ changes at time $T_e(\phi)$.
+In all three cases \textbf{I--III} as defined in Theorem~\ref{thm:extend-edge}, the outflow of $e$ changes at time $T_e(\phi)$.
 Only in case \textbf{III}, the outflow might change once again at time $T_{\depl} + \transit_e$, if during the interval $(\phi, T_{\depl})$ no other changes to the inflow of $e$ are made.
 Hence, in case~\textbf{III} we record a planned change event in the dictionary \code{depletions} for edge $e$ together with the current depletion time as well as change time.
 
@@ -370,28 +370,43 @@ def _process_depletions():
 
 After determining the extension length and the new flow horizon \code{phi}, we need to process all queue depletions that happen before or at time \code{phi}.
 This procedure is depicted in Algorithm~\ref{alg:process-depletions}.
-For such a queue depletion of an edge $e$, we need to update the queue function \code{queues[e]} which will attain $0$ at its depletion time and should be extended by a $0$ slope.
+For such a queue depletion of an edge \code{e}, we need to update the queue function \code{queues[e]} which will attain $0$ at its depletion time and should be extended by a $0$ slope.
 Furthermore, if the queue depletion induces a change of the edge outflow rate, an appropriate event is added to the priority queue \code{outflow_changes} and the outflow functions \code{outflow[e][i]} are updated for all commodities \code{i}.
 
 After processing all queue depletions, all edge outflow changes that will occur up to the new time horizon \code{phi} have an appropriate entry in \code{outflow_changes}.
 Thus, in the main procedure in Algorithm~\ref{alg:main-extend} we can collect all edges whose outflow has changed in the returned set~\code{changed_edges}.
 This is described in lines~\ref{line:returnedges:0}-\ref{line:returnedges:1}.
 
-For completeness, we also describe the extension procedures for the three cases \textbf{I}-\textbf{III} in more detail.
-Their corresponding implementations are displayed in Algorithms~\ref{alg:extend-case-i},~\ref{alg:extend-case-ii} and~\ref{alg:extend-case-iii}.
+For completeness, we also describe the extension procedures for the three cases \textbf{I}--\textbf{III} in more detail.
+Their corresponding implementations are displayed in Algorithm~\ref{alg:extend-cases}.
+In all three cases, we first determine the arrival time $T_{\code{e}}(\code{phi})$ when entering the edge at the current time \code{phi} and write the result into the variable \code{arrival}.
+Moreover, the pair \code{(e, arrival)} is pushed into the priority queue \code{outflow_changes}.
 
+For case~\textbf{I}, we extend the inflow rates starting at \code{phi} and the outflow rates starting at $T_{\code{e}}(\code{phi})$ with zeros.
+If the edge has a positive queue at time \code{phi}, the queue is expected to deplete at time \code{depl_time}.
+If this event occurs, no further changes to the outflow rates are necessary, hence we can set the value of \code{e} in the dictionary \code{depletions} to \code{(depl_time, float('inf'), None)}.
+On the other hand, if the queue is empty at time \code{phi}, we can simply remove \code{e} from the dictionary, as no depletion will occur.
+
+
+The case~\textbf{II} is straight-forward:
+The new outflow rate starting at $T_{\code{e}}(\code{phi})$ is calculated according to Theorem~\ref{thm:extend-edge} and the assumptions imply that no queue depletion will occur for the given inflow rates.
+Hence, we do not need to update the entry of \code{e} in \code{depletions}.
+Instead, if an entry of \code{e} exists, we simply remove it.
+
+Case~\textbf{III} can only occur, if a queue depletion is expected.
+Again, we calculate the outflow starting at $T_{\code{e}}(\code{phi})$ according to Theorem~\ref{thm:extend-edge} and update the entry in \code{depletions} for \code{e}:
+Here, the outflow is expected to change at time $T_{\depl} + \transit_e$ once again where the new outflow rates starting from that time match the new inflow rates. 
 
 
 \begin{algorithm}
-  \begin{minted}[mathescape, linenos]{python}
+    \begin{minted}[mathescape, linenos]{python}
 def _extend_case_i(self, e: Edge):
   cur_queue = self.queues[e](self.phi)
   arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+  self.outflow_changes.push((e, arrival), arrival)
   for i in range(n):
     self.inflow[e][i].extend(self.phi, 0)
     self.outflow[e][i].extend(arrival, 0)
-    
-  self.outflow_changes.push((e, arrival), arrival)
 
   queue_slope = 0 if cur_queue == 0 else -capacity[e]
   self.queues[e].extend_with_slope(self.phi, queue_slope)
@@ -400,45 +415,27 @@ def _extend_case_i(self, e: Edge):
     self.depletions[e] = depl_time, float('inf'), None
   elif e in self.depletions:
     self.depletions.pop(e)
-\end{minted}
-\caption{Extension Procedure for Case~\textbf{I} in \code{class MultiComFlow}}
-\label{alg:extend-case-i}
-\end{algorithm}
 
 
-\begin{algorithm}
-    \begin{minted}[mathescape, linenos]{python}
 def _extend_case_ii(self, e: Edge, new_inflow: List[float]):
-  cur_queue = self.queues[e](self.phi)
-  arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+  # cur_queue = [...]; arrival = [...]; self.outflow_changes.push([...])
   for i in range(n):
-    self.inflow[e][i].extend(phi, new_inflow[i])
+    self.inflow[e][i].extend(self.phi, new_inflow[i])
     new_out = min(capacity[e], acc_in) * new_inflow[i] / acc_in
     self.outflow[e][i].extend(arrival, new_out)
-    
-  self.outflow_changes.push((e, arrival), arrival)
 
   queue_slope = max(acc_in - capacity[e], 0)
-  self.queues[e].extend_with_slope(phi, queue_slope)
+  self.queues[e].extend_with_slope(self.phi, queue_slope)
   if e in self.depletions:
     self.depletions.pop(e)
-    \end{minted}
-\caption{Extension Procedure for Case~\textbf{II} in \code{class MultiComFlow}}
-\label{alg:extend-case-ii}
-\end{algorithm}
 
 
-\begin{algorithm}
-    \begin{minted}[mathescape, linenos]{python}
 def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
-  cur_queue = self.queues[e](self.phi)
-  arrival = self.phi + cur_queue / capacity[e] + travel_time[e]
+  # cur_queue = [...]; arrival = [...]; self.outflow_changes.push([...])
   for i in range(n):
     self.inflow[e][i].extend(self.phi, new_inflow[i])
     new_out = capacity[e] * new_inflow[i] / acc_in
     self.outflow[e][i].extend(arrival, new_out)
-    
-  self.outflow_changes.push((e, arrival), arrival)
 
   queue_slope = acc_in - capacity[e]
   self.queues[e].extend_with_slope(self.phi, queue_slope)
@@ -446,7 +443,8 @@ def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
   planned_change = depl_time + travel_time[e]
   self.depletions[e] = depl_time, planned_change, new_inflow
 \end{minted}
-\caption{Extension Procedure for Case~\textbf{III} in \code{class MultiComFlow}}
-\label{alg:extend-case-iii}
+\caption{Extension Procedure for Cases~\textbf{I}--\textbf{III} in \code{class MultiComFlow}}
+\label{alg:extend-cases}
 \end{algorithm}
+
 
