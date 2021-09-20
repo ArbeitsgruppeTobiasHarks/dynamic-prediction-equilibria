@@ -183,33 +183,33 @@ Using Lemma~\ref{lem:characterization-active-edges} we can now check whether an 
 \begin{algorithm}[h]
     \begin{minted}[mathescape, linenos]{python}
 def get_active_edges(
-    costs: List[PiecewiseLinear], theta: float, source: Node, sink: Node,
-    relevant_nodes: Set[Node], graph: DirectedGraph, strong_fifo: bool
+  costs: List[PiecewiseLinear], theta: float, source: Node, sink: Node,
+  relevant_nodes: Set[Node], graph: DirectedGraph, strong_fifo: bool
 ) -> Set[Edge]:
-    if len(source.outgoing_edges) <= 1:
-        return source.outgoing_edges
-    arrivals = dynamic_dijkstra(
-        theta, source, sink, relevant_nodes, costs
+  if len(source.outgoing_edges) <= 1:
+    return source.outgoing_edges
+  arrivals = dynamic_dijkstra(
+    theta, source, sink, relevant_nodes, costs
+  )
+  if strong_fifo:
+    return backward_search(costs, arrivals, source, sink)
+  else: # Second run of Dijkstra on the reverse graph.
+    graph.reverse()
+    traversals = [cost + identity for cost in costs]
+    new_costs: List[Callable[[float], float]] = [
+      lambda t: -trav.reversal(-t) - t for trav in traversals
+    ]
+    neg_departures = dynamic_dijkstra(
+      -arrivals[sink], sink, source, relevant_nodes, new_costs
     )
-    if strong_fifo:
-        return backward_search(costs, arrivals, source, sink)
-    else: # Second run of Dijkstra on the reverse graph.
-        graph.reverse()
-        traversals = [cost + identity for cost in costs]
-        new_costs: List[Callable[[float], float]] = [
-            lambda t: -trav.reversal(-t) - t for trav in traversals
-        ]
-        neg_departures = dynamic_dijkstra(
-            -arrivals[sink], sink, source, relevant_nodes, new_costs
-        )
-        graph.reverse()
-        return [
-            e for e in source.outgoing_edges
-            if traversals[e.id](theta) <= -neg_departures[e.node_to]
-        ]
-    \end{minted}
-    \caption{Calculating Active Edges}
-    \label{alg:calculate-active-edges}
+    graph.reverse()
+    return [
+      e for e in source.outgoing_edges
+      if traversals[e.id](theta) <= -neg_departures[e.node_to]
+    ]
+  \end{minted}
+  \caption{Calculating Active Edges}
+  \label{alg:calculate-active-edges}
 \end{algorithm}
 
 
