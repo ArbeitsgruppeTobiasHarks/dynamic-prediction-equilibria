@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pickle
-from dataclasses import dataclass
 from typing import List
 
 import numpy as np
@@ -11,12 +10,17 @@ from core.predictors.predictor_type import PredictorType
 from utilities.right_constant import RightConstant
 
 
-@dataclass
 class Commodity:
     source: Node
     sink: Node
     net_inflow: RightConstant
     predictor_type: PredictorType
+
+    def __init__(self, source: Node, sink: Node, net_inflow: RightConstant, predictor_type: PredictorType):
+        self.source = source
+        self.sink = sink
+        self.net_inflow = net_inflow
+        self.predictor_type = predictor_type
 
 
 class Network:
