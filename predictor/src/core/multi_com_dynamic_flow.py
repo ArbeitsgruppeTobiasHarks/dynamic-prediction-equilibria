@@ -173,7 +173,7 @@ class MultiComPartialDynamicFlow:
                 for i in range(len(self._network.commodities)):
                     self.outflow[e][i].extend(change_event[0], change_event[1][i])
 
-    def extend(self, new_inflow: Dict[int, List[float]], max_extension_length: float) -> Set[int]:
+    def extend(self, new_inflow: Dict[int, List[float]], max_extension_time: float) -> Set[int]:
         """
         Extends the flow with constant inflows new_inflow until some edge outflow changes.
         Edge inflows not in new_inflow are extended with their previous values.
@@ -197,7 +197,7 @@ class MultiComPartialDynamicFlow:
         self.phi = min(
             self.depletions.min_change_time(),
             self.outflow_changes.min_key(),
-            self.phi + max_extension_length
+            max_extension_time
         )
 
         self._process_depletions()
