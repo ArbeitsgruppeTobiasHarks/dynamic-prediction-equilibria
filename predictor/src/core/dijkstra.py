@@ -6,18 +6,22 @@ from core.machine_precision import eps
 from utilities.queues import PriorityQueue
 
 
-def dijkstra(
+def reverse_dijkstra(
         sink: Node,
-        costs: List[float]
+        costs: List[float],
+        nodes: Set[Node]
 ) -> Dict[Node, float]:
     dist: Dict[Node, float] = {sink: 0}
-
     queue = PriorityQueue([(sink, dist[sink])])
+
+    assert sink in nodes
 
     while len(queue) > 0:
         w = queue.pop()
         for edge in w.incoming_edges:
             v = edge.node_from
+            if v not in nodes:
+                continue
             relaxation = costs[edge.id] + dist[w]
             if v not in dist.keys():
                 dist[v] = relaxation
