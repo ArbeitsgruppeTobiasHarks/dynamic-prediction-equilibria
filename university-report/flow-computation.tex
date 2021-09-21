@@ -353,9 +353,9 @@ Finally, we also give the external mechanism the possibility to limit this exten
     \begin{minted}[linenos]{python}
 def _process_depletions():
   while min(
-          depl_time for (depl_time,_,_) in self.depletions.values(),
-          default=float('inf')
-        ) <= self.phi:
+      depl_time for (depl_time,_,_) in self.depletions.values(),
+      default=float('inf')
+    ) <= self.phi:
     e = min(self.depletions, key=lambda e: self.depletions[e][0])
     (depl_time, change_time, new_outflow) = self.depletions.pop(e)
     self.queues[e].extend_with_slope(depl_time, 0)
@@ -452,8 +452,9 @@ def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
 
 We now use the subroutine introduced in the previous section to compute $\varepsilon$-DPEs.
 Here, we define the mechanism which decides how the flow is routed from its source to its sink and which defines the constant inflow rates of the extension phases.
-As we want each commodity to take shortest path according to their own traffic forecast, the concept of a predictor is realized as an abstract class as shown in Data Structure~\ref{data:predictor}.
-
+As we want each commodity to take shortest paths according to their own traffic forecast, the concept of a predictor is realized as an abstract class as shown in Data Structure~\ref{data:predictor}.
+To speed up the calculation of shortest paths, we add a function \code{is_constant} which should return \code{True} if and only if the \code{predict} function of that predictor always returns constant functions.
+In that case, we can restrict ourselves to algorithms for static edge costs.
 
 \begin{classdef}
   \begin{minted}[linenos]{python}
@@ -471,48 +472,105 @@ class Predictor(ABC):
 \label{data:predictor}
 \end{classdef}
 
-\todo[inline]{
-  In section XXX, we will introduce all different predictors that have been used throughout the experiments.
-}
+
+In Section~X\todo{Add Section Number}, we will introduce all implementations of the different predictors that have been used throughout the experiments.
+Here, we will assume that these implementations are already available.
+In this section, we will introduce another class called \code{class MultiComFlowBuilder} which takes a network including a list of commodities as defined in Data Structure~\ref{data:commodity}.
+A commodity's network inflow rate is defined as an arbitrary piecewise constant function saved in the attribute \code{net_inflow}. 
+Moreover, each commodity has a predictor assigned to it which is used for its routing decisions.
+
+\begin{classdef}
+    \begin{minted}[mathescape, linenos, stripnl=false]{python}
+class Commodity:
+  source: Node
+  sink: Node
+  net_inflow: RightConstant
+  predictor: Predictor
+\end{minted}
+\caption{Commodities}%
+\label{data:commodity}
+\end{classdef}
+
+
+
+\begin{classdef}
+  \begin{minted}[mathescape, linenos]{python}      
+class MultiComFlowBuilder:
+  network: Network
+  predictors: List[Predictor]
+  reroute_interval: float
+  _flow: MultiComFlow
+  _net_inflow_changes: PriorityQueue[Tuple[Commodity, float]]
+  _next_reroute_time: float
+  _route_time: float
+  _costs: Dict[Predictor, List[PiecewiseLinear]]
+  _active_edges: List[Dict[Node, List[Edge]]]
+  _handle_nodes: Set[Node]
+\end{minted}
+    \caption{}%
+    \label{data:multi-com-flow-builder}
+\end{classdef}
 
 \begin{algorithm}
   \begin{minted}[linenos]{python}
-def extend_until(horizon: float) -> MultiComFlow:
+def build_until(self, horizon: float) -> MultiComFlow:
   graph = self.network.graph
   travel_time = self.network.travel_time
   capacity = self.network.capacity
 
-  while self._flow.phi < horizone:
-    while self._flow.phi >= self._network_inflow_changes.min_key():
-      c, t = self._network_inflow_changes.pop()
-      self._handle_nodes.add(c.source)
+  while self._flow.phi < horizon:
+    while self._net_inflow_changes.min_key() <= self._flow.phi:
+      commodity, t = self._net_inflow_changes.pop()
+      self._handle_nodes.add(commodity.source)
     if self._flow.phi >= self._next_reroute_time:
       predictions = {
-        key: predictor.predict_from_fcts(self._flow.queues, self._flow.phi)
-        for (key, predictor) in self.predictors.items()
+        p: p.predict(self._flow.queues, self._flow.phi)
+        for p in self.predictors
       }
       self._costs = {
-        key: [travel_time[e] + prediction[e] / capacity[e]
-              for e in range(len(graph.edges))]
-        for (key, prediction) in predictions.items()
+        p: [travel_time[e] + predictions[p][e] / capacity[e]
+            for e in graph.edges]
+        for p in self.predictors
       }
-
       self._active_edges = [{} for _ in self.network.commodities]
       self._route_time = self._next_reroute_time
       self._next_reroute_time += self.reroute_interval
-      self._handle_nodes = set(self.network.graph.nodes.values())
+      self._handle_nodes = set(graph.nodes)
 
     new_inflow = self._determine_new_inflow()
     max_ext_time = min(
-      self._next_reroute_time, self._network_inflow_changes.min_key()
+      self._next_reroute_time, self._net_inflow_changes.min_key()
     )
     changed_edges = self._flow.extend(new_inflow, max_ext_time)
-    self._handle_nodes = set(
-      self.network.graph.edges[e].node_to for e in changed_edges
-    )
+    self._handle_nodes = set(e.node_to for e in changed_edges)
 
   return self._flow
 \end{minted}
-\caption{The abstract \code{class Predictor}}
+\caption{The Build Procedure in \code{class MultiComFlowBuilder}}
 \label{alg:extend-flow-builder}
+\end{algorithm}
+
+\begin{algorithm}
+  \begin{minted}[linenos]{python}
+def _determine_new_inflow(self) -> Dict[Edge, List[float]]:
+  new_inflow = {}
+  m = len(self.network.commodities)
+  for v in self._handle_nodes:
+    new_inflow.update({e: [0.] * m for e in v.outgoing_edges})
+    for i, commodity in enumerate(self.network.commodities):
+      if v not in self._important_nodes[i] or v == commodity.sink:
+        continue
+      inflow = sum(self._flow.outflow[e][i](self._flow.phi)
+                   for e in v.incoming_edges)
+      if v == commodity.source:
+        inflow += commodity.net_inflow(self._flow.phi)
+      if inflow > 0:
+        active_edges = self._get_active_edges(i, v)
+        distribution = inflow / len(active_edges)
+        for e in active_edges:
+          new_inflow[e][i] = distribution
+  return new_inflow
+\end{minted}
+\caption{The Inflow Calculation in \code{class MultiComFlowBuilder}}
+\label{alg:determine-new-inflow}
 \end{algorithm}
