@@ -304,7 +304,7 @@ Hence, in case~\textbf{III} we record a planned change event in the dictionary \
 \begin{algorithm}[ht]
     \begin{minted}[linenos, escapeinside=||]{python}
 def extend(
-  self, new_inflow: Dict[Edge, List[float]], max_alpha: float
+  self, new_inflow: Dict[Edge, List[float]], max_ext_time: float
 ) -> Set[Edge]:
   for e in new_inflow.keys(): |\label{line:extendcases:0}|
     acc_in = sum(new_inflow)
@@ -321,7 +321,7 @@ def extend(
       change_time for (_,change_time,_) in self.depletions.values(),
       default=float('inf')
     ),
-    self.phi + max_alpha
+    max_ext_time
   ) |\label{line:extendalpha:1}|
 
   self._process_depletions()
@@ -347,7 +347,7 @@ Additionally, they update the entry of $\code{e}$ in the dictionary \code{deplet
 Once this is done, we can determine the maximum extension span $\alpha$ and thus the new flow horizon \code{phi} as described in lines~\ref{line:extendalpha:0}-\ref{line:extendalpha:1}.
 As we only want to extend at most as long as no edge outflow changes, we take the minimum of such change events.
 As queue depletions induced by case~\textbf{III} may also cause outflow rate changes, we also need to consider entries of the dictionary \code{depletions} here.
-Finally, we also give the external mechanism the possibility to limit this extension time using the parameter \code{max_alpha}.
+Finally, we also give the external mechanism the possibility to limit this extension time using the parameter \code{max_ext_time}.
 
 \begin{algorithm}
     \begin{minted}[linenos]{python}
@@ -452,6 +452,7 @@ def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
 
 We now use the subroutine introduced in the previous section to compute $\varepsilon$-DPEs.
 Here, we define the mechanism which decides how the flow is routed from its source to its sink and which defines the constant inflow rates of the extension phases.
+
 As we want each commodity to take shortest paths according to their own traffic forecast, the concept of a predictor is realized as an abstract class as shown in Data Structure~\ref{data:predictor}.
 To speed up the calculation of shortest paths, we add a function \code{is_constant} which should return \code{True} if and only if the \code{predict} function of that predictor always returns constant functions.
 In that case, we can restrict ourselves to algorithms for static edge costs.
@@ -475,12 +476,12 @@ class Predictor(ABC):
 
 In Section~X\todo{Add Section Number}, we will introduce all implementations of the different predictors that have been used throughout the experiments.
 Here, we will assume that these implementations are already available.
-In this section, we will introduce another class called \code{class MultiComFlowBuilder} which takes a network including a list of commodities as defined in Data Structure~\ref{data:commodity}.
+Each commodity has a predictor assigned to it which is used for its routing decisions.
 A commodity's network inflow rate is defined as an arbitrary piecewise constant function saved in the attribute \code{net_inflow}. 
-Moreover, each commodity has a predictor assigned to it which is used for its routing decisions.
+The class definition of a commodity can be seen in Data Structure~\ref{data:commodity}.
 
 \begin{classdef}
-    \begin{minted}[mathescape, linenos, stripnl=false]{python}
+    \begin{minted}[mathescape, linenos]{python}
 class Commodity:
   source: Node
   sink: Node
@@ -491,10 +492,24 @@ class Commodity:
 \label{data:commodity}
 \end{classdef}
 
+In the remainder of this section, we introduce another class which encapsulates all the state and procedures necessary for building an $\varepsilon$-DPE: \code{class MultiComFlowBuilder}.
+Such a builder is constructed with the following three arguments:
+\begin{itemize}
+  \item \code{network: Network}. Contains the graph, a list of commodities as well as capacities and travel times of the graph's edges.
+  \item \code{predictors: List[Predictor]}. Contains a list of all predictors that are used in the commodities.
+  \item \code{reroute_interval: float}. The value $\varepsilon$ for building a $\varepsilon$-DPE. 
+\end{itemize}
 
+The idea for building such a flow is as follows.
+We start with an ``empty'' flow, i.e. a flow with time horizon $\code{phi}=0$.
+We calculate shortest paths for each commodity according to predictions taken at time $0$.
+Then, we iteratively extend the flow using constant flow rates (with the \code{extend} method of \code{class MultiComFlow})
+until some node inflow rate changes or the next reroute time has been reached, i.e. $\code{phi} = k\cdot \varepsilon$ for some $k\in \Z$.
+Node inflow rates can only change if some edge outflow rate or the network inflow rate of some commodity change.
+The extension procedure of \code{class MultiComFlow} already takes care of changes in the edge outflow rates, so it suffices to keep track of changes in the network inflow rates.  
 
 \begin{classdef}
-  \begin{minted}[mathescape, linenos]{python}      
+  \begin{minted}[mathescape, linenos]{python}
 class MultiComFlowBuilder:
   network: Network
   predictors: List[Predictor]
@@ -503,22 +518,38 @@ class MultiComFlowBuilder:
   _net_inflow_changes: PriorityQueue[Tuple[Commodity, float]]
   _next_reroute_time: float
   _route_time: float
-  _costs: Dict[Predictor, List[PiecewiseLinear]]
-  _active_edges: List[Dict[Node, List[Edge]]]
+  _costs: Dict[Predictor, Dict[Edge, PiecewiseLinear]]
+  _active_edges: Dict[Commodity, Dict[Node, List[Edge]]]
   _handle_nodes: Set[Node]
 \end{minted}
-    \caption{}%
+    \caption{The \code{class MultiComFlowBuilder}}%
     \label{data:multi-com-flow-builder}
 \end{classdef}
 
+In Data Structure~\ref{data:multi-com-flow-builder} all internal state attributes of the builder are described prefixed with a \code{_}.
+Most importantly the actual flow is written to \code{_flow}.
+The priority queue \code{_net_inflow_changes} is initialized with all events of the type $(c, t)$ where the network inflow rate of a commodity $c$ changes at time $t$.
+In the attribute \code{_next_reroute_time} we save the next point in time at which routes should be recalculated.
+Initially, it has the value $\code{_flow.phi}$.
+The attributes \code{_route_time} and \code{_costs} get updated every time new routes are computed:
+In \code{_route_time} we save the time at which the latest routes have computed (and at which time the predictions of queues have been taken) and the attribute \code{_costs[p]} saves the corresponding dynamic edge cost functions $(c_{p,e}(\emptyArg, \bar\theta, q))_{e\in E}$ with $\bar\theta = \code{_route_time}$ for a predictor $\code{p}$.
+As calculating shortest paths consumes a lot of time, we employ a cache in the attribute \code{_active_edges}.
+Here, \code{_active_edges[c]} is a dictionary assigning active outgoing edges to nodes for a commodity \code{c}.
+These dictionaries are cleared at each reroute time step and filled only if we need to determine the active edges for some node, that means only if there is some positive inflow of that commodity into the node which needs to be assigned to outgoing edges.
+Finally, the attribute \code{_handle_nodes} is a set containing all nodes whose inflow should be redistributed to outgoing edges in the next extension phase: Only a subset of nodes whose inflow has changed or — at reroute steps — all nodes.
+
+Once the user has successfully constructed such a builder and the attributes have been initialized, the user can call the function~\code{builder.build_until} as shown in~Algorithm~\ref{alg:extend-flow-builder} on it.
+This method computes an $\varepsilon$-DPE up to some given time horizon.
+In the following, we discuss the details of this method.
+ 
 \begin{algorithm}
-  \begin{minted}[linenos]{python}
+  \begin{minted}[linenos, escapeinside=||]{python}
 def build_until(self, horizon: float) -> MultiComFlow:
   graph = self.network.graph
   travel_time = self.network.travel_time
   capacity = self.network.capacity
 
-  while self._flow.phi < horizon:
+  while self._flow.phi < horizon: |\label{line:builder:mainloop:0}|
     while self._net_inflow_changes.min_key() <= self._flow.phi:
       commodity, t = self._net_inflow_changes.pop()
       self._handle_nodes.add(commodity.source)
@@ -532,7 +563,7 @@ def build_until(self, horizon: float) -> MultiComFlow:
             for e in graph.edges]
         for p in self.predictors
       }
-      self._active_edges = [{} for _ in self.network.commodities]
+      self._active_edges = {c: {} for c in self.network.commodities}
       self._route_time = self._next_reroute_time
       self._next_reroute_time += self.reroute_interval
       self._handle_nodes = set(graph.nodes)
@@ -542,13 +573,18 @@ def build_until(self, horizon: float) -> MultiComFlow:
       self._next_reroute_time, self._net_inflow_changes.min_key()
     )
     changed_edges = self._flow.extend(new_inflow, max_ext_time)
-    self._handle_nodes = set(e.node_to for e in changed_edges)
+    self._handle_nodes = set(e.node_to for e in changed_edges) |\label{line:builder:mainloop:1}|
 
   return self._flow
 \end{minted}
 \caption{The Build Procedure in \code{class MultiComFlowBuilder}}
 \label{alg:extend-flow-builder}
 \end{algorithm}
+
+The main loop in lines~\ref{line:builder:mainloop:0}--\ref{line:builder:mainloop:1} 
+terminates only once the flow has been extended up to the desired time horizon.
+In each iteration of this main loop, the flow is extended once with new constant inflow rates using the \code{_flow.extend} method.
+Before that, we  
 
 \begin{algorithm}
   \begin{minted}[linenos]{python}
