@@ -454,7 +454,7 @@ We now use the subroutine introduced in the previous section to compute $\vareps
 Here, we define the mechanism which decides how the flow is routed from its source to its sink and which defines the constant inflow rates of the extension phases.
 
 As we want each commodity to take shortest paths according to their own traffic forecast, the concept of a predictor is realized as an abstract class as shown in Data Structure~\ref{data:predictor}.
-To speed up the calculation of shortest paths, we add a function \code{is_constant} which should return \code{True} if and only if the \code{predict} function of that predictor always returns constant functions.
+\todo{Explain the predict function} To speed up the calculation of shortest paths, we add a function \code{is_constant} which should return \code{True} if and only if the \code{predict} function of that predictor always returns constant functions.
 In that case, we can restrict ourselves to algorithms for static edge costs.
 
 \begin{classdef}
@@ -550,10 +550,10 @@ def build_until(self, horizon: float) -> MultiComFlow:
   capacity = self.network.capacity
 
   while self._flow.phi < horizon: |\label{line:builder:mainloop:0}|
-    while self._net_inflow_changes.min_key() <= self._flow.phi:
+    while self._net_inflow_changes.min_key() <= self._flow.phi: |\label{line:builder:netchange:0}|
       commodity, t = self._net_inflow_changes.pop()
-      self._handle_nodes.add(commodity.source)
-    if self._flow.phi >= self._next_reroute_time:
+      self._handle_nodes.add(commodity.source) |\label{line:builder:netchange:1}|
+    if self._flow.phi >= self._next_reroute_time: |\label{line:builder:reroute:0}|
       predictions = {
         p: p.predict(self._flow.queues, self._flow.phi)
         for p in self.predictors
@@ -566,9 +566,9 @@ def build_until(self, horizon: float) -> MultiComFlow:
       self._active_edges = {c: {} for c in self.network.commodities}
       self._route_time = self._next_reroute_time
       self._next_reroute_time += self.reroute_interval
-      self._handle_nodes = set(graph.nodes)
+      self._handle_nodes = set(graph.nodes) |\label{line:builder:reroute:1}|
 
-    new_inflow = self._determine_new_inflow()
+    new_inflow = self._determine_new_inflow() |\label{line:builder:restloop:0}|
     max_ext_time = min(
       self._next_reroute_time, self._net_inflow_changes.min_key()
     )
@@ -584,7 +584,23 @@ def build_until(self, horizon: float) -> MultiComFlow:
 The main loop in lines~\ref{line:builder:mainloop:0}--\ref{line:builder:mainloop:1} 
 terminates only once the flow has been extended up to the desired time horizon.
 In each iteration of this main loop, the flow is extended once with new constant inflow rates using the \code{_flow.extend} method.
-Before that, we  
+
+Before that, we take care of network inflow rate changes in lines~\ref{line:builder:netchange:0}--\ref{line:builder:netchange:1} by adding all source nodes of commodities whose inflow rate have changed to the set \code{_handle_nodes}.
+
+Furthermore, the lines~\ref{line:builder:reroute:0}--\ref{line:builder:reroute:1} are executed if the routes have to be recalculated.
+In that case, we first instantiate new predictions of the queue lengths for each predictor.
+From that, we can calculate the cost functions by dividing by the edge capacities and adding the travel times.
+After saving these to the attribute \code{self._costs}, we clear the cache of the active edges and update \code{_route_time} and \code{_next_reroute_time}.
+The set \code{_handle_nodes} gets the set of all nodes assigned, as any node with positive inflow needs to update its outgoing flow distribution according to the new routes.
+
+Lines~\ref{line:builder:restloop:0}--\ref{line:builder:mainloop:1} are executed in every iteration of the loop:
+We first determine new constant inflow rates using the current dynamic costs functions in \code{self._costs}.
+The maximum extension time is the minimum of the next reroute time and the next network inflow change time.
+Then, we call \code{self._flow.extend} with these two arguments to extend the flow with the new inflow rates until either some edge outflow rate changes or the maximum extension time is reached.
+This function call returns the set of edges whose outflow rate changed at time \code{self._flow.phi}.
+Hence, we assign \code{self._handle_nodes} the set of target nodes of those edges. 
+
+
 
 \begin{algorithm}
   \begin{minted}[linenos]{python}
