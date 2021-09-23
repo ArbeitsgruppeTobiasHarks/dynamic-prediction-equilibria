@@ -590,15 +590,15 @@ Before that, we take care of network inflow rate changes in lines~\ref{line:buil
 Furthermore, the lines~\ref{line:builder:reroute:0}--\ref{line:builder:reroute:1} are executed if the routes have to be recalculated.
 In that case, we first instantiate new predictions of the queue lengths for each predictor.
 From that, we can calculate the cost functions by dividing by the edge capacities and adding the travel times.
-After saving these to the attribute \code{self._costs}, we clear the cache of the active edges and update \code{_route_time} and \code{_next_reroute_time}.
+After saving these to the attribute \code{_costs}, we clear the cache of the active edges and update \code{_route_time} and \code{_next_reroute_time}.
 The set \code{_handle_nodes} gets the set of all nodes assigned, as any node with positive inflow needs to update its outgoing flow distribution according to the new routes.
 
 Lines~\ref{line:builder:restloop:0}--\ref{line:builder:mainloop:1} are executed in every iteration of the loop:
-We first determine new constant inflow rates using the current dynamic costs functions in \code{self._costs}.
+We first determine new constant inflow rates using the current dynamic costs functions in \code{_costs}.
 The maximum extension time is the minimum of the next reroute time and the next network inflow change time.
-Then, we call \code{self._flow.extend} with these two arguments to extend the flow with the new inflow rates until either some edge outflow rate changes or the maximum extension time is reached.
-This function call returns the set of edges whose outflow rate changed at time \code{self._flow.phi}.
-Hence, we assign \code{self._handle_nodes} the set of target nodes of those edges. 
+Then, we call \code{_flow.extend} with these two arguments to extend the flow with the new inflow rates until either some edge outflow rate changes or the maximum extension time is reached.
+This function call returns the set of edges whose outflow rate changed at time \code{_flow.phi}.
+Hence, we assign \code{_handle_nodes} the set of target nodes of those edges. 
 
 
 
