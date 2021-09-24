@@ -35,7 +35,7 @@ def dynamic_dijkstra(
 
 Adjusting the classical Dijkstra Algorithm to our setting yields the Dynamic Dijkstra Algorithm as depicted in Algorithm~\ref{alg:dynamic-dijkstra}.
 
-At the heart of the algorithm operates a priority queue consisting of items together with a priority key associated with each item.
+A priority queue, consisting of items together with a priority key associated with each item, operates at the heart of the algorithm.
 This queue has to support the operations \texttt{push(item, key)}, \texttt{min\_key()}, \texttt{pop()}, \texttt{decrease\_key(item, new\_key)} as well as \texttt{contains(item)}.
 The operation \texttt{push(item, key)} adds the item \texttt{item} with priority \texttt{key} to the queue, \texttt{min\_key()} returns the minimum key of an item in the queue, \texttt{pop()} returns the item with minimum key and removes it from the queue, \texttt{contains(item)} returns whether \texttt{item} is contained in the queue and the operation \texttt{decrease\_key(item, new\_key)} replaces the priority key associated to the item \texttt{item} with \texttt{new\_key}.
 
@@ -219,3 +219,4 @@ The resulting algorithm for this class of functions can be seen in Algorithm~\re
 Here, the flag \texttt{strong\_fifo} is expected to be set only for cost functions following the strong FIFO rule.
 For these type of functions, we use the simpler backward search; for  general FIFO functions, we use the approach described above.
 Other than that, if $s$ has only up to one outgoing edge, we simply return $\outEdges{s}$.
+

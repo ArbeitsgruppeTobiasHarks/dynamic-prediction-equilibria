@@ -515,11 +515,12 @@ class MultiComFlowBuilder:
   predictors: List[Predictor]
   reroute_interval: float
   _flow: MultiComFlow
+  _relevant_nodes: Dict[Commodity, Set[Node]]
   _net_inflow_changes: PriorityQueue[Tuple[Commodity, float]]
   _next_reroute_time: float
   _route_time: float
   _costs: Dict[Predictor, Dict[Edge, PiecewiseLinear]]
-  _active_edges: Dict[Commodity, Dict[Node, List[Edge]]]
+  _active_edges: Dict[Commodity, Dict[Node, Set[Edge]]]
   _handle_nodes: Set[Node]
 \end{minted}
     \caption{The \code{class MultiComFlowBuilder}}%
@@ -528,6 +529,7 @@ class MultiComFlowBuilder:
 
 In Data Structure~\ref{data:multi-com-flow-builder} all internal state attributes of the builder are described prefixed with a \code{_}.
 Most importantly the actual flow is written to \code{_flow}.
+Furthermore, for calculating shortest paths, we save the set of nodes lying on any path from a source to a sink for each commodity in the attribute \code{_relevant_nodes}. 
 The priority queue \code{_net_inflow_changes} is initialized with all events of the type $(c, t)$ where the network inflow rate of a commodity $c$ changes at time $t$.
 In the attribute \code{_next_reroute_time} we save the next point in time at which routes should be recalculated.
 Initially, it has the value $\code{_flow.phi}$.
@@ -600,8 +602,6 @@ Then, we call \code{_flow.extend} with these two arguments to extend the flow wi
 This function call returns the set of edges whose outflow rate changed at time \code{_flow.phi}.
 Hence, we assign \code{_handle_nodes} the set of target nodes of those edges. 
 
-
-
 \begin{algorithm}
   \begin{minted}[linenos]{python}
 def _determine_new_inflow(self) -> Dict[Edge, List[float]]:
@@ -610,14 +610,14 @@ def _determine_new_inflow(self) -> Dict[Edge, List[float]]:
   for v in self._handle_nodes:
     new_inflow.update({e: [0.] * m for e in v.outgoing_edges})
     for i, commodity in enumerate(self.network.commodities):
-      if v not in self._important_nodes[i] or v == commodity.sink:
+      if v not in self._relevant_nodes[commodity] or v == commodity.sink:
         continue
       inflow = sum(self._flow.outflow[e][i](self._flow.phi)
                    for e in v.incoming_edges)
       if v == commodity.source:
         inflow += commodity.net_inflow(self._flow.phi)
       if inflow > 0:
-        active_edges = self._get_active_edges(i, v)
+        active_edges = self._get_active_edges(commodity, v)
         distribution = inflow / len(active_edges)
         for e in active_edges:
           new_inflow[e][i] = distribution
@@ -625,4 +625,49 @@ def _determine_new_inflow(self) -> Dict[Edge, List[float]]:
 \end{minted}
 \caption{The Inflow Calculation in \code{class MultiComFlowBuilder}}
 \label{alg:determine-new-inflow}
+\end{algorithm}
+
+
+Next, we discuss Algorithm~\ref{alg:determine-new-inflow} which takes care of calculating the new constant inflow rates of all outgoing edges of nodes $v$ in~\code{_handle_nodes}.
+For all commodities $i$, we calculate the total inflow rate $\bal{i}{v}^+(\phi) = \sum_{e\in\inEdges{v}} \outfl_{e,i}(\phi) + \mathbf{1}_{v=s_i} u_i(\phi)$ into $v$ at time $\phi = \code{_flow.phi}$.
+If this value is positive, we retrieve all active outgoing edges for this commodity and node under the current predictions of the commodity's predictor using the method \code{_get_active_edges}.
+We then distribute all inflow uniformly into all active outgoing edges. All other outgoing edges get a zero inflow rate.
+
+The final ingredient of the flow builder is the method \code{_get_active_edges} for retrieving the currently active edges for a commodity and a node.
+It is shown in Algorithm~\ref{alg:builder:get_active_edges}.
+
+\begin{algorithm}
+  \begin{minted}[linenos]{python}
+def _get_active_edges(self, c: Commodity, s: Node) -> Set[Edge]:
+  if s in self._active_edges[i]:
+    return self._active_edges[i][s]
+
+  relevant_nodes = self._relevant_nodes[c]
+  sink = commodity.sink
+
+  if self.predictors[commodity.predictor].is_constant():
+    const_costs = [c.values[0] for c in self._costs[commodity.predictor]]
+    distances = reverse_dijkstra(commodity.sink, const_costs, com_nodes)
+    for v in com_nodes:
+      if v == commodity.sink:
+        continue
+      active_edges = []
+      for e in v.outgoing_edges:
+        w = e.node_to
+        if w not in distances.keys():
+          continue
+        if const_costs[e.id] + distances[w] <= distances[v] + eps:
+          active_edges.append(e)
+        assert len(active_edges) > 0
+        self._active_edges[i][v] = active_edges
+  else:
+    active_edges = get_active_edges(
+      self._costs[commodity.predictor], self._route_time, s,
+      c.sink, relevant_nodes, self.network.graph, False
+    )
+    self._active_edges[i][s] = active_edges
+    return self._active_edges[i][s]
+\end{minted}
+\caption{Retrieving Active Edges in \code{class MultiComFlowBuilder}}
+\label{alg:builder:get_active_edges}
 \end{algorithm}
