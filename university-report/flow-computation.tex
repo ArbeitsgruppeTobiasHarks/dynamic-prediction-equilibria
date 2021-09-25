@@ -639,34 +639,27 @@ It is shown in Algorithm~\ref{alg:builder:get_active_edges}.
 \begin{algorithm}
   \begin{minted}[linenos]{python}
 def _get_active_edges(self, c: Commodity, s: Node) -> Set[Edge]:
-  if s in self._active_edges[i]:
-    return self._active_edges[i][s]
+  if s in self._active_edges[c]:
+    return self._active_edges[c][s]
 
-  relevant_nodes = self._relevant_nodes[c]
-  sink = commodity.sink
-
-  if self.predictors[commodity.predictor].is_constant():
-    const_costs = [c.values[0] for c in self._costs[commodity.predictor]]
-    distances = reverse_dijkstra(commodity.sink, const_costs, com_nodes)
-    for v in com_nodes:
-      if v == commodity.sink:
+  nodes = self._relevant_nodes[c]
+  if self.predictors[c.predictor].is_constant():
+    costs = [cost.values[0] for cost in self._costs[c.predictor]]
+    distances = static_dijkstra(c.sink, costs, nodes, reverse=True)
+    for v in nodes:
+      if v == c.sink:
         continue
-      active_edges = []
-      for e in v.outgoing_edges:
-        w = e.node_to
-        if w not in distances.keys():
-          continue
-        if const_costs[e.id] + distances[w] <= distances[v] + eps:
-          active_edges.append(e)
-        assert len(active_edges) > 0
-        self._active_edges[i][v] = active_edges
+      self._active_edges[c][v] = set(
+        e for e in v.outgoing_edges
+        if e.node_to in distances.keys() and \
+        costs[e.id] + distances[e.node_to] <= distances[v]
+      )
   else:
-    active_edges = get_active_edges(
-      self._costs[commodity.predictor], self._route_time, s,
-      c.sink, relevant_nodes, self.network.graph, False
+    self._active_edges[c][s] = get_active_edges(
+      self._costs[c.predictor], self._route_time, s, c.sink,
+      nodes, self.network.graph, False
     )
-    self._active_edges[i][s] = active_edges
-    return self._active_edges[i][s]
+  return self._active_edges[c][s]
 \end{minted}
 \caption{Retrieving Active Edges in \code{class MultiComFlowBuilder}}
 \label{alg:builder:get_active_edges}
