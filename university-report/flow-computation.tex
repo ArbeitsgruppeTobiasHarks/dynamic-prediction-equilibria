@@ -535,8 +535,8 @@ In the attribute \code{_next_reroute_time} we save the next point in time at whi
 Initially, it has the value $\code{_flow.phi}$.
 The attributes \code{_route_time} and \code{_costs} get updated every time new routes are computed:
 In \code{_route_time} we save the time at which the latest routes have computed (and at which time the predictions of queues have been taken) and the attribute \code{_costs[p]} saves the corresponding dynamic edge cost functions $(c_{p,e}(\emptyArg, \bar\theta, q))_{e\in E}$ with $\bar\theta = \code{_route_time}$ for a predictor $\code{p}$.
-As calculating shortest paths consumes a lot of time, we employ a cache in the attribute \code{_active_edges}.
-Here, \code{_active_edges[c]} is a dictionary assigning active outgoing edges to nodes for a commodity \code{c}.
+As calculating shortest paths is computationally expensive, we employ a cache in the attribute \code{_active_edges}.
+Here, \code{_active_edges[c]} is a dictionary assigning active outgoing edges to nodes for the commodity \code{c}.
 These dictionaries are cleared at each reroute time step and filled only if we need to determine the active edges for some node, that means only if there is some positive inflow of that commodity into the node which needs to be assigned to outgoing edges.
 Finally, the attribute \code{_handle_nodes} is a set containing all nodes whose inflow should be redistributed to outgoing edges in the next extension phase: Only a subset of nodes whose inflow has changed or — at reroute steps — all nodes.
 
@@ -635,25 +635,24 @@ We then distribute all inflow uniformly into all active outgoing edges. All othe
 
 The final ingredient of the flow builder is the method \code{_get_active_edges} for retrieving the currently active edges for a commodity and a node.
 It is shown in Algorithm~\ref{alg:builder:get_active_edges}.
+\newcommand{\dist}{\textrm{dist}}
 
 \begin{algorithm}
-  \begin{minted}[linenos]{python}
+  \begin{minted}[linenos, escapeinside=||]{python}
 def _get_active_edges(self, c: Commodity, s: Node) -> Set[Edge]:
   if s in self._active_edges[c]:
     return self._active_edges[c][s]
 
   nodes = self._relevant_nodes[c]
-  if self.predictors[c.predictor].is_constant():
+  if self.predictors[c.predictor].is_constant(): |\label{line:getactiveedges:static:0}|
     costs = [cost.values[0] for cost in self._costs[c.predictor]]
     distances = static_dijkstra(c.sink, costs, nodes, reverse=True)
     for v in nodes:
-      if v == c.sink:
-        continue
       self._active_edges[c][v] = set(
         e for e in v.outgoing_edges
         if e.node_to in distances.keys() and \
         costs[e.id] + distances[e.node_to] <= distances[v]
-      )
+      ) |\label{line:getactiveedges:static:1}|
   else:
     self._active_edges[c][s] = get_active_edges(
       self._costs[c.predictor], self._route_time, s, c.sink,
@@ -664,3 +663,25 @@ def _get_active_edges(self, c: Commodity, s: Node) -> Set[Edge]:
 \caption{Retrieving Active Edges in \code{class MultiComFlowBuilder}}
 \label{alg:builder:get_active_edges}
 \end{algorithm}
+
+Of course, if the active edges of the corresponding node have already been computed, then we simply return the cached value from~\code{_active_edges}.
+Otherwise, we still have to compute them.
+We do a case distinction on whether the predictor of a commodity $i$ returns constant queue length functions only.
+
+In the case of constant queue lengths, all edge cost functions $c_{i,e}(\emptyArg,\bar\theta,q)$ are constant as well with $c_{i,e}(\emptyArg,\bar\theta,q)\equiv c_{i,e}(\bar\theta,q) \in \R_{>0}$.
+If we denote \[
+  \dist_{i,v}(\bar\theta, q)\coloneqq \min_{e_1\,\cdots\,e_k\in\paths_{v,t_i}} \sum_{l=1}^k c_{i,e_k}(\bar\theta, q)
+\]
+as the $\bar\theta$-predicted distance from node $v$ to the sink $t_i$, the arrival functions $l_{i,v}(\emptyArg, \bar\theta, q)$ can be written as \[
+  l_{i,v}(\theta, \bar\theta, q) = \theta + \dist_{i,v}(\bar\theta, q) 
+\]
+leaving an edge $e=vw$ $\bar\theta$-predicted active at time $\theta$ if and only if \[
+  \dist_{i,v}(\bar\theta, q) = c_{i,e}(\bar\theta, q) + \dist_{i,w}(\bar\theta, q).
+\]
+Using the static version of the Dijkstra Algorithm on the reverse graph yields the distance vector $(\dist_{i,v}(\bar\theta, q))_{v\in V_i}$.
+Thus, as expected we only need a single run of the Dijkstra Algorithm to compute the active edges of all nodes for that commodity.
+This is implemented in lines~\ref{line:getactiveedges:static:0}--\ref{line:getactiveedges:static:1} of Algorithm~\ref{alg:builder:get_active_edges}.
+The implementation of the function~\code{static_dijkstra} is not included in this report, however it is straight forward and well covered in standard literature.  
+
+If the queue length functions are not constant, we utilize the algorithm developed in Section~\ref{sec:compute-active-edges}.
+This means, that for any node (for which the function \code{_get_active_edges} is called) two instances of the Dynamic Dijkstra Algorithm have to be evaluated once in every routing phase. 
