@@ -454,14 +454,18 @@ We now use the subroutine introduced in the previous section to compute $\vareps
 Here, we define the mechanism which decides how the flow is routed from its source to its sink and which defines the constant inflow rates of the extension phases.
 
 As we want each commodity to take shortest paths according to their own traffic forecast, the concept of a predictor is realized as an abstract class as shown in Data Structure~\ref{data:predictor}.
-\todo{Explain the predict function} To speed up the calculation of shortest paths, we add a function \code{is_constant} which should return \code{True} if and only if the \code{predict} function of that predictor always returns constant functions.
+A predictor has an implementation for the method \code{predict}. Attributes of that method are a prediction time \code{phi} and a list \code{old_queues} of past queue length functions of all edges.
+This method should return the queue length functions as predicted at time \code{phi} using the past queues \code{old_queues}.
+In mathematical terms, it should return $(\hat q_{i,e}(\emptyArg, \bar\theta, q))_{e\in E}$ with $\code{phi}= \bar\theta$ and $\code{old_queues} = q$.
+
+To speed up the calculation of shortest paths, we add a function \code{is_constant} which should return \code{True} if and only if the \code{predict} function of that predictor always returns constant functions.
 In that case, we can restrict ourselves to algorithms for static edge costs.
 
 \begin{classdef}
   \begin{minted}[linenos]{python}
 class Predictor(ABC):
   @abstractmethod
-  def predict(self, old_queues: List[PiecewiseLinear], phi: float) \
+  def predict(self, phi: float, old_queues: List[PiecewiseLinear]) \
     -> List[PiecewiseLinear]:
     pass
   
@@ -539,10 +543,6 @@ As calculating shortest paths is computationally expensive, we employ a cache in
 Here, \code{_active_edges[c]} is a dictionary assigning active outgoing edges to nodes for the commodity \code{c}.
 These dictionaries are cleared at each reroute time step and filled only if we need to determine the active edges for some node, that means only if there is some positive inflow of that commodity into the node which needs to be assigned to outgoing edges.
 Finally, the attribute \code{_handle_nodes} is a set containing all nodes whose inflow should be redistributed to outgoing edges in the next extension phase: Only a subset of nodes whose inflow has changed or — at reroute steps — all nodes.
-
-Once the user has successfully constructed such a builder and the attributes have been initialized, the user can call the function~\code{builder.build_until} as shown in~Algorithm~\ref{alg:extend-flow-builder} on it.
-This method computes an $\varepsilon$-DPE up to some given time horizon.
-In the following, we discuss the details of this method.
  
 \begin{algorithm}
   \begin{minted}[linenos, escapeinside=||]{python}
@@ -557,7 +557,7 @@ def build_until(self, horizon: float) -> MultiComFlow:
       self._handle_nodes.add(commodity.source) |\label{line:builder:netchange:1}|
     if self._flow.phi >= self._next_reroute_time: |\label{line:builder:reroute:0}|
       predictions = {
-        p: p.predict(self._flow.queues, self._flow.phi)
+        p: p.predict(self._flow.phi, self._flow.queues)
         for p in self.predictors
       }
       self._costs = {
@@ -582,6 +582,10 @@ def build_until(self, horizon: float) -> MultiComFlow:
 \caption{The Build Procedure in \code{class MultiComFlowBuilder}}
 \label{alg:extend-flow-builder}
 \end{algorithm}
+
+Once the user has successfully constructed such a builder and the attributes have been initialized, the user can call the function~\code{builder.build_until} on it as shown in~Algorithm~\ref{alg:extend-flow-builder}.
+This method computes an $\varepsilon$-DPE up to some given time horizon.
+In the following, we discuss the details of this method.
 
 The main loop in lines~\ref{line:builder:mainloop:0}--\ref{line:builder:mainloop:1} 
 terminates only once the flow has been extended up to the desired time horizon.
