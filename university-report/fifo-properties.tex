@@ -3,7 +3,7 @@
 To make sure that we can ignore non-simple paths in the definition of shortest paths, we exploit the FIFO property of the cost functions:
 
 \begin{proposition}\label{prop:removing-cycles-in-fifo-graphs}
-    Given cost functions $c:\R\rightarrow\R_{\geq0}^E$ following the FIFO rule, we can remove a cycle in any $v$-$t$-path $P$ while not increasing the path's traversal time.
+    Given cost functions $c:\R\rightarrow\R_{\geq0}^E$ following the FIFO rule, removing a cycle in any $v$-$t$-path $P$ does not increase the path's traversal time.
 
     More specifically, if $P=P_1\, C \, P_2$ is the concatenation of paths $P_1$, a cycle $C$ and another path $P_2$, then it holds that $
         T_P(\theta) \geq \left(
@@ -75,7 +75,7 @@ The method used works in any cyclic graph: We build a self-confirming cycle prop
     For node $s$, the equation reads \[
         \tilde l_s(\theta) = \min\left\{ \tilde l_t(T_{st}(\theta)), \tilde l_v(T_{sv}(\theta)) \right\}. 
     \]
-    Inserting the definitions of $\tilde l_v$ and $\tilde l_t$ in the right-hand side yields \[
+    By inserting the definitions of $\tilde l_v$ and $\tilde l_t$, the right-hand side equates to \[
         \min\left\{ T_{st}(\theta), \tilde l_s(T_{vs}(T_{sv}(\theta))) \right\}
         = \min \left\{ T_{st}(\theta), T_{st} \Big( T_{vs}\big(T_{sv}(\theta)\big) \Big), 0 \right\}.
     \]
