@@ -33,7 +33,7 @@ def dynamic_dijkstra(
 \label{alg:dynamic-dijkstra}
 \end{algorithm}
 
-Adjusting the classical Dijkstra Algorithm to our setting yields the Dynamic Dijkstra Algorithm as depicted in Algorithm~\ref{alg:dynamic-dijkstra}.
+Adjusting the classical Dijkstra Algorithm for static edge costs to our setting yields the Dynamic Dijkstra Algorithm as depicted in Algorithm~\ref{alg:dynamic-dijkstra}.
 
 A priority queue, consisting of items together with a priority key associated with each item, operates at the heart of the algorithm.
 This queue has to support the operations \texttt{push(item, key)}, \texttt{min\_key()}, \texttt{pop()}, \texttt{decrease\_key(item, new\_key)} as well as \texttt{contains(item)}.
@@ -77,30 +77,30 @@ Given a FIFO cost function $c: \R\rightarrow\R_{\geq0}^E$ with a node $s$, a tim
 \]
 Unfortunately, from the arrival times $(l_{s,w}(\theta))_{w\in V'}$ obtained by a simple run of the Dynamic Dijkstra Algorithm, we cannot determine all active edges:
 Usually, the idea for determining all active edges would be to do a backward search starting from $t$ on edges $e=vw$ with $l_{s,w}(\theta) = T_e(l_{s,v}(\theta))$ and remember those edges as \emph{active} as they lie on a shortest $s$-$t$-path.
-An implementation of this is shown in Algorithm~\ref{alg:backward-search}, where \texttt{arrivals} consists of the labels $(l_{s,w}(\theta))_{w\in V'}$ as returned by the Dynamic Dijkstra Algorithm.
+An implementation of this is shown in Algorithm~\ref{alg:backward-search}, where \code{arrivals} consists of the labels $(l_{s,w}(\theta))_{w\in V'}$ as returned by the Dynamic Dijkstra Algorithm.
 
-\begin{algorithm}[h]
+\begin{algorithm}
     \begin{minted}[mathescape, linenos]{python}
 def backward_search(
-    costs: List[Callable[[float], float]], arrivals: Dict[Node, float],
-    source: Node, sink: Node
+  costs: List[Callable[[float], float]], arrivals: Dict[Node, float],
+  source: Node, sink: Node
 ) -> Set[Edge]:
-    active_edges = []
-    queue: List[Node] = [sink]
-    nodes_enqueued: Set[Node] = {sink}
-    while len(queue) > 0:
-        w = queue.pop()
-        for e in w.incoming_edges:
-            v = e.node_from
-            if v not in arrivals.keys():
-                continue
-            if arrivals[v] + costs[e.id](arrivals[v]) <= arrivals[w]:
-                if v == source:
-                    active_edges.append(e)
-                if v not in nodes_enqueued:
-                    queue.append(v)
-                    nodes_enqueued.add(v)
-    return active_edges
+  active_edges = set()
+  queue: List[Node] = [sink]
+  nodes_enqueued: Set[Node] = {sink}
+  while len(queue) > 0:
+    w = queue.pop()
+    for e in w.incoming_edges:
+      v = e.node_from
+      if v not in arrivals.keys():
+        continue
+      if arrivals[v] + costs[e.id](arrivals[v]) <= arrivals[w]:
+        if v == source:
+          active_edges.add(e)
+        if v not in nodes_enqueued:
+          queue.append(v)
+          nodes_enqueued.add(v)
+  return active_edges
     \end{minted}
     \caption{Backward Search}
     \label{alg:backward-search}
@@ -116,7 +116,7 @@ That means, for strong FIFO costs, the Backward Search Algorithm is correct.
 \begin{proposition}
     Let $P=e_1\,\cdots\,e_k$ be a path with $e_i = v_{i-1}v_{i}$ and $v_0 = s, v_k= t$ and let $c:\R\rightarrow\R^E_{\geq0}$ be a cost function following the FIFO rule. Then
     \[ 
-        \left(\forall i:\, T_{e_i}(l_{s,v_{i-1}}(\theta)) = l_{s,v_i}(\theta)\right)
+        \left(\forall i:\, {T_{e_i}}{\left(l_{s,v_{i-1}}(\theta)\right)} = l_{s,v_i}(\theta)\right)
         \implies
         T_P(\theta) = l_{s,t}(\theta).
     \]

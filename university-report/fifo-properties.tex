@@ -65,10 +65,10 @@ The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the f
     \]
 \end{proof}
 
-The following example illustrates why the given system of equations is generally not unique.
+The following example illustrates why the given system of equations does generally not have a unique solution.
 The method used works in any cyclic graph: We build a self-confirming cycle proposing an earlier arrival time than actually possible.
 \begin{example}
-    A minimal example without loops consists of three nodes $V=\{ s, v, t \}$ with three edges $E=\{ st, sv, vs \}$ whose cost functions $c_e: \R \rightarrow \R_{>0}$ follow the FIFO rule.
+    A minimal example without loops consists of three nodes $V=\{ s, v, t \}$ with three edges $E=\{ st, sv, vs \}$ whose cost functions $c_e: \R \rightarrow \R_{\geq 0}$ follow the FIFO rule.
     We virtually limit the arrival time of $s$ at $0$ using $\tilde l_s (\theta) \coloneqq \min\{ T_{st}(\theta), 0 \}$.
     We define the arrival times of $v$ and $t$ as expected with $\tilde l_t(\theta) \coloneqq \theta$ and $\tilde l_v(\theta) \coloneqq \tilde l_s(T_{vs}(\theta))$.
     Obviously, the system of equations is satisfied for nodes $v$ and $t$.

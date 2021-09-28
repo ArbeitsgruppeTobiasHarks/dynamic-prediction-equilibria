@@ -677,7 +677,7 @@ If we denote \[
   \dist_{i,v}(\bar\theta, q)\coloneqq \min_{e_1\,\cdots\,e_k\in\paths_{v,t_i}} \sum_{l=1}^k c_{i,e_k}(\bar\theta, q)
 \]
 as the $\bar\theta$-predicted distance from node $v$ to the sink $t_i$, the arrival functions $l_{i,v}(\emptyArg, \bar\theta, q)$ can be written as \[
-  l_{i,v}(\theta, \bar\theta, q) = \theta + \dist_{i,v}(\bar\theta, q) 
+  l_{i,v}(\theta, \bar\theta, q) = \theta + \dist_{i,v}(\bar\theta, q),
 \]
 leaving an edge $e=vw$ $\bar\theta$-predicted active at time $\theta$ if and only if \[
   \dist_{i,v}(\bar\theta, q) = c_{i,e}(\bar\theta, q) + \dist_{i,w}(\bar\theta, q).

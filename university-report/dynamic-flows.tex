@@ -34,7 +34,7 @@ Moreover, the \emph{network inflow rate} of a commodity is given by a locally in
 This definition already leads to a good insight on how particles should behave in a dynamic flow of this type:
 A particle of commodity $i$ is generated at the source $s_i$ at some time $\theta$ and immediately decides which outgoing edge $e=s_i v\in \outEdges{s_i}$ it should take.
 At this time, the cost of $e$ is $c_e(\theta) = \transit_e + \qulen_e(\theta) / \capa_e$, which means that the particle has to queue for $\qulen_e(\theta) / \capa_e$ time units before it can traverse the edge in $\transit_e$ time.
-It will thus arrive at $v$ at time $\theta + c_e(\theta)$.
+It will thus arrive at $v$ at time $T_e(\theta) \coloneqq \theta + c_e(\theta)$.
 Once it arrives at an intermediary node $v\neq t_i$, it will again have an opportunity to update its routing decision by choosing a new outgoing edge in~$\outEdges{v}$ unless it arrives at its destination $t_i$. 
 
 To make the dynamic flows behave like imagined above, we have to make several restrictions forming the class of feasible dynamic flows:
@@ -50,7 +50,7 @@ To make the dynamic flows behave like imagined above, we have to make several re
                 0, & \text{otherwise,}
         \end{cases}
         \]
-        where $\xi\coloneqq \max \{ \xi  \mid \xi + c_e(\xi) = \theta \}$ is the latest departure time a particle can arrive at $w$ at time $\theta$ by traversing edge $e=vw$. 
+        where $\xi\coloneqq \max \{ \xi  \mid T_e(\xi) = \theta \}$ is the latest departure time a particle can arrive at $w$ at time $\theta$ by traversing edge $e=vw$. 
         \item\label{def:feasible-flow:flow-conservation} Flow conservation is preserved on intermediary nodes, i.e. \[\forall i\in I, v\in V\setminus\{ s_i, t_i \}: \quad
         \bal{i}{v}(\theta)\coloneqq \sum_{e\in\outEdges{v}}\infl_{i,e}(\theta) - \sum_{e\in\inEdges{v}} \outfl_{i,e}(\theta) = 0 \]
         and $\bal{i}{s_i}(\theta) = u_i(\theta)$ as well as $\bal{i}{t_i}(\theta) \leq 0$ for all $\theta\in\R$.
@@ -66,9 +66,25 @@ To make the dynamic flows behave like imagined above, we have to make several re
     A feasible flow up to $\infty$ is also called a \emph{feasible} flow.
 \end{definition}
 
-We note, that for a given feasible flow the costs $c_e$ follow the FIFO-rule and hence the results from Section~\ref{sec:fifo-costs} can be applied.
-\todo{Add cite}
 
-\todo[inline]{
+
+\begin{remark}
+    We highlight, that property~\ref{def:feasible-flow:deterministic-split} is defined slightly different in literature such as~\cite{}
+\todo{
     Remark, that we switched min with max
 }
+\end{remark}
+
+We note, that for a given feasible flow $f$ the costs $c_e$ follow the FIFO-rule and hence the results from Section~\ref{sec:fifo-costs} can be applied.
+\begin{proposition}
+    The cost functions $c$ induced by a feasible flow $f$ follow the FIFO-rule.
+\end{proposition}
+\begin{proof}
+    This can be seen by applying property~\ref{def:feasible-flow:max-capacity} in the following inequality for $\theta_1\leq \theta_2$:
+    \begin{align*}
+        T_e(\theta_2) - T_e(\theta_1)
+        &= \theta_2 - \theta_1 + \frac{q_e(\theta_2) - q_e(\theta_1)}{\capa_e}
+        = \theta_2 - \theta_1 + \frac{\int_{\theta_1}^{\theta_2}f_e^+(t)\diff t - \int_{\theta_1 + \transit_e}^{\theta_2 + \transit_e} f_e^-(t) \diff t}{\capa_e}\\
+        &\geq \theta_2 - \theta_1 + \frac{\int_{\theta_1}^{\theta_2} \infl_e(t)\diff t - (\theta_2 - \theta_1)\cdot \capa_e}{\capa_e} \geq 0.
+    \end{align*}
+\end{proof}
