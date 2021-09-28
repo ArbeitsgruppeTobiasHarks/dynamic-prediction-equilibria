@@ -15,7 +15,7 @@ The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the f
 
 \begin{proposition}\label{prop:characterization-arrival-functions}
     Let $c:\R\rightarrow\R_{>0}^E$ be a cost function following the FIFO rule.
-    The vector $(l_{v,t})_{v\in V}$ of functions is the maximal solution of the following system of equations in the function-valued variables $(\tilde l_v: \R \rightarrow \R)_{v\in V}$:
+    The vector $(l_{v,t})_{v\in V}$ of functions is the (pointwise) maximal solution of the following system of equations in the function-valued variables $(\tilde l_v: \R \rightarrow \R)_{v\in V}$:
     \[
         \tilde l_v(\theta) = \begin{cases}
             \theta, &\text{if $v = t$}, \\
@@ -65,6 +65,20 @@ The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the f
     \]
 \end{proof}
 
-\todo[inline]{
-    Give an example of another solution of this system of equations.
-}
+The following example illustrates why the given system of equations is generally not unique.
+The method used works in any cyclic graph: We build a self-confirming cycle proposing an earlier arrival time than actually possible.
+\begin{example}
+    A minimal example without loops consists of three nodes $V=\{ s, v, t \}$ with three edges $E=\{ st, sv, vs \}$ whose cost functions $c_e: \R \rightarrow \R_{>0}$ follow the FIFO rule.
+    We virtually limit the arrival time of $s$ at $0$ using $\tilde l_s (\theta) \coloneqq \min\{ T_{st}(\theta), 0 \}$.
+    We define the arrival times of $v$ and $t$ as expected with $\tilde l_t(\theta) \coloneqq \theta$ and $\tilde l_v(\theta) \coloneqq \tilde l_s(T_{vs}(\theta))$.
+    Obviously, the system of equations is satisfied for nodes $v$ and $t$.
+    For node $s$, the equation reads \[
+        \tilde l_s(\theta) = \min\left\{ \tilde l_t(T_{st}(\theta)), \tilde l_v(T_{sv}(\theta)) \right\}. 
+    \]
+    Inserting the definitions of $\tilde l_v$ and $\tilde l_t$ in the right-hand side yields \[
+        \min\left\{ T_{st}(\theta), \tilde l_s(T_{vs}(T_{sv}(\theta))) \right\}
+        = \min \left\{ T_{st}(\theta), T_{st} \Big( T_{vs}\big(T_{sv}(\theta)\big) \Big), 0 \right\}.
+    \]
+    The FIFO rule together with the non-negative cost functions implies the inequality $T_{st}(\theta) \leq T_{st} ( T_{vs}(T_{sv}(\theta)))$, so that the right-hand side reduces to $\min\{ T_{st}(\theta), 0 \} = \tilde l_s(\theta)$.
+    Obviously, this solution $(\tilde l_w)_{w\in V}$ is different to the actual arrival times $(l_w)_{w\in V}$: The arrival time when starting in $s$ at a positive time $\theta$ fulfills $l_s(\theta) = T_{st}(\theta) \geq \theta > 0 = \tilde l_s(\theta)$.
+\end{example}
