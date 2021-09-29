@@ -9,7 +9,11 @@
 \usepackage{enumitem}
 \usepackage{todonotes}
 \usepackage{algorithm}
+\usepackage{biblatex}
 \usepackage[outputdir=out, cache=true]{minted}
+
+
+\addbibresource{literature.bib}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -50,6 +54,8 @@
 \newcommand{\firstN}[1]{[#1]}
 \newcommand{\restrict}[2]{#1\vert_{#2}}
 \newcommand{\colonequiv}{\vcentcolon\mspace{-1.2mu}\equiv}
+\newcommand{\restrictUpTo}[2]{#1_{\leq #2}}
+
 
 % Flow-specifics
 \newcommand{\capa}{\nu}
@@ -97,7 +103,7 @@
 
     \newpage
     \input{flow-computation.tex}
-        
 
-
+    \newpage
+    \printbibliography
 \end{document}
