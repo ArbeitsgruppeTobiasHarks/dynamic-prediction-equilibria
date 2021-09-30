@@ -10,9 +10,9 @@ More formally, for a commodity $i\in I$ the \emph{predicted queue length} of an 
 Aside from the predicted queue lengths all other predicted values will be denoted with a hat. 
 This means, each commodity $i$ has a set of predictor functions $(\predq_{i,e})_{e\in E}$ each of which has the following the signature:
 \[
-    \predq_{i,e} : \R_{\geq 0} \times \R_{\geq 0} \times \contFcts{\R_{\geq 0}}{\R_{\geq 0}}^E \rightarrow \R_{\geq0},
+    \predq_{i,e} : \R \times \R \times \QueueFct^E \rightarrow \R_{\geq0},
 \]
-where $\contFcts{A}{B}$ denotes the set of all continuous functions from $A$ to $B$.
+where $\QueueFct\coloneqq \contFcts{\R}{\R_{\geq0}}$ denotes the set of all continuous functions from $\R$ to $\R_{\geq0}$.
 
 Based on the predicted queue lengths we can also determine \emph{predicted queue costs} by \[
     \predc_{i,e}(\theta, \bar\theta, q) \coloneqq \transit_e + \frac{\predq_{i,e}(\theta, \bar\theta, q)}{\capa_e}.
@@ -34,7 +34,7 @@ Before we continue, we want to make sure, that this definition of shortest-paths
 We can only restrict ourselves to simple paths, if waiting at a node, or traveling through a short cycle, is never helpful.
 This can be realized by assuming the FIFO-property of predictors:
 \begin{definition}
-    A set of predictors $(\predq_{i,e})_{e\in E}$ \emph{follows the FIFO rule} if $(\predc_{i,e}(\emptyArg, \bar\theta, q))_{e\in E}$ follows the FIFO-rule for all $\bar\theta\in\R_{\geq0}, q\in\contFcts{\R_{\geq0}}{\R_{\geq0}}$.
+    A set of predictors $(\predq_{i,e})_{e\in E}$ \emph{follows the FIFO rule} if $(\predc_{i,e}(\emptyArg, \bar\theta, q))_{e\in E}$ follows the FIFO-rule for all $\bar\theta\in\R_{\geq0}, q\in\QueueFct^E$.
 \end{definition}
 
 We recall, that for predictors following the FIFO rule, the results from Section~\ref{sec:fifo-costs} apply, and we have $\predl_{i,v}(\theta, \bar\theta, q) \leq \predl_{i,w}{(
@@ -59,12 +59,90 @@ We can now define an equilibrium based on these predictors, in which all agents 
         \infl_{i,e}(\theta) > 0 \implies e \in \predE_i(\theta, \theta, q).
     \]
     For $H = \infty$ the pair $(\predq, f)$ is called \emph{dynamic prediction equilibrium (DPE)}. 
+    Moreover, we call $f$ a \emph{dynamic prediction flow with respect to the predictor $\predq$}. 
+
 \end{definition}
 
 In other words, a pair of a set of predictors and a flow is a DPE, if whenever flow enters an edge at some time $\theta$, then the prediction of that commodity evaluated at the same time $\theta$ says, that the edge lies on a dynamic shortest path to $t_i$.
 
+DPEs have been introduced in~\cite{mainpaper}.
+For the proof of the existence of DPEs the following two properties are important.
+
+\begin{definition}
+    A predictor $\predq_{e}$  is called \emph{oblivious},
+if the following condition holds
+    \[
+    \forall \theta,\bar\theta, q,q'\colon\quad
+    \restrictUpTo{q}{\bar\theta} = \restrictUpTo{q'}{\bar\theta}
+    \implies
+    \predq_{i,e}(\theta;\bar\theta;q)=\predq_{i,e}(\theta;\bar\theta;q'),
+    \]
+    where $\restrictUpTo{q}{\bar\theta}$ denotes the restriction of the function $q: \R_{\geq 0} \times E \to \R_{\geq 0}$ to $[0,\bar\theta] \times E$.
+\end{definition}
+\begin{definition}
+    A predictor $\predq_{e}$ is \emph{continuous}, if the mapping 
+    \[
+        \predq_{e}: \R\times \R\times \QueueFct^E \rightarrow \R_{\geq0}
+    \] with respect to the product topology on the left side and the topology induced by the uniform norm on $\QueueFct$ is continuous.
+\end{definition}
+
+\begin{theorem}[{\cite[Theorem~10]{mainpaper}}]\label{thm:dpe-existence}
+    For any network with a finite set of commodities, each associated with a locally integrable, bounded network inflow rate and oblivious and continuous predictors $\predq_{i,e}$ that respect FIFO, there exists a dynamic prediction flow with respect to $\predq$. 
+\end{theorem}
+
 \subsection{Applied Predictors}
 
-\todo[inline]{
-    Write about all the applied predictors
-}
+In this section we introduce several predictors that have been used throughout the project.
+We begin with very primitive predictors and enhance them step by step.
+
+
+The \emph{Zero-Predictor} $\predq^\predZ$ predicts that no queues occur at all, i.e.\[
+    \predq^\predZ_{e}(\theta, \bar\theta, q) \coloneqq 0
+\]
+for all $e\in E$, $\theta,\bar\theta\in\R$ and $q\in \QueueFct^E$.
+This induces the constant edge costs $\predc^\predZ_e(\emptyArg, \emptyArg, \emptyArg)\equiv \transit_e$ for all edges $e\in E$.
+
+Another approach is the so-called \emph{constant predictor} $\predq^\predC$ which predicts, that the queue lengths simply stay constant beginning from the prediction time, i.e.
+\[
+    \predq^\predC_{e}(\theta, \bar\theta, q) \coloneqq q_e(\bar\theta)
+\]
+for all $e\in E$, $\theta,\bar\theta\in\R$ and $q\in \QueueFct^E$.
+Here, the edge costs are constant in the argument $\theta$ with $\predc^\predZ_e(\emptyArg, \bar\theta, q)\equiv \transit_e + q_e(\bar\theta)/\capa_e$ for all edges $e\in E$.
+If all commodities use the constant predictor, the dynamic flow of a DPE is the same as an instantaneous dynamic equilibrium (IDE) as introduced in~\cite[Definition~2.1]{Graf2020}.
+
+A more sophisticated variant is the \emph{linear predictor} $\predq^\predL$ which predicts that the queue length extends with the current derivative up to some prediction horizon $H\in \R_{>0} \cup \{ \infty \}$.
+Starting from $H$ we assume a constant course.
+In formulas, this can be written as \[
+    \predq^\predL_e(\theta,\bar\theta,q) \coloneqq \left( q_e(\bar\theta) + \partial_- q_e(\bar\theta) \cdot \min\{\theta - \bar\theta, H \} \right)^+,
+\]
+where $(x)^+\coloneqq \max\{ x, 0 \}$ denotes the positive part of $x\in\R$.
+
+As the left derivative of $q_e$ might not be continuous, the linear predictor does not qualify for the requirements of Theorem~\ref{thm:dpe-existence}.
+The following predictor eliminates this problem by applying a regularization.
+The \emph{regularized linear predictor} $\predq^\predRL$ uses a rolling average of the past gradient with rolling horizon $\delta>0$, which yields
+\[
+\hat q_{i,e}^{\text{RL}}(\theta, \bar\theta, q) \coloneqq
+  \Big( q_e(\bar\theta) + \frac{q_e(\bar\theta) - q_e(\bar\theta - \delta)}{\delta} \cdot \min\{ \theta - \bar\theta, H \} \Big)^+.
+\]
+
+Furthermore, we introduce a machine learning predictor $\predq^\predML$ using a simple linear regression model.
+More specifically, for an edge $e=vw$ we use $k_p$ samples of past queue lengths of surrounding edges $N(e) = \inEdges{v} \cup \{ e \} \cup\outEdges{v}$ to predict $k_f$ samples of the future queue length of $e$.
+The samples are equidistant with step length $\delta > 0$.
+For each edge $e$, we learn coefficient matrices $W^{e'}\in\R^{k_p\times k_f}$ for $e'\in N(e)$ as well as biases $\beta\in\R^{k_f}$ to compute interpolation points \[
+    \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right) \coloneqq 
+    \left(
+    \sum_{e'\in N(e)} \sum_{i = 1}^{k_p} w^{e'}_{i, j} \cdot {q_{e'}}{\left( 
+        \bar\theta - (i-1)\cdot\delta
+    \right)}
+    + \beta_j
+    \right)^+.
+\]
+The function $\predq^\predML_e(\emptyArg, \bar\theta, q)$ linearly interpolates these points and is extended constantly with the value $\predq^\predML_e(\bar\theta + k_f\cdot\delta,\bar\theta,q )$ starting from $\bar\theta + k_f\cdot \delta$.
+As the above predictor does not generally fulfill the FIFO-property, we manually limit the gradient of $\predq^\predML_e(\emptyArg, \bar\theta, q)$ such that it never subceeds $-\capa_e$.
+
+Finally, we introduce the \emph{perfect predictor} $\predq^\predP$ which predicts the queues as they will occur with \[
+    \predq^\predP_e(\theta,\bar\theta,q) \coloneqq q_e(\theta).
+\]
+As this is a non-oblivious predictor, it is not possible to embed it into a simulation nor does it fulfill the constraints of Theorem~\ref{thm:dpe-existence}.
+Nevertheless, the flow of a DPE equilibrium, in which all commodities use the perfect predictor, is the same as a dynamic equilibrium as analyzed in~\cite[Definition~2]{Cominetti2015}.
+In this scenario particles can exactly predict the traffic conditions at any future time and chose a shortest path already when starting at the source node.
