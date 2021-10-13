@@ -478,7 +478,7 @@ class Predictor(ABC):
 \end{classdef}
 
 
-In Section~X\todo{Add Section Number}, we will discuss the implementations of the different predictors that have been used throughout the experiments.
+In Section~\ref{subsec:implementation-predictors}, we will discuss the implementations of the different predictors that have been used throughout the experiments.
 Here, we will assume that these implementations are already available.
 Each commodity has a predictor assigned to it which is used for its routing decisions.
 A commodity's network inflow rate is defined as an arbitrary piecewise constant function saved in the attribute \code{net_inflow}. 
@@ -689,3 +689,109 @@ The implementation of the function~\code{static_dijkstra} is not included in thi
 
 If the queue length functions are not constant, we utilize the algorithm developed in Section~\ref{sec:compute-active-edges}.
 This means, that for any node (for which the function \code{_get_active_edges} is called) two instances of the Dynamic Dijkstra Algorithm have to be evaluated once in every routing phase. 
+
+
+\subsection{Implementation of the Predictors}\label{subsec:implementation-predictors}
+
+In this section we show how the different predictors introduced in section~\ref{sec:applied-predictors} are implemented.
+The simplest predictor is the Zero-Predictor which returns simply returns a constant zero function for each edge as shown in Algorithm~\ref{alg:zero-predictor}.
+
+\begin{algorithm}
+  \begin{minted}[linenos, escapeinside=||]{python}
+class ZeroPredictor(Predictor):
+
+  def is_constant(self) -> bool:
+    return True
+
+  def predict(self, old_queues: List[PiecewiseLinear], phi: float) -> \
+      List[PiecewiseLinear]:
+    zero_fct = PiecewiseLinear([phi], [0.], 0., 0.)
+    return [zero_fct for _ in old_queues]
+\end{minted}
+\caption{The Zero Predictor}
+\label{alg:zero-predictor}
+\end{algorithm}
+
+The constant predictor is slightly more advanced as it predicts constant functions with value $q_e(\phi)$ as shown in Algorithm~\ref{alg:constant-predictor}.
+
+\begin{algorithm}
+  \begin{minted}[linenos, escapeinside=||]{python}
+class ConstantPredictor(Predictor):
+
+  def is_constant(self) -> bool:
+    return True
+
+  def predict(self, old_queues: List[PiecewiseLinear], phi: float) -> \
+      List[PiecewiseLinear]:
+    return [
+      PiecewiseLinear([phi], [queue(phi)], 0., 0.)
+      for queue in old_queues
+    ]
+\end{minted}
+\caption{The Constant Predictor}
+\label{alg:constant-predictor}
+\end{algorithm}
+
+For the linear predictor as well as the regularized linear predictor, we assume that the prediction horizon $H>0$ is finite.
+The linear predictor can then be initialized using a value \code{horizon} representing $H$.
+To determine the gradient $\partial_-q_e(\phi)$, the method \code{gradient} has been implemented for the \code{class PiecewiseLinear}.
+The resulting linear predictor is shown in Algorithm~\ref{alg:linear-predictor}.
+
+\begin{algorithm}
+  \begin{minted}[linenos, escapeinside=||]{python}
+class LinearPredictor(Predictor):
+  horizon: float
+
+  def __init__(self, horizon: float):
+    super(LinearPredictor, self).__init__()
+    self.horizon = horizon
+
+  def is_constant(self) -> bool:
+      return False
+
+  def predict(self, old_queues: List[PiecewiseLinear], phi: float) \
+      -> List[PiecewiseLinear]:
+    times = [phi, phi + self.horizon]
+    queues = [None] * len(old_queues)
+    for i, queue in enumerate(old_queues):
+      val = max(0., queue(phi) + self.horizon * queue.gradient(phi))
+      queues[i] = PiecewiseLinear(times, [queue(phi), val], 0., 0.)
+    return queues
+  \end{minted}
+  \caption{The Linear Predictor}
+  \label{alg:linear-predictor}
+\end{algorithm}
+
+The regularized linear predictor is again a bit easier to implement, as we only evaluate the queue $q_e$ at multiple time steps.
+The regularization constant $\delta$ is given as another argument to the constructor of the class.
+The corresponding class is shown in~Algorithm~\ref{alg:reg-linear-predictor}.
+
+\begin{algorithm}
+  \begin{minted}[linenos, escapeinside=||]{python}
+class RegularizedLinearPredictor(Predictor):
+  horizon: float
+  delta: float
+
+  def __init__(self, horizon: float, delta: float):
+    super(RegularizedLinearPredictor, self).__init__()
+    self.horizon = horizon
+    self.delta = delta
+
+  def is_constant(self) -> bool:
+      return False
+
+  def predict(self, old_queues: List[PiecewiseLinear], phi: float) \
+      -> List[PiecewiseLinear]:
+    times = [phi, phi + self.horizon]
+    queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
+    for i, queue in enumerate(old_queues):
+      slope = (queue(phi) - queue(phi - self.delta)) / self.delta
+      val = max(0., queue(phi) + self.horizon * slope)
+      queues[i] = PiecewiseLinear(times, [queue(phi), val], 0., 0.)
+    return queues
+  \end{minted}
+  \caption{The Regularized Linear Predictor}
+  \label{alg:reg-linear-predictor}
+\end{algorithm}
+
+
