@@ -448,7 +448,7 @@ def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
 \end{algorithm}
 
 
-\subsection{Computation of Approximated DPEs}
+\subsection{Computation of Approximated DPEs}\label{sec:compute-dpes}
 
 We now use the subroutine introduced in the previous section to compute $\varepsilon$-DPEs.
 Here, we define the mechanism which decides how the flow is routed from its source to its sink and which defines the constant inflow rates of the extension phases.
@@ -693,10 +693,12 @@ This means, that for any node (for which the function \code{_get_active_edges} i
 
 \subsection{Implementation of the Predictors}\label{subsec:implementation-predictors}
 
-In this section we show how the different predictors introduced in section~\ref{sec:applied-predictors} are implemented.
-The simplest predictor is the Zero-Predictor which returns simply returns a constant zero function for each edge as shown in Algorithm~\ref{alg:zero-predictor}.
+In this section we show how the different predictors introduced in Section~\ref{sec:applied-predictors} are implemented.
 
-\begin{algorithm}
+
+The simplest predictor is the Zero-Predictor $\predq^\predZ$ which returns simply returns a constant zero function for each edge as shown in Algorithm~\ref{alg:zero-predictor}.
+
+\begin{algorithm}[H]
   \begin{minted}[linenos, escapeinside=||]{python}
 class ZeroPredictor(Predictor):
 
@@ -708,13 +710,15 @@ class ZeroPredictor(Predictor):
     zero_fct = PiecewiseLinear([phi], [0.], 0., 0.)
     return [zero_fct for _ in old_queues]
 \end{minted}
-\caption{The Zero Predictor}
+\caption{The Zero-Predictor $\predq^\predZ$.}
 \label{alg:zero-predictor}
 \end{algorithm}
 
-The constant predictor is slightly more advanced as it predicts constant functions with value $q_e(\phi)$ as shown in Algorithm~\ref{alg:constant-predictor}.
+The constant predictor $\predq^\predC$ is slightly more advanced as it predicts constant functions with value $q_e(\phi)$ as shown in Algorithm~\ref{alg:constant-predictor}.
+As the function $\predq(\emptyArg, \bar\theta, q)$ is constant for the constant predictor $\predq^\predC$ and for the Zero-predictor $\predq^\predZ$, the method \code{is_constant} returns \code{true}.
+For all remaining predictors this is not the case and \code{is_constant} returns \code{false} for them.
 
-\begin{algorithm}
+\begin{algorithm}[H]
   \begin{minted}[linenos, escapeinside=||]{python}
 class ConstantPredictor(Predictor):
 
@@ -728,7 +732,7 @@ class ConstantPredictor(Predictor):
       for queue in old_queues
     ]
 \end{minted}
-\caption{The Constant Predictor}
+\caption{The constant predictor $\predq^\predC$.}
 \label{alg:constant-predictor}
 \end{algorithm}
 
@@ -737,7 +741,7 @@ The linear predictor can then be initialized using a value \code{horizon} repres
 To determine the gradient $\partial_-q_e(\phi)$, the method \code{gradient} has been implemented for the \code{class PiecewiseLinear}.
 The resulting linear predictor is shown in Algorithm~\ref{alg:linear-predictor}.
 
-\begin{algorithm}
+\begin{algorithm}[H]
   \begin{minted}[linenos, escapeinside=||]{python}
 class LinearPredictor(Predictor):
   horizon: float
@@ -752,7 +756,7 @@ class LinearPredictor(Predictor):
   def predict(self, old_queues: List[PiecewiseLinear], phi: float) \
       -> List[PiecewiseLinear]:
     times = [phi, phi + self.horizon]
-    queues = [None] * len(old_queues)
+    queues = [None for _ in old_queues]
     for i, queue in enumerate(old_queues):
       val = max(0., queue(phi) + self.horizon * queue.gradient(phi))
       queues[i] = PiecewiseLinear(times, [queue(phi), val], 0., 0.)
@@ -763,10 +767,9 @@ class LinearPredictor(Predictor):
 \end{algorithm}
 
 The regularized linear predictor is again a bit easier to implement, as we only evaluate the queue $q_e$ at multiple time steps.
-The regularization constant $\delta$ is given as another argument to the constructor of the class.
-The corresponding class is shown in~Algorithm~\ref{alg:reg-linear-predictor}.
+The regularization constant $\delta$ is given as another argument to the constructor of the class as shown in~Algorithm~\ref{alg:reg-linear-predictor}.
 
-\begin{algorithm}
+\begin{algorithm}[H]
   \begin{minted}[linenos, escapeinside=||]{python}
 class RegularizedLinearPredictor(Predictor):
   horizon: float
@@ -783,7 +786,7 @@ class RegularizedLinearPredictor(Predictor):
   def predict(self, old_queues: List[PiecewiseLinear], phi: float) \
       -> List[PiecewiseLinear]:
     times = [phi, phi + self.horizon]
-    queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
+    queues = [None for _ in old_queues]
     for i, queue in enumerate(old_queues):
       slope = (queue(phi) - queue(phi - self.delta)) / self.delta
       val = max(0., queue(phi) + self.horizon * slope)
@@ -794,4 +797,92 @@ class RegularizedLinearPredictor(Predictor):
   \label{alg:reg-linear-predictor}
 \end{algorithm}
 
+The most challenging predictor to implement was of course the machine-learned predictor.
+After some attempts with the \emph{Tensorflow} framework \cite{tensorflow}, the \emph{Weka} tool \cite{frank2005weka} and the \emph{Deep Graph Library} \cite{dgl} together with the \emph{PyTorch} framework \cite{pytorch}, more detailed experiments were deducted using the \emph{scikit-learn} framework \cite{scikit-learn}, which provides very efficient implementations of linear regression methods.
 
+As explained in Section~\ref{sec:applied-predictors}, for each edge $e=vw$ we want to learn coefficient matrices $W^{e'} \in \R^{k_p \times k_f}$ for neighbouring edges $e'\in N(e)$ and biases $\beta\in\R^{k_f}$ to compute the interpolation points \[
+  \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right) \coloneqq 
+  \left(
+  \sum_{e'\in N(e)} \sum_{i = 1}^{k_p} w^{e'}_{i, j} \cdot {q_{e'}}{\left( 
+      \bar\theta - (i-1)\cdot\delta
+  \right)}
+  + \beta_j
+  \right)^+,
+\]
+for $j\in\{1,\dots,k_f\}$, $i\in\{1,\dots,k_p\}$ and $N(e) = \outEdges{v} \cup \{e\} \cup \inEdges{w}$.
+For graphs with a large number of edges this quickly gets computationally infeasible. Hence, for such a graph we learn a fixed number of matrices and apply them on all edges.
+More specifically, let $\deg^+\coloneqq \max_{v\in V} \abs{ \inEdges{v} }$ be the maximum in-degree and $\deg^-\coloneqq \max_{v\in V} \abs{\outEdges{v}}$ the maximum out-degree of any node.
+We learn matrices $W^{+1},\dots,W^{+\deg^+}$, $W^0$, $W^{-1},\dots,W^{-\deg^-}$ and biases $\beta\in\R^{k_f}$.
+These generalized parameters can now be applied to predict the queue lengths of any edge $e=vw$:
+We arbitrarily order the neighboring edges using $\inEdges{v} \eqqcolon \{ e^{+1},\dots,e^{+\abs{\inEdges{v}}}\}$, $e\eqqcolon e^0$ and $\outEdges{w} \eqqcolon \{ e^{-1},\dots,e^{-\abs{\outEdges{w}}} \}$ and compute \[
+  \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right) \coloneqq 
+  \left(
+  \sum_{e^l\in N(e)} \sum_{i = 1}^{k_p} w^{l}_{i, j} \cdot {q_{e'}}{\left( 
+      \bar\theta - (i-1)\cdot\delta
+  \right)}
+  + \beta_j
+  \right)^+.
+\]
+ 
+For graphs of any size, we train the linear regression model on samples of queue functions that have previously been computed by the extension procedure of Section~\ref{sec:compute-dpes}.
+In these training flows all commodities exclusively use the constant predictor.
+
+As previously noted, using this prediction method as described by the formulas above does not necessarily lead to a FIFO-respecting predictor.
+To force such a predictor to follow the FIFO rule, we have to make sure that the derivate of $\predq^\predML(\emptyArg,\bar\theta,q)$ never subceeds $\capa_e$.
+We do this by sequentially reassigning \[
+  \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right)
+  \coloneqq \max\left\{
+    \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right), \predq^\predML_e\left(\bar\theta + (j-1)\cdot\delta,\bar\theta,q \right) + \delta\cdot \capa_e
+    \right\}
+  \]
+for $j=1,\dots,k_f$ in a post-processing step.
+
+The full implementation of the predictor for small graphs with $\delta = 1$ can be seen in Algorithm~\ref{alg:ml-predictor}; the predictor for larger graphs is omitted here.
+The depicted predictor can be constructed using instances of \code{class sklearn.linear_model.LinearRegression}, i.e. one prelearned linear regression model per edge.
+Such a model can be utilized by calling its method \code{predict}.
+The variable \code{prediction} in Algorithm~\ref{alg:ml-predictor} then holds the $k_f$ values of the computed interpolation points. 
+
+\begin{algorithm}[H]
+  \begin{minted}[linenos, escapeinside=||]{python}
+class PerEdgeLinearRegressionPredictor(Predictor):
+  network: Network
+  past_timesteps: int
+  future_timesteps: int
+
+  def __init__(self, models: List[LinearRegression], past_timesteps: int, \ 
+      future_timesteps: int, network: Network):
+    super().__init__(network)
+    self.models = models
+    self.past_timesteps = past_timesteps
+    self.future_timesteps = future_timesteps
+    self.network = network
+
+  def is_constant(self) -> bool:
+    return False
+
+  def predict(self, old_queues: List[PiecewiseLinear], phi: float) \ 
+      -> List[PiecewiseLinear]:
+    times = [phi + t for t in range(0, self.future_timesteps + 1, 1)]
+    past_times = [phi - t for t in range(-self.past_timesteps + 1, 1)]
+    queues = [None for _ in old_queues]
+    for e in self.network.graph.edges:
+      model_inputs = 
+        [old_queues[ie.id](t) for t in past_times
+         for ie in e.node_from.incoming_edges] + \
+        [old_queues[oe.id](t) for t in past_times
+         for oe in e.node_to.outgoing_edges] + \
+        [old_queues[e.id](t) for t in past_times]
+      prediction = self.models[e.id].predict([model_inputs])[0]
+      cap = self.network.capacity[e.id]
+      new_values = [old_queues[e.id](phi)]
+      for j in range(1, len(new_values)):
+        new_values.append(
+          max(prediction[j - 1], new_values[j - 1] - cap, 0.)
+        )
+      queues[e.id] = PiecewiseLinear(times, new_values, 0., 0.)
+    return queues
+  \end{minted}
+  \caption{The Machine-Learned Predictor $\predq^\predML$ for small graphs}
+  \label{alg:ml-predictor}
+\end{algorithm}
+    

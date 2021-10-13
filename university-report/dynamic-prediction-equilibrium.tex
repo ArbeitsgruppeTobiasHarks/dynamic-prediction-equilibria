@@ -126,7 +126,7 @@ The \emph{regularized linear predictor} $\predq^\predRL$ uses a rolling average 
 \]
 
 Furthermore, we introduce a machine learning predictor $\predq^\predML$ using a simple linear regression model.
-More specifically, for an edge $e=vw$ we use $k_p$ samples of past queue lengths of surrounding edges $N(e) = \inEdges{v} \cup \{ e \} \cup\outEdges{v}$ to predict $k_f$ samples of the future queue length of $e$.
+More specifically, for an edge $e=vw$ we use $k_p$ samples of past queue lengths of surrounding edges $N(e) = \inEdges{v} \cup \{ e \} \cup\outEdges{w}$ to predict $k_f$ samples of the future queue length of $e$.
 The samples are equidistant with step length $\delta > 0$.
 For each edge $e$, we learn coefficient matrices $W^{e'}\in\R^{k_p\times k_f}$ for $e'\in N(e)$ as well as biases $\beta\in\R^{k_f}$ to compute interpolation points \[
     \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right) \coloneqq 
@@ -135,8 +135,9 @@ For each edge $e$, we learn coefficient matrices $W^{e'}\in\R^{k_p\times k_f}$ f
         \bar\theta - (i-1)\cdot\delta
     \right)}
     + \beta_j
-    \right)^+.
+    \right)^+
 \]
+for $j\in\{1,\dots,k_f\}$ and $i\in\{1,\dots,k_p\}$.
 The function $\predq^\predML_e(\emptyArg, \bar\theta, q)$ linearly interpolates these points and is extended constantly with the value $\predq^\predML_e(\bar\theta + k_f\cdot\delta,\bar\theta,q )$ starting from $\bar\theta + k_f\cdot \delta$.
 As the above predictor does not generally fulfill the FIFO-property, we manually limit the gradient of $\predq^\predML_e(\emptyArg, \bar\theta, q)$ such that it never subceeds $-\capa_e$.
 
