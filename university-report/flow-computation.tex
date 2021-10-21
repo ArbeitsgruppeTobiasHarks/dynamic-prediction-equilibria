@@ -696,7 +696,7 @@ This means, that for any node (for which the function \code{_get_active_edges} i
 In this section we show how the different predictors introduced in Section~\ref{sec:applied-predictors} are implemented.
 
 
-The simplest predictor is the Zero-Predictor $\predq^\predZ$ which returns simply returns a constant zero function for each edge as shown in Algorithm~\ref{alg:zero-predictor}.
+The simplest predictor is the Zero-Predictor $\predq^\predZ$ which simply returns a constant zero function for each edge as shown in Algorithm~\ref{alg:zero-predictor}.
 
 \begin{algorithm}[H]
   \begin{minted}[linenos, escapeinside=||]{python}
@@ -828,11 +828,11 @@ For graphs of any size, we train the linear regression model on samples of queue
 In these training flows all commodities exclusively use the constant predictor.
 
 As previously noted, using this prediction method as described by the formulas above does not necessarily lead to a FIFO-respecting predictor.
-To force such a predictor to follow the FIFO rule, we have to make sure that the derivate of $\predq^\predML(\emptyArg,\bar\theta,q)$ never subceeds $\capa_e$.
+To force such a predictor to follow the FIFO rule, we have to make sure that the derivate of $\predq^\predML(\emptyArg,\bar\theta,q)$ never subceeds $-\capa_e$.
 We do this by sequentially reassigning \[
   \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right)
   \coloneqq \max\left\{
-    \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right), \predq^\predML_e\left(\bar\theta + (j-1)\cdot\delta,\bar\theta,q \right) + \delta\cdot \capa_e
+    \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right), \predq^\predML_e\left(\bar\theta + (j-1)\cdot\delta,\bar\theta,q \right) - \delta\cdot \capa_e
     \right\}
   \]
 for $j=1,\dots,k_f$ in a post-processing step.
