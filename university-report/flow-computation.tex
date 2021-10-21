@@ -1,4 +1,4 @@
-\section{Computation of Multi-Commodity Equilibrium Flows}
+\section{Computation of Dynamic Prediction Equilibria}
 
 In this section we want to discuss how we can compute an approximated variant of DPEs.
 We recall from the definition, that in a DPE all infinitesimally small agents update their routing decision every time they arrive at an intermediate node.
@@ -849,7 +849,7 @@ class PerEdgeLinearRegressionPredictor(Predictor):
   past_timesteps: int
   future_timesteps: int
 
-  def __init__(self, models: List[LinearRegression], past_timesteps: int, \ 
+  def __init__(self, models: List[LinearRegression], past_timesteps: int,
       future_timesteps: int, network: Network):
     super().__init__(network)
     self.models = models

@@ -14,11 +14,12 @@ def eval_sample():
     horizon = 100.
     demand = 0. + step_size
     avg_times = [[], [], [], [], [], []]
+    comp_times = []
     while demand < max_demand:
         network = build_sample_network()
         net_inflow = RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf')))
         network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
-        times = evaluate_single_run(
+        times, comp_time = evaluate_single_run(
             network,
             flow_id=None,
             focused_commodity=0,
@@ -31,11 +32,14 @@ def eval_sample():
         )
         for i, val in enumerate(times):
             avg_times[i].append(val)
+        comp_times.append(comp_time)
         print(f"Calculated for demand={demand}. times={times}")
         demand += step_size
     print()
     print(avg_times)
+    avg_comp_time = sum(comp_times) / len(comp_times)
     print()
+    print(f"Average Computation Time: {avg_comp_time}")
 
     with open("./avg_times_sample.json", "w") as file:
         json.dump(avg_times, file)

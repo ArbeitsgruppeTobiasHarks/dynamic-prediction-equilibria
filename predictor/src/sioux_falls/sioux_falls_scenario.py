@@ -1,3 +1,4 @@
+import json
 import os
 
 from core.predictors.constant_predictor import ConstantPredictor
@@ -44,6 +45,7 @@ def run_scenario(tntp_path: str, scenario_dir: str):
         reroute_interval,
         horizon,
         random_commodities=True,
+        suppress_log=True,
         build_predictors=lambda network: {
             PredictorType.ZERO: ZeroPredictor(network),
             PredictorType.CONSTANT: ConstantPredictor(network),
@@ -58,10 +60,20 @@ def run_scenario(tntp_path: str, scenario_dir: str):
             )
         })
 
+    average_comp_times = []
+    for file in os.listdir(eval_dir):
+        if file.endswith(".json"):
+            path = os.path.join(eval_dir, file)
+            with open(path, "r") as file:
+                d = json.load(file)
+            average_comp_times.append(d["comp_time"])
+    
+    avg_comp_time = sum(average_comp_times) / len(average_comp_times)
+    print(f"Average computing time: {avg_comp_time}")
 
 if __name__ == "__main__":
     def main():
-        tntp_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_net.tntp"
+        tntp_path = "/mnt/c/Users/Tür an Tür/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_net.tntp"
         run_scenario(tntp_path, "../../out/aaai-sioux-falls")
 
     main()

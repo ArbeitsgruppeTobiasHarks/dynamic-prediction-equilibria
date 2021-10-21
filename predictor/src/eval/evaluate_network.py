@@ -11,7 +11,7 @@ from utilities.right_constant import RightConstant
 
 def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
                  reroute_interval: float, horizon: float, split: bool = False,
-                 random_commodities: bool = False,
+                 random_commodities: bool = False, suppress_log=True,
                  build_predictors: Optional[PredictorBuilder] = None, check_for_optimizations: bool = True):
     if check_for_optimizations:
         assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
@@ -59,6 +59,7 @@ def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
             selected_commodity = network.remove_unnecessary_commodities(k)
         evaluate_single_run(network, flow_id=k, inflow_horizon=inflow_horizon,
                             focused_commodity=selected_commodity, horizon=horizon, reroute_interval=reroute_interval,
+                            suppress_log=suppress_log,
                             split=split, output_folder=output_folder, build_predictors=build_predictors)
         os.remove(lock_path)
 

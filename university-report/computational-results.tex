@@ -1,3 +1,168 @@
 \section{Results of the Computational Study}
 
-test 
+We want to compare the different predictors that we introduced in the last section.
+As a metric for the performance of the different predictors, we monitor their average travel times in an $\varepsilon$-DPE with multiple predictors used side by side:
+Let $i$ be a commodity with net inflow rate
+\[
+    u_i(\theta) \coloneqq \begin{cases}
+        \bar{u}_i, &\text{ for $\theta \leq h$,}\\
+        0, &\text{ for $\theta > h$,}
+    \end{cases}
+\]
+where $\bar{u}_i\in\R_{>0}$ is the constant inflow rate up to some time $h$. 
+We denote the outflow rate of commodity $i$ out of the network by  $o_i(\theta) \coloneqq \sum_{e\in\inEdges{t}} f_{i,e}^-(\theta) - \sum_{e\in\outEdges{t}} f_{i,e}^+(\theta)$.
+Taking the integral of $u_i(\psi) - o_i(\psi)$ over $[0, \phi]$ yields the amount of flow of commodity $i$ that is inside the network at time $\phi$.
+If we integrate the flow inside the network over some time period $[0, H]$ with $H \geq h$, we obtain the \emph{total travel time} of particles of commodity $i$ up to time $H$:
+\begin{align*}
+    T^{\text{total}}_i
+    &\coloneqq\int_0^H \int_0^\phi u_i(\psi) - o_{i}(\psi) \diff\psi \diff \phi.
+\end{align*}
+The \emph{average travel time} is defined as $T^{\text{avg}}_i\coloneqq  T_i^{\text{total}} / (h\cdot \bar{u}_i)$.
+
+To determine a commodity's regret of a chosen predictor, we additionally need to compute the minimum travel time given a computed $\varepsilon$-DPE $f$.
+We first determine the labels $(l_{i,v}(\emptyArg))_{v\in V_i}$ using the Bellman-Ford-Algorithm~\ref{alg:dynamic-bellman-ford} with the dynamic edge costs induced by the computed queue length functions $(q_e(\emptyArg))_{e\in E}$ of $f$.
+The minimum travel time at time $\theta$ (up to time horizon $H$) can then be computed using $\min\{H, l_{i,s}(\theta)\} - \theta$.
+The \emph{total minimum travel time} of all particles of a commodity can be expressed as
+\[
+    T^{\mathrm{total}}_{i, \text{OPT}}
+    \coloneqq \int_0^H u_i(\theta)\cdot (\min\{H, l_{i,s}(\theta)\} - \theta) \diff \theta
+    = \bar u_i \cdot \int_0^h \min\{H, l_{i,s}(\theta)\} - \theta \diff \theta.
+\]
+From that we derive the \emph{average minimum travel time} as
+\[
+    T^{\mathrm{avg}}_{i, \text{OPT}}
+    \coloneqq \frac{T^{\mathrm{total}}_{i, \text{OPT}}}{\int_0^h u_i(\theta)\diff \theta} = \frac{1}{h}\cdot \int_0^h \min\{H, l_{i,s}(\theta)\} - \theta \diff \theta.
+\]
+
+\subsection{Data}
+
+We conduct our experiments on three graphs.
+The first is a warm-up synthetic graph with $4$ nodes and $5$ edges. We present the graph in Figure~\ref{fig:synthetic-network}.
+The second graph is the road map of Sioux Falls as given in~\cite{LeBlanc1975} which is commonly used in the transport science literature.
+This public data set comes with edge attributes free-flow travel time $\tau_e$ and capacity $\nu_e$. 
+The third graph is the center of Tokyo, as obtained from Open Street Maps~\cite{openstreetmaps}. 
+This graph includes information about the free-flow speed, the length and the numbers of lanes of each road segment $e$.
+We compute the transit time $\tau_e$ as the product of the free-flow speed and the length of edge $e$.
+The capacity $\nu_e$ is calculated by multiplying the number of lanes with the free-flow speed.
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}
+        \node[draw,circle](0)at(0,0) {$s$};
+        \node[draw,circle](1)at(2,0) {$v$};
+        \node[draw,circle](2)at(0,-2) {$t$};
+        \node[draw,circle](3)at(2,-2) {$w$};
+        
+        \draw[thick,->](0) --node[above]{$(1,2)$} (1);
+        \draw[thick,->](1) --node[right]{$(1,2)$} (3);
+        \draw[thick,->](3) --node[below]{$(1,1)$} (2);
+        \draw[thick,->](3) --node[above,sloped]{$(1,1)$} (0);
+        \draw[thick,->](0) --node[left]{$(3,1)$} (2);
+    \end{tikzpicture}
+    \caption{A network with source $s$ and sink $t$. Edges are labeled with $(\tau_e, \nu_e)$.}\label{fig:synthetic-network}
+\end{figure}
+
+In the first network, we only have one commodity with source $s$ and sink $t$ for each predictor. 
+For the latter two networks, commodities are randomly chosen.
+More detailed information on all networks are depicted in Table~\ref{table:network-data}.
+Besides the configuration of all predictors, the average time for computing a single $\varepsilon$-DPE up to time $H$ is shown in row $T^{\mathrm{avg}}_{\mathrm{comp}}$.
+Here, each predictor is used by exactly one commodity except for the constant predictor which is used by all other commodities.
+The resulting computation times were taken on a single core of an Intel\textsuperscript{\textregistered} Core\textsuperscript{\texttrademark} i7-3520M CPU at $2{.}90$GHz.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{c c c c}
+        \textbf{Network} & \textbf{Synthetic} & \textbf{Sioux Falls} & \textbf{Tokyo}
+        \\
+        \hline
+        $\abs{E}$ & $5$ & $75$ &  $4{,}803$
+        \\
+        $\abs{V}$ & $4$ & $24$ & $3{,}538$
+        \\
+        $\abs{I}$ & $5$ & $17$ & $40$
+        \\
+        $[\nu_{\min}, \nu_{\max}]$ & $[1,2]$ & $[4823,25901]$ & $[8, 250]$
+        \\
+        $[\tau_{\min},\tau_{\max}]$ & $[1,3]$ & $[2, 10]$ & $[0.01, 6.6]$
+        \\
+        $H$ & $100$ & $100$ & $100$
+        \\
+        $h$ & $25$ & $25$ & $25$
+        \\
+        $\varepsilon$ & $0{.}25$ & $1$ & $2{.}5$
+        \\
+        $H$ for $\predq^\predL$ & $10$ & $20$ & $20$
+        \\
+        $\delta,H$ for $\predq^\predRL$ & $5,10$ & $1,20$ & $1,20$
+        \\
+        $\delta,k_p,k_f$ for $\predq^\predML$ & $1,10,10$ & $1,20,20$ & $1,20,20$
+        \\
+        ML model for $\predq^\predML$ & single & per-edge & single
+        \\
+        $T^{\mathrm{avg}}_{\mathrm{comp}}$ & $0{.}33s$ & $10{.}92s$ & $343{.}93s$
+    \end{tabular}
+    \caption{Attributes and configuration of the considered networks.}
+    \label{table:network-data}
+\end{table}
+
+\subsection{Comparison of Predictors}\label{subsec:comparison-predictors}
+
+In this section we finally carry out the experiments and compare the average travel times of the different predictors.
+
+\subsubsection*{Results on the Synthetic Network}
+
+We first take a closer look at the synthetic network as shown in Figure~\ref{fig:synthetic-network}.
+Here, we want to analyze how the average travel times of competing predictors evolve while increasing the total network inflow. 
+For each oblivious predictor described in Section~\ref{sec:applied-predictors}, we add a commodity $i\in\{\predq^\predZ, \predq^\predC, \predq^\predL, \predq^\predRL, \predq^\predML \}$.
+Each of these commodities has the same source $s$ and sink $t$ and the same constant inflow $\bar u_i$ up to time $h=25$.
+The outcome of running the simulation with time horizon $H=100$ for each sampled total inflow in $(0, 30)$ can be seen in Figure~\ref{fig:synthetic-travel-times}.
+The ML based predictor performed best, while notably the Zero-Predictor, which distributes flow along paths $(s,t)$ and $(s,v,w,t)$ uniformly at all times, performs better than the remaining predictors.
+We note, that here the machine-learned model of the Tokyo network was used.
+
+\begin{figure}
+    \centering
+    \input{sample-graph-travel-times}
+    \caption{Measured average travel times of competing predictors in the synthetic network in Figure~\ref{fig:synthetic-network}.}\label{fig:synthetic-travel-times}
+\end{figure}
+
+
+
+\subsubsection*{Results on the Sioux Falls Network}
+
+For the road-networks of Sioux Falls and Tokyo, we randomly generate inflow rates according to the edge capacities of the network.
+For each commodity $i$, we ran the simulation after adding $5$ additional commodities with the same source and sink as $i$, one for each predictor, with a very small constant inflow rate.
+We monitored their average travel time as a measure of the performance of the different predictors.
+All other commodities in the network were assigned the constant predictor, such that the resulting queues should behave similar to the training data.
+
+As the number of edges is small enough in the Sioux Falls network, we trained a separate model for each edge each with a $90\% / 10\%$ split for the training data and test data.
+The coefficient of determination was above $0{.}9$ for all edges except for $6$ edges but always higher than $0{.}5$.
+
+Evaluating the average travel time of the different predictors for $12$ random commodities yields the results depicted in Figure~\ref{fig:sioux-falls-boxplot}.
+We can see that the linear regression predictor $\predq^\predML$ performs similarly well as the regularized linear predictor $\predq^\predRL$ which is slightly beaten by the constant and the linear predictors.
+The Zero predictor performs worse than the others many times.
+
+
+\begin{figure}
+    \centering
+    \input{sioux-falls-boxplot}
+    \caption{Average travel times compared to the minimum average travel time in the Sioux Falls network.}
+    \label{fig:sioux-falls-boxplot}
+\end{figure}
+
+
+
+\subsubsection*{Results on the Tokyo Network}
+
+Because the Tokyo instance has substantially more edges, we decided to train a single model used for all edges.
+A training and validation split of $90\%/10\%$ yields a coefficient of determination of $0{.}97$.
+Running the evaluation now on $35$ randomly chosen commodities gives the results shown in~\ref{fig:tokyo-boxplot}.
+In this scenario, the linear regression predictor performed similarly well as the linear and the constant predictor.
+Here, the Zero predictor performs slightly better than the regularized linear predictor, but worse than the remaining three.
+
+
+\begin{figure}
+    \centering
+    \input{tokyo-boxplot}
+    \caption{Average travel times compared to the minimum average travel time in the Tokyo network.}
+    \label{fig:tokyo-boxplot}
+\end{figure}

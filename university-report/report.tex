@@ -8,11 +8,24 @@
 \usepackage{pythonhighlight}
 \usepackage{enumitem}
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
 \usepackage{todonotes}
 \usepackage{algorithm}
-\usepackage{biblatex}
+\usepackage[maxnames=4]{biblatex}
 \usepackage[outputdir=out, cache=true]{minted}
 
+
+\usepackage{tikz}
+\usetikzlibrary{chains,shapes.multipart}
+\usetikzlibrary{shapes,calc}
+\usetikzlibrary{automata,positioning}
+\usetikzlibrary{arrows, decorations.markings}
+\usetikzlibrary{shapes}
+
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.16}
+\usepgfplotslibrary{statistics} % For boxplots
 
 \addbibresource{literature.bib}
 
@@ -88,34 +101,50 @@
 \begin{document}
     \maketitle
 
-    \newpage
+    \clearpage
     \tableofcontents
 
-    \newpage
+    \clearpage
     \section{Introduction}
 
-    The computation of dynamic flows is up to today a hard challenge.
+    When analyzing real-world traffic or communication networks, often simulations are used to retrieve structural information on the performance of the network given certain demands.
+    Starting from a more theoretical perspective, equilibria of underlying game-theoretic models propose to give more fundamental insights.
+    In this software project, we aim to compute such an equilibrium called Dynamic Prediction Equilibrium (DPE) which was recently introduced in~\cite{mainpaper}.
 
-    \todo[inline]{Comment about ignoring rounding errors for simplicity}
+    We first take a closer look to general time-dependent cost functions following the First-In-First-Out (FIFO) rule in Section~\ref{sec:fifo-costs}:
+    We discuss a duality of arrival and departure times that can be used for a simple Dijkstra-based algorithm to compute all so-called \emph{active edges}.
+    This modification of the Dijkstra algorithm together with the duality was developed during the project; it is unclear whether this problem has been solved similarly in previous literature.
+    
+    In Section~\ref{sec:equilibrium-flows} we describe the mathematical flow model and define the equilibrium within this model.
+    These definitions are mostly taken from~\cite{mainpaper}.
 
-    \newpage
+    The computation of an approximation of such an equilibrium is described in detail in section~\ref{sec:compute-dpes}.
+
+
+    All code snippets presented in this work use the Python 3.8 syntax where type hints (e.g. \code{i: int}) are often used to make the underlying data encoding clearer.
+    The presented source code is often a simplified version of the original code such that the reader is not distracted by technical details which might improve the performance.
+    Moreover, in this work we abstract from any kind of rounding errors due to the fixed size floating point numbers.
+    It is worth mentioning though, that fixing these kinds of errors was quite laborious. 
+    The full source code of this software project is publicly available at \url{https://github.com/schedulaar/predicted-dynamic-flows}.
+
+    \clearpage
     \input{fifo-cost-functions.tex}
 
-    \newpage
-    \section{Equilibrium Flows}
+    \clearpage
+    \section{Equilibrium Flows}\label{sec:equilibrium-flows}
 
-    The goal of this project is to compute several kinds of equilibrium flows.
-    This section gives the appropriate introduction in the mathematical model of the underlying flows and the various kinds of equilibria.
+    The goal of this project is to compute a specific kind of equilibrium flows.
+    This section gives the appropriate introduction in the mathematical model of the underlying flows and Dynamic Prediction Equilibria.
     
     \input{dynamic-flows.tex}
     \input{dynamic-prediction-equilibrium.tex}
 
-    \newpage
+    \clearpage
     \input{flow-computation.tex}
     
-    \newpage
+    \clearpage
     \input{computational-results.tex}
 
-    \newpage
+    \clearpage
     \printbibliography
 \end{document}

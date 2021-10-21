@@ -50,10 +50,9 @@ def build_flows(network_path: str, out_directory: str, number_flows: int, horizo
             assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster generation."
 
         predictors = {PredictorType.CONSTANT: ConstantPredictor(network)}
-        distributor = UniformDistributor(network)
 
-        flow_builder = MultiComFlowBuilder(network, predictors, distributor, reroute_interval)
-        flow = build_with_times(flow_builder, flow_id, reroute_interval, horizon)
+        flow_builder = MultiComFlowBuilder(network, predictors, reroute_interval)
+        flow, _ = build_with_times(flow_builder, flow_id, reroute_interval, horizon)
 
         print(f"Successfully built flow up to time {flow.phi}!")
         with open(flow_path, "wb") as file:

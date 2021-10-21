@@ -22,7 +22,7 @@ To calculate the traversal times $T_e = c_e + \id_\R$ we need pointwise addition
 To detect changes we also need to be able to identify whether one function is everywhere smaller or equal to some other function. 
 Instead of representing the constant function with value $\infty$, we can simply only add a function once it gets its first update.
 
-\begin{algorithm}[h]
+\begin{algorithm}
     \begin{minted}[mathescape, linenos]{python}
 def dynamic_bellman_ford(
   sink: Node, costs: List[PiecewiseLinear], relevant_nodes: Set[Node],

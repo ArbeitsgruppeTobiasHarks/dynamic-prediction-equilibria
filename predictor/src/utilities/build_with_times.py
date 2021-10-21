@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Tuple
 
 import time
 
@@ -10,7 +10,7 @@ from core.multi_com_flow_builder import MultiComFlowBuilder
 def build_with_times(
         flow_builder: MultiComFlowBuilder, flow_id: int, reroute_interval: float, horizon: float,
         observe_commodities: Optional[Iterable[int]] = None, suppress_log: bool = False
-) -> MultiComPartialDynamicFlow:
+) -> Tuple[MultiComPartialDynamicFlow, float]:
     generator = flow_builder.build_flow()
     start_time = last_milestone_time = time.time()
     flow = next(generator)
@@ -43,5 +43,5 @@ def build_with_times(
                       )
             milestone += milestone_interval
             last_milestone_time = new_milestone_time
-
-    return flow
+    elapsed = time.time() - start_time
+    return flow, elapsed
