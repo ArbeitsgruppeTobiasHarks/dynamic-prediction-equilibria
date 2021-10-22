@@ -1,4 +1,4 @@
-\section{Results of the Computational Study}
+\section{Results of the Computational Study}\label{sec:results}
 
 We want to compare the different predictors that we introduced in the last section.
 As a metric for the performance of the different predictors, we monitor their average travel times in an $\varepsilon$-DPE with multiple predictors used side by side:
@@ -119,7 +119,7 @@ The outcome of running the simulation with time horizon $H=100$ for each sampled
 The ML based predictor performed best, while notably the Zero-Predictor, which distributes flow along paths $(s,t)$ and $(s,v,w,t)$ uniformly at all times, performs better than the remaining predictors.
 We note, that here the machine-learned model of the Tokyo network was used.
 
-\begin{figure}
+\begin{figure}[hb]
     \centering
     \input{sample-graph-travel-times}
     \caption{Measured average travel times of competing predictors in the synthetic network in Figure~\ref{fig:synthetic-network}.}\label{fig:synthetic-travel-times}
@@ -142,7 +142,7 @@ We can see that the linear regression predictor $\predq^\predML$ performs simila
 The Zero predictor performs worse than the others many times.
 
 
-\begin{figure}
+\begin{figure}[ht]
     \centering
     \input{sioux-falls-boxplot}
     \caption{Average travel times compared to the minimum average travel time in the Sioux Falls network.}
@@ -160,7 +160,7 @@ In this scenario, the linear regression predictor performed similarly well as th
 Here, the Zero predictor performs slightly better than the regularized linear predictor, but worse than the remaining three.
 
 
-\begin{figure}
+\begin{figure}[ht]
     \centering
     \input{tokyo-boxplot}
     \caption{Average travel times compared to the minimum average travel time in the Tokyo network.}

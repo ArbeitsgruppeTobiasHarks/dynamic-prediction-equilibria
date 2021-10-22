@@ -1,4 +1,4 @@
-\section{Computation of Dynamic Prediction Equilibria}
+\section{Computation of Dynamic Prediction Equilibria}\label{sec:compute-dpes}
 
 In this section we want to discuss how we can compute an approximated variant of DPEs.
 We recall from the definition, that in a DPE all infinitesimally small agents update their routing decision every time they arrive at an intermediate node.
@@ -127,8 +127,8 @@ The following theorem is the building block for the algorithms introduced in the
     For $g_e = 0$, the inflow rates $\infl[h]_{i,e}(\theta)$ and $\infl[h]_{e}(\xi)$ are zero as well.
 \end{proof}
 
-We note that in the scenario of Theorem~\ref{thm:extend-edge}, the queue $q_e$ of the transformed flow is giving for $\theta \geq \phi$ as follows:
-\begin{enumerate}[wide=0.5em]
+We note that in the scenario of Theorem~\ref{thm:extend-edge}, the queue $q_e$ of the transformed flow is given for $\theta \geq \phi$ as follows:
+\begin{enumerate}[align=left,leftmargin=*]
     \item[\textbf{Cases I and III.}] If we denote the depletion time by $T_{\depl} \coloneqq \phi + q_e(\phi) / (\capa_e - g_e)$, the queue lengths can be determined using \[
         q_e(\theta) = \begin{cases}
             q_e(\phi) - (\theta - \phi)\cdot (\capa_e - g_e), & \text{for $\theta \leq T_{\depl}$,}\\
@@ -166,8 +166,8 @@ where $v_f$ is written to the attribute \code{first_value}.
 Here, $k=0$ is allowed.
 In both cases, an evaluation of the function can be done using a simple binary search in the \code{times} array resulting in a logarithmic complexity in the time dimension $k$.
 
-\vspace{-1em}\begin{minipage}[t]{0.5\textwidth}
-\begin{classdef}[H]
+\vspace{-1em}\hspace{-1em}\begin{minipage}[t]{0.5\textwidth}%
+\begin{classdef}[H]%
     \begin{minted}[mathescape, linenos]{python}
 class PiecewiseLinear:
   times: List[float]
@@ -179,9 +179,8 @@ class PiecewiseLinear:
 \end{minted}
     \caption{\\Piecewise~Linear~Functions\vphantom{Right}}%
     \label{data:piecewise-linear}
-\end{classdef}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.5\textwidth}
+\end{classdef}%
+\end{minipage}\begin{minipage}[t]{0.5\textwidth}%
 \begin{classdef}[H]
     \begin{minted}[mathescape, linenos, stripnl=false]{python}
 class RightConstant:
@@ -274,8 +273,8 @@ In this section we discuss how to extend a feasible flow for some time period gi
 
 In the beginning we usually start with an empty flow representing a feasible flow up to time $0$.
 This is an object of the class \code{MultiComFlow} initialized using the operations
-\begin{itemize}
-\setlength{\itemsep}{0em}
+\begin{itemize}[left=0pt]
+  \setlength{\itemsep}{0em}
 \item \code{phi = 0},
 \item \code{inflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i},
 \item \code{outflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i}
@@ -448,7 +447,7 @@ def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
 \end{algorithm}
 
 
-\subsection{Computation of Approximated DPEs}\label{sec:compute-dpes}
+\subsection{Computation of Approximated DPEs}\label{subsec:compute-dpes}
 
 We now use the subroutine introduced in the previous section to compute $\varepsilon$-DPEs.
 Here, we define the mechanism which decides how the flow is routed from its source to its sink and which defines the constant inflow rates of the extension phases.
@@ -501,7 +500,7 @@ Such a builder is constructed with the following three arguments:
 \begin{itemize}
   \item \code{network: Network}. Contains the graph, a list of commodities as well as capacities and travel times of the graph's edges.
   \item \code{predictors: List[Predictor]}. Contains a list of all predictors that are used in the commodities.
-  \item \code{reroute_interval: float}. The value $\varepsilon$ for building a $\varepsilon$-DPE. 
+  \item \code{reroute_interval: float}. The value $\varepsilon$ for building an $\varepsilon$-DPE. 
 \end{itemize}
 
 The idea for building such a flow is as follows.
@@ -824,7 +823,7 @@ We arbitrarily order the neighboring edges using $\inEdges{v} \eqqcolon \{ e^{+1
   \right)^+.
 \]
  
-For graphs of any size, we train the linear regression model on samples of queue functions that have previously been computed by the extension procedure of Section~\ref{sec:compute-dpes}.
+For graphs of any size, we train the linear regression model on samples of queue functions that have previously been computed by the extension procedure of Section~\ref{subsec:compute-dpes}.
 In these training flows all commodities exclusively use the constant predictor.
 
 As previously noted, using this prediction method as described by the formulas above does not necessarily lead to a FIFO-respecting predictor.

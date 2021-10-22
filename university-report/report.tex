@@ -10,7 +10,6 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage{todonotes}
 \usepackage{algorithm}
 \usepackage[maxnames=4]{biblatex}
 \usepackage[outputdir=out, cache=true]{minted}
@@ -25,7 +24,7 @@
 
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.16}
-\usepgfplotslibrary{statistics} % For boxplots
+\usepgfplotslibrary{statistics} % For boxplots 
 
 \addbibresource{literature.bib}
 
@@ -110,16 +109,20 @@
     When analyzing real-world traffic or communication networks, often simulations are used to retrieve structural information on the performance of the network given certain demands.
     Starting from a more theoretical perspective, equilibria of underlying game-theoretic models propose to give more fundamental insights.
     In this software project, we aim to compute such an equilibrium called Dynamic Prediction Equilibrium (DPE) which was recently introduced in~\cite{mainpaper}.
+    The fundamental dynamics adhere to Vickrey's fluid queuing model in which infinitesimal particles enter edges.
+    Once the amount of flow exceeds an edge's capacity, a point queue will form in front of it.
 
-    We first take a closer look to general time-dependent cost functions following the First-In-First-Out (FIFO) rule in Section~\ref{sec:fifo-costs}:
-    We discuss a duality of arrival and departure times that can be used for a simple Dijkstra-based algorithm to compute all so-called \emph{active edges}.
-    This modification of the Dijkstra algorithm together with the duality was developed during the project; it is unclear whether this problem has been solved similarly in previous literature.
+    In a DPE, each commodity has a source-sink pair as well as some mean of predicting future travel times of any edge.
+    An agent of a commodity, an infinitesimal particle traveling from the commodity's source $s$ to its sink $t$, computes a shortest path to the sink $t$ every time it arrives at a node $v$ by instantiating a new prediction on the future edge costs. Then, it enters an outgoing edge of $v$ lying on that path.
+    The predictions of a commodity $i$ are modeled as a function $\predq_{i,e}(\theta, \bar\theta, q)$ that given the past queue lengths $q: \R\rightarrow \R_{\geq0}^E$ will return the predicted queue length of edge $e$ at time $\theta$ as predicted at time $\bar\theta$.
+    If all commodities use a perfect predictor, which predicts all queue lengths correctly, the resulting equilibrium flow is called a Dynamic Equilibrium which has been studied thoroughly in literature, for example in~\cite{Cominetti2015}.
     
-    In Section~\ref{sec:equilibrium-flows} we describe the mathematical flow model and define the equilibrium within this model.
-    These definitions are mostly taken from~\cite{mainpaper}.
 
-    The computation of an approximation of such an equilibrium is described in detail in section~\ref{sec:compute-dpes}.
-
+    In this document, we first take a closer look at general time-dependent cost functions following the First-In-First-Out (FIFO) rule in Section~\ref{sec:fifo-costs}:
+    We discuss a duality of arrival and departure times that can be used for a simple Dijkstra-based algorithm to compute all so-called \emph{active edges}.
+    In Section~\ref{sec:equilibrium-flows} we describe the mathematical flow model and define DPEs within this model.
+    The computation of an approximation of such an equilibrium is described in detail in Section~\ref{sec:compute-dpes}.
+    Finally, we run our developed algorithms in Section~\ref{sec:results} on a small synthetic network and multiple real world traffic networks.
 
     All code snippets presented in this work use the Python 3.8 syntax where type hints (e.g. \code{i: int}) are often used to make the underlying data encoding clearer.
     The presented source code is often a simplified version of the original code such that the reader is not distracted by technical details which might improve the performance.

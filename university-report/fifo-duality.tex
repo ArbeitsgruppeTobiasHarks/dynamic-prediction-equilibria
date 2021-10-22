@@ -18,6 +18,7 @@ To enable this switch, we define a kind of inverse of a monotonically increasing
 We can interpret the reversal of $f$ in the following way:
 If $f(\theta)$ is the earliest arrival time when departing at time $\theta$, then $\minv{f}(\theta)$ is the latest departure time for arriving before or at time $\theta$.
 
+
 \begin{proposition}\label{prop:reversal-props}
     For $f,g\in \IncCoercive$ the following statements are true:
     \begin{enumerate}[label=(\roman*)]
@@ -101,7 +102,7 @@ If $f(\theta)$ is the earliest arrival time when departing at time $\theta$, the
     \end{enumerate}
 \end{corollary}
 
-The reversal of a function can be utilized for a characterization of active edges:
+The reversal of a function can be utilized for a characterization of active edges in the case of continuous cost function:
 
 \begin{lemma}\label{lem:characterization-active-edges}
     Let $c: \R\rightarrow\R_{\geq0}^E$ be a continuous cost function following the FIFO rule with $\lim_{\theta\to-\infty} T_e(\theta) = -\infty$ for all $e\in E$ and let $t\in V$ be a sink node.

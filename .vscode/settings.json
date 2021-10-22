@@ -3,5 +3,12 @@
         "./predictor/src"
     ],
     "latex-workshop.latex.outDir": "%DIR%/out",
-    "gitlens.currentLine.enabled": false
+    "gitlens.currentLine.enabled": false,
+    "ltex.latex.commands": {
+        "code": "dummy",
+        "pgfplotsset": "ignore"
+    },
+    "ltex.latex.environments": {
+        "minted": "ignore"
+    }
 }

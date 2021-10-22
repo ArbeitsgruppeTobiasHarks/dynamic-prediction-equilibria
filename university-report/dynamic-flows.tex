@@ -1,7 +1,7 @@
 \subsection{Dynamic Flows}\label{subsec:dynamic-flows}
 
 We begin by defining the model of dynamic flows, also called flows over time.
-Here, Vickrey's fluid queuing model is used. \todo{Add cite}
+Here, Vickrey's fluid queuing model is used.
 The traffic network is represented as a directed Graph $(V, E)$ with a finite set of nodes $V$ and a finite set of edges $E$.
 Although, we allow parallel edges, we often write $e=vw\in E$ for a directed edge $e$ from node $v$ to node $w$.
 For a node $v$, we denote the set of \emph{outgoing edges} of $v$ as $\outEdges{v}\coloneqq \{ vw \in E \}$ and the set of \emph{incoming edges} as $\inEdges{v} \coloneqq \{ uv \in E \}$.
@@ -10,10 +10,13 @@ Each edge $e$ has a positive \emph{rate capacity} $\capa_e > 0$ and a positive \
 The rate capacity bounds the amount of flow an edge can transfer at a time, which can be imagined as the width of a conveyor belt.
 The transit time on the other is the time the conveyor belt needs to transfer particles from its beginning to its end.
 
-We often analyze multi-commodity flows.
+In this project, we consider multicommodity flows.
 That means, we have a finite set $I$ of commodities and each commodity $i\in I$ has a \emph{source node} $s_i\in V$ and a \emph{sink node} $t_i\in V\setminus\{ s_i \}$.
 We require, that $s_i$ can reach $t_i$ in $(V,E)$.
-Furthermore, we define $V_i \coloneqq \{ v \in V \mid \text{$s_i$ can reach $v$ and $v$ can reach $t_i$ in (V, E)} \}$ as the subset of nodes that are relevant to commodity $i$.
+Furthermore, we define \[
+    V_i \coloneqq \{ v \in V \mid \text{$v$ lies on a directed path from $s$ to $t$ in (V, E)} \}
+\]
+as the subset of nodes that are \emph{relevant} to commodity $i$.
 
 Moreover, the \emph{network inflow rate} of a commodity is given by a locally integrable function $u_i:\R \rightarrow \R_{\geq 0}$ with $u_i(\theta) = 0$ for $\theta \leq 0$.
 
@@ -69,10 +72,8 @@ To make the dynamic flows behave like imagined above, we have to make several re
 
 
 \begin{remark}
-    We highlight, that property~\ref{def:feasible-flow:deterministic-split} is defined slightly different in literature such as~\cite{}
-\todo{
-    Remark, that we switched min with max
-}
+    We highlight, that property~\ref{def:feasible-flow:deterministic-split} is defined slightly different in literature such as~\cite{Graf2020} where $\xi\coloneqq \min \{ \xi  \mid T_e(\xi) = \theta \}$ is defined as the earliest possible time to arrive at $w$ when traversing $e$.
+    However, the set $\{\theta \mid \min \{ \xi  \mid T_e(\xi) = \theta \} < \max \{ \xi  \mid T_e(\xi) = \theta \} \}$ has zero measure such that the effect on the definition vanishes.
 \end{remark}
 
 We note, that for a given feasible flow $f$ the costs $c_e$ follow the FIFO-rule and hence the results from Section~\ref{sec:fifo-costs} can be applied.

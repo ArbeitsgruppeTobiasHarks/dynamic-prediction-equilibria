@@ -2,3 +2,6 @@
 {"rule":"THE_SUPERLATIVE","sentence":"^\\QComputation of Shortest Paths with FIFO Costs.\\E$"}
 {"rule":"THE_SUPERLATIVE","sentence":"^\\QAssume \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and let \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q be a shortest \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q-\\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q-path at time \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
 {"rule":"POSSESSIVE_APOSTROPHE","sentence":"^\\QThe functions \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q correspond to the attributes inflow[e][i] and outflow[e][i], respectively.\\E$"}
+{"rule":"ARROWS","sentence":"^\\QThe decision whether the inequality \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q holds for all \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q is expressed by the term arrivals[v] <= relaxation.\\E$"}
+{"rule":"ENGLISH_WORD_REPEAT_BEGINNING_RULE","sentence":"^\\QFor any path \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q it holds that \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"ENGLISH_WORD_REPEAT_BEGINNING_RULE","sentence":"^\\QFor any node \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q it holds that \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}

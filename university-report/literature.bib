@@ -21,7 +21,7 @@
 }
 
 @article{Cominetti2015,
- ISSN = {0030364X, 15265463},
+ delISSN = {0030364X, 15265463},
  URL = {http://www.jstor.org/stable/24540348},
  author = {Roberto Cominetti and José Correa and Omar Larré},
  journal = {Operations Research},
@@ -100,16 +100,30 @@ author={
 }
 
 @article{scikit-learn,
- title={Scikit-learn: Machine Learning in {P}ython},
- author={Pedregosa, F. and Varoquaux, G. and Gramfort, A. and Michel, V.
-         and Thirion, B. and Grisel, O. and Blondel, M. and Prettenhofer, P.
-         and Weiss, R. and Dubourg, V. and Vanderplas, J. and Passos, A. and
-         Cournapeau, D. and Brucher, M. and Perrot, M. and Duchesnay, E.},
- journal={Journal of Machine Learning Research},
- volume={12},
- pages={2825--2830},
- year={2011}
+  author = {Pedregosa, Fabian and Varoquaux, Ga\"{e}l and Gramfort, Alexandre and Michel, Vincent and Thirion, Bertrand and Grisel, Olivier and Blondel, Mathieu and Prettenhofer, Peter and Weiss, Ron and Dubourg, Vincent and Vanderplas, Jake and Passos, Alexandre and Cournapeau, David and Brucher, Matthieu and Perrot, Matthieu and Duchesnay, \'{E}douard},
+  title = {Scikit-Learn: Machine Learning in Python},
+  year = {2011},
+  issue_date = {2/1/2011},
+  publisher = {JMLR.org},
+  volume = {12},
+  number = {null},
+  issn = {1532-4435},
+  abstract = {Scikit-learn is a Python module integrating a wide range of state-of-the-art machine
+  learning algorithms for medium-scale supervised and unsupervised problems. This package
+  focuses on bringing machine learning to non-specialists using a general-purpose high-level
+  language. Emphasis is put on ease of use, performance, documentation, and API consistency.
+  It has minimal dependencies and is distributed under the simplified BSD license, encouraging
+  its use in both academic and commercial settings. Source code, binaries, and documentation
+  can be downloaded from http://scikit-learn.sourceforge.net.},
+  journal = {J. Mach. Learn. Res.},
+  month = nov,
+  pages = {2825–2830},
+  numpages = {6}
 }
+
+  
+
+
 
 @article{dgl,
   author    = {Minjie Wang and
@@ -135,7 +149,7 @@ author={
   journal   = {CoRR},
   volume    = {abs/1909.01315},
   year      = {2019},
-  url       = {http://arxiv.org/abs/1909.01315},
+  DELurl       = {http://arxiv.org/abs/1909.01315},
   eprinttype = {arXiv},
   eprint    = {1909.01315},
   timestamp = {Tue, 30 Mar 2021 15:38:46 +0200},
@@ -170,8 +184,46 @@ number = {5},
 pages = {309-318},
 year = {1975},
 issn = {0041-1647},
-doi = {https://doi.org/10.1016/0041-1647(75)90030-1},
-url = {https://www.sciencedirect.com/science/article/pii/0041164775900301},
+doi = {10.1016/0041-1647(75)90030-1},
+DELurl = {https://www.sciencedirect.com/science/article/pii/0041164775900301},
 author = {Larry J. LeBlanc and Edward K. Morlok and William P. Pierskalla},
 abstract = {This paper presents a solution technique for large scale road network equilibrium assignment and related flow problems with nonlinear costs. It is shown that this nonlinear network problem can be solved without explicitly considering any of the constraints—they are satisfied automatically in the procedure developed—and without storing all of the individual decision variables. The computational requirements of the algorithm reported are almost identical to the requirements of heuristic solution techniques for traffic assignment. A solution time of nine seconds on the CDC 6400 was obtained for the test problem, which included 76 arcs and 24 nodes, all of which were origins and destinations.}
 }
+
+@inproceedings{TimeDepShortestPaths,
+author = {Ding, Bolin and Yu, Jeffrey Xu and Qin, Lu},
+title = {Finding Time-Dependent Shortest Paths over Large Graphs},
+year = {2008},
+DELisbn = {9781595939265},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+DELurl = {https://doi.org/10.1145/1353343.1353371},
+doi = {10.1145/1353343.1353371},
+abstract = {The spatial and temporal databases have been studied widely and intensively over years.
+In this paper, we study how to answer queries of finding the best departure time that
+minimizes the total travel time from a place to another, over a road network, where
+the traffic conditions dynamically change from time to time. We study a generalized
+form of this problem, called the time-dependent shortest-path problem. A time-dependent
+graph GT is a graph that has an edge-delay function, wi, j(t), associated with each
+edge (vi, vj), to be stored in a database. The edge-delay function wi, j(t) specifies
+how much time it takes to travel from node vi to node vj, if it departs from vi at
+time t. A user-specified query is to ask the minimum-travel-time path, from a source
+node, vs, to a destination node, ve, over the time-dependent graph, GT, with the best
+departure time to be selected from a time interval T. We denote this user query as
+LTT(vs, ve, T) over GT. The challenge of this problem is the added complexity due
+to the time dependency in the time-dependent graph. That is, edge delays are not constants,
+and can vary from time to time. In this paper, we propose a novel algorithm to find
+the minimum-travel-time path with the best departure time for a LTT(vs, ve, T) query
+over a large graph GT. Our approach outperforms existing algorithms in terms of both
+time complexity in theory and efficiency in practice. We will discuss the design of
+our algorithm, together with its correctness and complexity. We conducted extensive
+experimental studies over large graphs and will report our findings.},
+booktitle = {Proceedings of the 11th International Conference on Extending Database Technology: Advances in Database Technology},
+pages = {205–216},
+numpages = {12},
+location = {Nantes, France},
+series = {EDBT '08}
+}
+
+  
+

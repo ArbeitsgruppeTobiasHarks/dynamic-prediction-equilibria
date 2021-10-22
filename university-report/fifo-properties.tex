@@ -43,7 +43,7 @@ The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the f
     \[
         l_{v,t}(\theta) \leq T_{P'}(\theta) = l_{w,t}(T_{e}(\theta)).
     \]
-    This shows that $l_{v,t}(\theta)$ is a lower bound on $\{ \tilde l_{w,t}(
+    This shows that $l_{v,t}(\theta)$ is a lower bound on $\{ l_{w,t}(
         T_{e}(\theta)
     ) \mid e=vw\in\outEdges{v}  \}$.
     Let $P = e_1\, \cdots\, e_k$ be a shortest $v$-$t$-path at time $\theta$ and let $e_1=vw$ and $P' = e_2\,\cdots\,e_k$.
@@ -54,18 +54,18 @@ The statement is a direct consequence of the monotonicity of $T_{P_2}$ and the f
         T_{P}(\theta) > 
         T_{Q}(T_{e_1}(\theta)),
     \]
-    such that removing any cycles in the path $e_1\circ Q$ would yield a shorter path than $P$.
+    such that removing any cycles in the path $e_1\circ Q$ would yield a strictly shorter path than $P$; a contradiction.
 
     We now have to show that $(l_{v,t})_{v\in V}$ is the maximal solution.
     That means that for any other solution $(\tilde l_v)_{v\in V}$ of the system of equations
-     $\tilde l_{v,t}(\theta) \leq l_v(\theta)$ holds for all $v\in V$ and $\theta\in\R$.
+     $\tilde l_{v}(\theta) \leq l_v(\theta)$ should hold for all $v\in V$ and $\theta\in\R$.
     Let $P = e_1 \,\cdots e_k$ be a shortest $v$-$t$-path at time $\theta$ and let $v_0 = v, v_k= t$ and $e_i = v_{i-1} v_i$ for $i=1,\dots,k$.
     Then by the system of equations we infer \[
-        \tilde l_{v}(\theta) \leq \tilde l_{v_1}(T_{e_1}(\theta)) \leq \tilde l_{v_2,t}(T_{e_1\,e_2} (\theta)) \leq \cdots \leq \tilde l_{t}(T_P(\theta)) = T_P(\theta) \leq l_{v,t}(\theta).
+        \tilde l_{v}(\theta) \leq \tilde l_{v_1}(T_{e_1}(\theta)) \leq \tilde l_{v_2,t}(T_{e_1\,e_2} (\theta)) \leq \cdots \leq \tilde l_{t}(T_P(\theta)) = T_P(\theta) = l_{v,t}(\theta).
     \]
 \end{proof}
 
-The following example illustrates why the given system of equations does generally not have a unique solution.
+The following example illustrates why the system of equations above does not always have a unique solution.
 The method used works in any cyclic graph: We build a self-confirming cycle proposing an earlier arrival time than actually possible.
 \begin{example}
     A minimal example without loops consists of three nodes $V=\{ s, v, t \}$ with three edges $E=\{ st, sv, vs \}$ whose cost functions $c_e: \R \rightarrow \R_{\geq 0}$ follow the FIFO rule.
@@ -79,6 +79,6 @@ The method used works in any cyclic graph: We build a self-confirming cycle prop
         \min\left\{ T_{st}(\theta), \tilde l_s(T_{vs}(T_{sv}(\theta))) \right\}
         = \min \left\{ T_{st}(\theta), T_{st} \Big( T_{vs}\big(T_{sv}(\theta)\big) \Big), 0 \right\}.
     \]
-    The FIFO rule together with the non-negative cost functions implies the inequality $T_{st}(\theta) \leq T_{st} ( T_{vs}(T_{sv}(\theta)))$, so that the right-hand side reduces to $\min\{ T_{st}(\theta), 0 \} = \tilde l_s(\theta)$.
-    Obviously, this solution $(\tilde l_w)_{w\in V}$ is different to the actual arrival times $(l_w)_{w\in V}$: The arrival time when starting in $s$ at a positive time $\theta$ fulfills $l_s(\theta) = T_{st}(\theta) \geq \theta > 0 = \tilde l_s(\theta)$.
+    Proposition~\ref{prop:removing-cycles-in-fifo-graphs} implies the inequality $T_{st}(\theta) \leq T_{st} ( T_{vs}(T_{sv}(\theta)))$, so that the right-hand side reduces to $\min\{ T_{st}(\theta), 0 \} = \tilde l_s(\theta)$.
+    Obviously, this solution $(\tilde l_w)_{w\in V}$ is different to the actual arrival times $(l_w)_{w\in V}$: The arrival time when starting in $s$ at any positive time $\theta$ fulfills $l_s(\theta) = T_{st}(\theta) \geq \theta > 0 = \tilde l_s(\theta)$.
 \end{example}

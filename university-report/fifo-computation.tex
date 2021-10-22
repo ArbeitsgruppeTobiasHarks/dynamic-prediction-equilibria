@@ -5,29 +5,29 @@ Here, only those nodes are relevant for us that are reachable from $s$ and that 
 Moreover, we only need to determine the arrival times of nodes $w$ that can be reached before $t$, i.e. that fulfill $l_{s,w}(\theta) \leq l_{s,t}(\theta)$.
 Hence, the set $V'$ consists of all nodes $w$ that lie on a path from $v$ to $t$ and fulfill $l_{s,w}(\theta) \leq l_{s,t}(\theta)$.
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
 \begin{minted}[mathescape, linenos]{python}
 def dynamic_dijkstra(
     theta: float, source: Node, sink: Node, relevant_nodes: Set[Node],
     costs: List[Callable[[float], float]]
 ) -> Dict[Node, float]:
-    arrival_times: Dict[Node, float] = {}
-    queue: PriorityQueue[Node] = PriorityQueue([(source, theta)])
-    while len(queue) > 0:
-        arrival_time, v = queue.min_key(), queue.pop()
-        arrival_times[v] = arrival_time
-        if v == sink:
-            break
-        for e in v.outgoing_edges:
-            w = e.node_to
-            if w in arrival_times.keys() or w not in relevant_nodes:
-                continue
-            relaxation = arrival_time + costs[e.id](arrival_time)
-            if not queue.contains(w):
-                queue.push(w, relaxation)
-            elif relaxation < queue.key_of(w):
-                queue.decrease_key(w, relaxation)
-    return arrival_times
+  arrival_times: Dict[Node, float] = {}
+  queue: PriorityQueue[Node] = PriorityQueue([(source, theta)])
+  while len(queue) > 0:
+    arrival_time, v = queue.min_key(), queue.pop()
+    arrival_times[v] = arrival_time
+    if v == sink:
+      break
+    for e in v.outgoing_edges:
+      w = e.node_to
+      if w in arrival_times.keys() or w not in relevant_nodes:
+        continue
+      relaxation = arrival_time + costs[e.id](arrival_time)
+      if not queue.contains(w):
+        queue.push(w, relaxation)
+      elif relaxation < queue.key_of(w):
+        queue.decrease_key(w, relaxation)
+  return arrival_times
 \end{minted}
 \caption{The Dynamic Dijkstra Algorithm}
 \label{alg:dynamic-dijkstra}
@@ -36,42 +36,46 @@ def dynamic_dijkstra(
 Adjusting the classical Dijkstra Algorithm for static edge costs to our setting yields the Dynamic Dijkstra Algorithm as depicted in Algorithm~\ref{alg:dynamic-dijkstra}.
 
 A priority queue, consisting of items together with a priority key associated with each item, operates at the heart of the algorithm.
-This queue has to support the operations \texttt{push(item, key)}, \texttt{min\_key()}, \texttt{pop()}, \texttt{decrease\_key(item, new\_key)} as well as \texttt{contains(item)}.
-The operation \texttt{push(item, key)} adds the item \texttt{item} with priority \texttt{key} to the queue, \texttt{min\_key()} returns the minimum key of an item in the queue, \texttt{pop()} returns the item with minimum key and removes it from the queue, \texttt{contains(item)} returns whether \texttt{item} is contained in the queue and the operation \texttt{decrease\_key(item, new\_key)} replaces the priority key associated to the item \texttt{item} with \texttt{new\_key}.
+This queue has to support the operations \code{push(item, key)}, \code{min_key()}, \code{pop()}, \code{decrease_key(item, new_key)} as well as \code{contains(item)}.
+The operation \code{push(item, key)} adds the item \code{item} with priority \code{key} to the queue, \code{min_key()} returns the minimum key of an item in the queue, \code{pop()} returns the item with minimum key and removes it from the queue, \code{contains(item)} returns whether \code{item} is contained in the queue and the operation \code{decrease_key(item, new_key)} replaces the priority key associated to the item \code{item} with \code{new_key}.
 
 
-This priority queue holds all discovered nodes where the priority key of a node $w$ is its currently suspected earliest arrival time, an upper bound on $l_{s,w}(\theta)$.
+The idea of Algorithm~\ref{alg:dynamic-dijkstra} is to iteratively retrieve an unvisited node $v$ with the current earliest arrival time $t$ of all unvisited nodes.
+Then, for each outgoing edge $e=vw$ we realize its cost at time $t$ and update the arrival time of the target node $w$.
+The priority queue holds all discovered but unvisited nodes where the priority key of a node $w$ is its currently suspected earliest arrival time, an upper bound on $l_{s,w}(\theta)$.
+Nodes that are not added to the queue have either been already visited and thus have an entry in \code{arrival_times} or are not discovered and hence have an imaginary arrival time of $\infty$.
 
+In the following proposition we show the correctness of the algorithm:
 
 \begin{proposition}
-    Given cost functions $c:\R \rightarrow \R_{\geq0}^E$ following the FIFO rule, the Dynamic Dijkstra Algorithm initiated on the source $v\in V$ and a reachable sink $t\in V$ computes the vector $(l_{s,w}(\theta))_{w\in V'}$ with \[
-        V' = \{ w\in V \mid \text{$w$ lies on a $v$-$t$-path and $l_{s,w}(\theta) \leq l_{s,t}(\theta)$} \}.
+    Given cost functions $c:\R \rightarrow \R_{\geq0}^E$ following the FIFO rule, the Dynamic Dijkstra Algorithm initiated on the source $s\in V$ and a reachable sink $t\in V$ computes the vector $(l_{s,w}(\theta))_{w\in V'}$ with \[
+        V' = \{ w\in V \mid \text{$w$ lies on an $s$-$t$-path and $l_{s,w}(\theta) \leq l_{s,t}(\theta)$} \}.
     \]
 \end{proposition}
 \begin{proof}
-    As an invariant for the algorithm we proof, that once a value of a node $w$ is written to \texttt{arrival\_times[w]}, this value coincides with $l_{s,w}(\theta)$.
-    In the beginning this is clearly true as no values are written beforehand.
-    In the first loop iteration $\texttt{v}$ is the source $s$ and its key $\theta= l_{v,v}(\theta)$ is written to \texttt{arrival\_times[v]}.
-    Assume the loop invariant holds before entering loop body another time.
-    As nodes are added at most once to the queue, we have $\texttt{v} \neq s$.
-    Let $u$ be the any node in whose iteration $\texttt{v}$ was added to the queue or the key of $\texttt{v}$ in the queue was modified.
-    The invariant implies $\texttt{arrival\_times[}u\texttt{]} = l_{\texttt{v},u}(\theta)$ and thus $\texttt{arrival\_time} = l_{s,u}(\theta) + c_{u\texttt{v}}(l_{s,u}(\theta)) = T_{u\texttt{v}}(l_{s,u}(\theta)) \geq l_{s,\texttt{v}}(\theta)$.
+    As an invariant for the algorithm we proof, that once a value of a node $w$ is written to \code{arrival_times[w]}, this value coincides with $l_{s,w}(\theta)$.
+    In the beginning this is clearly true as \code{arrival_times} is initially empty.
+    In the first iteration of the loop, the variable $\code{v}$ holds the source $s$ and its key $\theta= l_{s,s}(\theta)$ is written to \code{arrival_times[v]}.
+    Assume the loop invariant holds before entering the body of the loop again at a later time and let $v$ be the popped node.
+    As nodes are added at most once to the queue, we have $v \neq s$.
+    Let $u$ be the node in whose iteration $v$ was added to the queue or the key of $v$ in the queue was decreased the most recently.
+    The invariant implies $\code{arrival_times[}u\code{]} = l_{v,u}(\theta)$ and thus $\code{arrival_time} = l_{s,u}(\theta) + c_{uv}(l_{s,u}(\theta)) = T_{uv}(l_{s,u}(\theta)) \geq l_{s,v}(\theta)$.
 
-    Assume $\texttt{arrival\_time} > l_{s,\texttt{v}}(\theta)$ and let $P$ be a shortest $s$-$\texttt{v}$-path at time $\theta$.
-    If all nodes of $P$ were available in \texttt{arrival\_times}, then so is the last one $u$ before $\texttt{v}$ in $P$ which would have set the key of \texttt{v} in its iteration to $T_{u\texttt{v}}(l_{s,u}(\theta)) = l_{s,\texttt{v}}(\theta)$.
-    Let $u$ be the first node in $P$ that is not available in \texttt{arrival\_times}.
+    Assume $\code{arrival_time} > l_{s,v}(\theta)$ and let $P$ be a shortest $s$-$v$-path at time $\theta$.
+    If all nodes of $P$ were available in \code{arrival_times}, then the last node before $v$ in $P$ would have set the key of $v$ in its iteration to $l_{s,v}(\theta)$.
+    Let $u$ be the first node in $P$ that is not available in \code{arrival_times}.
     Because $u$ cannot be the source $s$, the  predecessor $u'$ of $u$ in $P$ must have set the key of $u$ to at most $T_{u'u}(l_{s,u'}(\theta)) \leq T_P(\theta)$.
-    As $\texttt{arrival\_time}>l_{s,\texttt{v}}(\theta) = l_P(\theta)$ the key of $u$ in the queue was smaller than the key of \texttt{v}, so the priority queue would have popped $u$ before \texttt{v}.
+    As $\code{arrival_time}>l_{s,v}(\theta) = l_P(\theta)$ the key of $u$ in the queue was smaller than the key of $v$, so the priority queue would have popped $u$ before $v$.
 \end{proof}
 
 A simple binary min-heap together with a lookup table was implemented to support the operations of the queue efficiently.
-With this data structure, the worst case running time is logarithmic for the operations \texttt{push(item,key)}, \texttt{pop()} and \texttt{decrease\_key(item, new\_key)} and constant for the operations \texttt{min\_key()} and \texttt{contains(item)}.
+With this data structure, the worst case running time is logarithmic in the number of queue items for the operations \code{push(item, key)}, \code{pop()} and \code{decrease_key(item, new_key)} and constant for the operations \code{min_key()} and \code{contains(item)}.
 Thus, the Dynamic Dijkstra Algorithm terminates with a running time of $\bigO( (\abs{V} + \abs{E}) \cdot \log \abs{V})$.
 
 
 \subsection{Computing Active Outgoing Edges}\label{sec:compute-active-edges}
 
-Given a FIFO cost function $c: \R\rightarrow\R_{\geq0}^E$ with a node $s$, a time $\theta\in\R$ and a sink $t$, we now want to compute the active outgoing edges $E(\theta) \cap \outEdges{s}$ of $s$, i.e. the edges $e=sw$ with 
+Given a FIFO cost function $c: \R\rightarrow\R_{\geq0}^E$ with nodes $s,t\in V$, a time $\theta\in\R$, we want to compute the active outgoing edges $E(\theta) \cap \outEdges{s}$ of $s$, i.e. the edges $e=sw$ with 
 \[
     l_{s,t}(\theta) = l_{w,t}(T_e(\theta)).
 \]
@@ -122,6 +126,7 @@ That means, for strong FIFO costs, the Backward Search Algorithm is correct.
     \]
     If $c$ follows the strong FIFO rule, the statements are equivalent.
 \end{proposition}
+
 \begin{proof}
     Assume $T_{e_i}(l_{s,v_{i-1}}(\theta)) = l_{s,v_i}(\theta)$ holds for all $i$.
     Then we have \begin{align*}
@@ -180,7 +185,7 @@ With this setup, we can do a second run of the Dynamic Dijkstra Algorithm to obt
 \]
 Using Lemma~\ref{lem:characterization-active-edges} we can now check whether an outgoing edge $sw\in\outEdges{s}$ of $s$ is active at time $\theta$ by evaluating $T_e(\theta) \leq \minv{l_{t,w}}( l_{s,t}(\theta))$.
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
     \begin{minted}[mathescape, linenos]{python}
 def get_active_edges(
   costs: List[PiecewiseLinear], theta: float, source: Node, sink: Node,
@@ -216,6 +221,6 @@ def get_active_edges(
 To implement this algorithm, we have to restrict ourselves to cost functions where the reversal of $T_e$ can be evaluated easily.
 This is the case, for example, if $c_e$ are piecewise linear functions.
 The resulting algorithm for this class of functions can be seen in Algorithm~\ref{alg:calculate-active-edges}.
-Here, the flag \texttt{strong\_fifo} is expected to be set only for cost functions following the strong FIFO rule.
+Here, the flag \code{strong_fifo} is expected to be set only for cost functions following the strong FIFO rule.
 For these type of functions, we use the simpler backward search; for  general FIFO functions, we use the approach described above.
 Other than that, if $s$ has only up to one outgoing edge, we simply return $\outEdges{s}$.
