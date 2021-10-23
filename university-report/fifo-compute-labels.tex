@@ -14,7 +14,7 @@ This means, we want to find the maximal solution of the system of equations \[
         \right), &\text{otherwise}.
     \end{cases}
 \]
-Hence, the idea is to initialize all functions with $\tilde l_v(\theta) \coloneqq \infty$ for $v\neq t$ and $\tilde l_t(\theta) \coloneqq \theta$ and decrease the functions (pointwise) using the operation $\tilde l_v \coloneqq \min_{vw\in\outEdges{v}} \tilde l_w \circ T_{vw}$ until no further changes are made, and the equations are fulfilled for all $v\in V$.
+Hence, the idea is to initialize all functions with $\tilde l_v(\theta) \coloneqq \infty$ for $v\neq t$ and $\tilde l_t(\theta) \coloneqq \theta$ and decrease the functions (pointwise) using the operation $\tilde l_v \coloneqq \min_{vw\in\outEdges{v}} \tilde l_w \circ T_{vw}$ until no further changes are made, and the equations are fulfilled for all $v\in V\setminus\{t\}$.
 
 More specifically, if some function $\tilde l_w$ changes, then all nodes $v$ with an edge $vw$ leading to $w$ might need to be adjusted as well using the operation $\tilde l_v \coloneqq \min\{ \tilde l_v, \tilde l_w \circ T_{vw} \}$.
 Therefore, we need some operations on the class of functions operated on to formulate the algorithm:
@@ -60,3 +60,4 @@ Finally, the pointwise minimum of the functions \code{arrivals[v]} and \code{rel
 
 
 The benefit of calculating the arrival times as functions is that the active outgoing edges of all nodes $v$ can be determined in one run of the Dynamic Bellman-Ford Algorithm by simply evaluating $l_{w,t}(T_e(\theta)) \leq  l_{v,t}(\theta)$ for $vw\in E$.
+Additionally, the result can be used to calculate average travel times as explained in Section~\ref{sec:results}.

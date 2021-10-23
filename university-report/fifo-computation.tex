@@ -80,18 +80,21 @@ Given a FIFO cost function $c: \R\rightarrow\R_{\geq0}^E$ with nodes $s,t\in V$,
     l_{s,t}(\theta) = l_{w,t}(T_e(\theta)).
 \]
 Unfortunately, from the arrival times $(l_{s,w}(\theta))_{w\in V'}$ obtained by a simple run of the Dynamic Dijkstra Algorithm, we cannot determine all active edges:
-Usually, the idea for determining all active edges would be to do a backward search starting from $t$ on edges $e=vw$ with $l_{s,w}(\theta) = T_e(l_{s,v}(\theta))$ and remember those edges as \emph{active} as they lie on a shortest $s$-$t$-path.
-An implementation of this is shown in Algorithm~\ref{alg:backward-search}, where \code{arrivals} consists of the labels $(l_{s,w}(\theta))_{w\in V'}$ as returned by the Dynamic Dijkstra Algorithm.
+Usually, the idea is to backtrack all shortest paths by searching edges backwards starting from $t$ for which equality holds in $l_{s,w}(\theta) \leq T_e(l_{s,v}(\theta))$.
+This approach is described in Algorithm~\ref{alg:backward-search} which aims to return the set $E(\theta)\cap \outEdges{s}$.
+The vector $(l_{s,w}(\theta))_{w\in V'}$ as returned by the Dynamic Dijkstra Algorithm is passed to the function via the parameter \code{arrivals}.
+During the procedure, we only enqueue a node $u$ to the queue \code{queue}, if there exists a path from $u$ to $t$ in which each edge $e=vw$ fulfills $l_{s,w}(\theta)= T_e(l_{s,v}(\theta))$.
+Once we discover an edge from $s$ to such an enqueued node that also fulfills the equality, we add it to the set of active outgoing edges of $s$ which is returned by the algorithm.
 
 \begin{algorithm}
     \begin{minted}[mathescape, linenos]{python}
-def backward_search(
+def backtrack_shortest_paths(
   costs: List[Callable[[float], float]], arrivals: Dict[Node, float],
   source: Node, sink: Node
 ) -> Set[Edge]:
   active_edges = set()
   queue: List[Node] = [sink]
-  nodes_enqueued: Set[Node] = {sink}
+  discovered: Set[Node] = {sink}
   while len(queue) > 0:
     w = queue.pop()
     for e in w.incoming_edges:
@@ -101,21 +104,18 @@ def backward_search(
       if arrivals[v] + costs[e.id](arrivals[v]) <= arrivals[w]:
         if v == source:
           active_edges.add(e)
-        if v not in nodes_enqueued:
+        if v not in discovered:
           queue.append(v)
-          nodes_enqueued.add(v)
+          discovered.add(v)
   return active_edges
     \end{minted}
-    \caption{Backward Search}
+    \caption{Retrieve Active Edges by Backtracking Shortest Paths}
     \label{alg:backward-search}
 \end{algorithm}
 
-However, there might be edges $e=vw$ with $l_{s,w}(\theta) < T_e(l_{s,v}(\theta))$ that lie on a shortest $s$-$t$-path at time $\theta$.
-This might be the case if a bottleneck edge $e'$ closer to $t$ has an interval on which $T_{e'}$ is constant.
-
 The following proposition proves that paths found using the described approach are in fact shortest paths.
 Moreover, we show that for strong FIFO costs we find all shortest paths.
-That means, for strong FIFO costs, the Backward Search Algorithm is correct.
+That means, for strong FIFO costs, Algorithm~\ref{alg:backward-search} returns the whole set $E(\theta)\cap\outEdges{s}$.
 
 \begin{proposition}
     Let $P=e_1\,\cdots\,e_k$ be a path with $e_i = v_{i-1}v_{i}$ and $v_0 = s, v_k= t$ and let $c:\R\rightarrow\R^E_{\geq0}$ be a cost function following the FIFO rule. Then
@@ -139,18 +139,37 @@ That means, for strong FIFO costs, the Backward Search Algorithm is correct.
 
     Let $c$ now follow the strong FIFO rule and assume there is some $i\in\{1,\dots, k\}$ with $T_{e_i}(l_{s,v_{i-1}}(\theta)) > l_{s,v_i}(\theta)$.
     Let $P'$ be a shortest $s$-$v_i$-path at time $\theta$.
-    If we extend $P'$ with $e_{i+1}\,\cdots\,e_{k}$ we get an $s$-$t$-path $P''$ with \[
+    If we extend $P'$ with $e_{i+1}\,\cdots\,e_{k}$ we get an $s$-$t$-path $P''$ which 
+    by the strong monotonicity of all $T_e$ fulfills \[
         l_{s,t}(\theta) \leq T_{P''}(\theta)
         = T_{e_{i+1}\,\cdots\,e_k}(l_{s,v_{i}}(\theta))
         < T_{e_{i+1}\,\cdots\,e_k}(T_{e_1\,\cdots\,e_i}(\theta))
-        = T_P(\theta),
+        = T_P(\theta).\qedhere
     \]
-    by the strong monotonicity of $T_e$ for all $e\in E$.
 \end{proof}
 
+For general FIFO costs however, not all subpaths of shortest paths are again shortest paths.
+That means, there might be edges $e=vw$ that do not fulfill the equality $l_{s,w}(\theta) = T_e(l_{s,v}(\theta))$ but still lie on a shortest $s$-$t$-path at time $\theta$.
+This might be the case if a bottleneck edge $e'$ closer to $t$ has an interval on which $T_{e'}$ is constant.
+An example of this can be seen in Figure~\ref{fig:bottleneck}.
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}
+        \node[draw,circle](0)at(0,1) {$s$};
+        \node[draw,circle](1)at(2, 1) {$v$};
+        \node[draw,circle](2)at(7,1) {$t$};
+        
+        \draw[thick,->, bend left](0) to[bend left] node[above]{$c_{e_1}\equiv 1$} (1);
+        \draw[thick,->](0) to[bend right] node[below]{$c_{e_2}\equiv 2$} (1);
+        \draw[thick,->](1) --node[above]{$c_{e_3}(\theta) = \max\{ 3 - \theta, 1\}$} (2);
+    \end{tikzpicture}
+    \caption{Both $e_1$ and $e_2$ are active at time $0$ with $T_{e_2}(l_{s,s}(0))> l_{s,v}(0)$.}\label{fig:bottleneck}
+\end{figure}
+
 This leaves us with the question of how to find the rest of the active edges for general FIFO cost functions.
-For the rest of this section, let $c:\R\rightarrow\R^E_{\geq0}$ follow the FIFO rule with $\lim_{\theta\to-\infty} T_e(\theta) = -\infty$ for all $e\in E$.
-The idea we want to exploit now is that once we determined $l_{s,t}(\theta)$, we can do another run of the Dynamic Dijkstra Algorithm on the reverse graph $\rev{G} = (V, \rev{E})$ with $\rev{E}\coloneqq \{ \rev{e} = wv \mid e=vw\in E \}$ to compute the latest departure time to arrive before or at $l_{s,t}(\theta)$ at $t$.
+For the rest of this section, let $c:\R\rightarrow\R^E_{\geq0}$ be a continuous cost function following the FIFO rule with $\lim_{\theta\to-\infty} T_e(\theta) = -\infty$ for all $e\in E$.
+Now we want to exploit that once we determined $l_{s,t}(\theta)$, we can do another run of the Dynamic Dijkstra Algorithm on the reverse graph $\rev{G} = (V, \rev{E})$ with $\rev{E}\coloneqq \{ \rev{e} = wv \mid e=vw\in E \}$ to compute the latest departure time starting from any node $v$ to arrive before or at time $l_{s,t}(\theta)$ at $t$.
 
 We define the corresponding cost function $\tilde c$ as \[
     \tilde c : \R \rightarrow \R_{\geq0}^{\rev E}, \quad
@@ -197,7 +216,7 @@ def get_active_edges(
     theta, source, sink, relevant_nodes, costs
   )
   if strong_fifo:
-    return backward_search(costs, arrivals, source, sink)
+    return backtrack_shortest_paths(costs, arrivals, source, sink)
   else: # Second run of Dijkstra on the reverse graph.
     graph.reverse()
     traversals = [cost + identity for cost in costs]
@@ -222,5 +241,5 @@ To implement this algorithm, we have to restrict ourselves to cost functions whe
 This is the case, for example, if $c_e$ are piecewise linear functions.
 The resulting algorithm for this class of functions can be seen in Algorithm~\ref{alg:calculate-active-edges}.
 Here, the flag \code{strong_fifo} is expected to be set only for cost functions following the strong FIFO rule.
-For these type of functions, we use the simpler backward search; for  general FIFO functions, we use the approach described above.
+For these type of functions, we use the simpler backtracking search; for  general FIFO functions, we use the approach described above.
 Other than that, if $s$ has only up to one outgoing edge, we simply return $\outEdges{s}$.
