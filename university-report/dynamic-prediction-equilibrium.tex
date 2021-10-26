@@ -14,7 +14,7 @@ This means, each commodity $i$ has a set of predictor functions $(\predq_{i,e})_
 \]
 where $\QueueFct\coloneqq \contFcts{\R}{\R_{\geq0}}$ denotes the set of all continuous functions from $\R$ to $\R_{\geq0}$.
 
-Based on the predicted queue lengths we can also determine \emph{predicted queue costs} by \[
+Based on the predicted queue lengths we can also determine \emph{predicted edge costs} by \[
     \predc_{i,e}(\theta, \bar\theta, q) \coloneqq \transit_e + \frac{\predq_{i,e}(\theta, \bar\theta, q)}{\capa_e}.
 \]
 The \emph{predicted traversal time of an edge $e=vw$} is the predicted arrival time at $w$ when entering edge $e$ at time $\theta$ defined as $\predT_{i,e}(\theta, \bar\theta, q) \coloneqq \theta + \predc(\theta, \bar\theta, q)$.
@@ -34,10 +34,10 @@ Before we continue, we want to make sure, that this definition of shortest-paths
 We can only restrict ourselves to simple paths, if waiting at a node, or traveling through a short cycle, is never helpful.
 This can be realized by assuming the FIFO-property of predictors:
 \begin{definition}
-    A set of predictors $(\predq_{i,e})_{e\in E}$ \emph{follows the FIFO rule} if $(\predc_{i,e}(\emptyArg, \bar\theta, q))_{e\in E}$ follows the FIFO-rule for all $\bar\theta\in\R_{\geq0}, q\in\QueueFct^E$.
+    A set of predictors $(\predq_{i,e})_{e\in E}$ is \emph{FIFO-compatible} if $(\predc_{i,e}(\emptyArg, \bar\theta, q))_{e\in E}$ follows the FIFO-rule for all $\bar\theta\in\R_{\geq0}, q\in\QueueFct^E$.
 \end{definition}
 
-We recall, that for predictors following the FIFO rule, the results from Section~\ref{sec:fifo-costs} apply, and we have $\predl_{i,v}(\theta, \bar\theta, q) \leq \predl_{i,w}{(
+We recall, that for FIFO-compatible predictors the results from Section~\ref{sec:fifo-costs} apply, and we have $\predl_{i,v}(\theta, \bar\theta, q) \leq \predl_{i,w}{(
     \predT_{i, e}(\theta, \bar\theta, q)
 )}$
 for all $v\in V_i$ and $e=vw\in E$.
@@ -87,7 +87,7 @@ if the following condition holds
 \end{definition}
 
 \begin{theorem}[{\cite[Theorem~10]{mainpaper}}]\label{thm:dpe-existence}
-    For any network with a finite set of commodities, each associated with a locally integrable, bounded network inflow rate and oblivious and continuous predictors $\predq_{i,e}$ that respect FIFO, there exists a dynamic prediction flow with respect to $\predq$. 
+    For any network with a finite set of commodities, each associated with a locally integrable, bounded network inflow rate and oblivious, continuous, and FIFO-compatible predictors $\predq_{i,e}$ there exists a dynamic prediction flow with respect to $\predq$. 
 \end{theorem}
 
 \subsection{Applied Predictors}\label{sec:applied-predictors}
@@ -139,11 +139,12 @@ For each edge $e$, we learn coefficient matrices $W^{e'}\in\R^{k_p\times k_f}$ f
 \]
 for $j\in\{1,\dots,k_f\}$ and $i\in\{1,\dots,k_p\}$.
 The function $\predq^\predML_e(\emptyArg, \bar\theta, q)$ linearly interpolates these points and is extended constantly with the value $\predq^\predML_e(\bar\theta + k_f\cdot\delta,\bar\theta,q )$ starting from $\bar\theta + k_f\cdot \delta$.
-As the above predictor does not generally fulfill the FIFO-property, we manually limit the gradient of $\predq^\predML_e(\emptyArg, \bar\theta, q)$ such that it never subceeds $-\capa_e$.
+As the above predictor is not necessarily FIFO-compatible per se, we manually limit the gradient of $\predq^\predML_e(\emptyArg, \bar\theta, q)$ such that it never subceeds $-\capa_e$.
+More details on this method are described in Section~\ref{subsec:implementation-predictors}.
 
 Finally, we introduce the \emph{perfect predictor} $\predq^\predP$ which predicts the queues as they will occur with \[
     \predq^\predP_e(\theta,\bar\theta,q) \coloneqq q_e(\theta).
 \]
 As this is a non-oblivious predictor, it is not possible to embed it into a simulation nor does it fulfill the constraints of Theorem~\ref{thm:dpe-existence}.
 Nevertheless, the flow of a DPE equilibrium, in which all commodities use the perfect predictor, is the same as a dynamic equilibrium as analyzed in~\cite[Definition~2]{Cominetti2015}.
-In this scenario particles can exactly predict the traffic conditions at any future time and chose a shortest path already when starting at the source node.
+In this scenario particles can exactly predict the traffic conditions at any future time and choose a shortest path already when starting at the source node.

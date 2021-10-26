@@ -1,7 +1,10 @@
 \section{Time-Dependent FIFO Cost Functions}\label{sec:fifo-costs}
 
 Time-dependent cost functions that follow the First In First Out (FIFO) rule are very important for the algorithms introduced later.
-We begin by defining the FIFO rule in a directed graph $(V, E)$.
+We begin by defining the FIFO rule in a directed graph $(V, E)$ representing our network.
+Here, we work on a finite set of nodes $V$ and a finite set of edges $E$.
+Although, we allow parallel edges, we often write $e=vw\in E$ for a directed edge $e$ from node $v$ to node $w$.
+For a node $v$, we denote the set of \emph{outgoing edges} of $v$ as $\outEdges{v}\coloneqq \{ vw \in E \}$ and the set of \emph{incoming edges} as $\inEdges{v} \coloneqq \{ uv \in E \}$.
 
 
 \begin{definition}

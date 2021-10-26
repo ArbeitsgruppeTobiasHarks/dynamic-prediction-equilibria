@@ -2,7 +2,7 @@
 
 In this section we want to discuss how we can compute an approximated variant of DPEs.
 We recall from the definition, that in a DPE all infinitesimally small agents update their routing decision every time they arrive at an intermediate node.
-As we are dealing with continuous flow, these routing decisions take place in a continuous manner.
+As we are dealing with continuous flows, these routing decisions take place in a continuous manner.
 To approximate this, we choose to allow updates of the routing decisions to happen at predefined intervals.
 This leads to the following definition:
 
@@ -28,8 +28,9 @@ The following theorem is the building block for the algorithms introduced in the
 
 \begin{theorem}\label{thm:extend-edge}
     Let $f$ be a dynamic flow fulfilling properties~\ref{def:feasible-flow:max-capacity}, \ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity} on an edge $e\in E$ for almost all $\theta\in\R$.
-    We are given new constant inflow rates $(g_{i,e})\in\R_{\geq0}^{I}$ into $e$ beginning from time $\phi$ with $g_e \coloneqq \sum_{i\in I} g_{i,e}$.
-    We partially reassign $\infl_{i,e}$ and $\outfl_{i,e}$ in the following manner:
+    We are given new constant inflow rates $(g_{i,e})_{i\in I}\in\R_{\geq0}^{I}$ into $e$ beginning from time $\phi$ and let $g_e \coloneqq \sum_{i\in I} g_{i,e}$.
+    We partially reassign $\infl_{i,e}$ using $\restrict{\infl_{i,e}}{[\phi,\infty)} \colonequiv g_{i,e}$ for all $i\in I$.
+    Moreover, we partially update $\outfl_{i,e}$ in the following manner:
     \begin{enumerate}[label=\textbf{Case \Roman*.}, wide=0.5em, labelwidth=4.5em]
         \item If $g_e = 0$, we set $\restrict{\outfl_{i,e}}{[T_e(\phi), \infty)} \colonequiv 0$.
         
@@ -44,11 +45,10 @@ The following theorem is the building block for the algorithms introduced in the
             \colonequiv g_{i,e}.
         \end{align*}
     \end{enumerate}
-    If we additionally reassign $\restrict{\infl_{i,e}}{[\phi,\infty)} \colonequiv g_{i,e}$,
-    the properties \ref{def:feasible-flow:max-capacity}, \ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity} still hold on $e$ for almost all $\theta\in \R$.
+    Then the updated dynamic flow $f$ still fulfills the properties \ref{def:feasible-flow:max-capacity}, \ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity} on edge $e$ for almost all $\theta\in \R$.
 \end{theorem}
 \begin{proof}
-    Let $f$ be the original and $h$ be the transformed dynamic flow and let $q^f$ and $q^h$ denote their corresponding queue lengths.
+    Let $f$ be the original and $h$ be the transformed dynamic flow and let $q^f$ and $q^h$ denote their corresponding queue length functions.
     We note, that $q^f$ and $q^h$ as well as $T^f$ and $T^h$ coincide on $(-\infty, \phi]$.
     Moreover, the outflow rate $\outfl[h]_e$ never exceeds $\capa_e$ and hence~\ref{def:feasible-flow:max-capacity} is fulfilled right away.
     Next, we show~\ref{def:feasible-flow:operate-at-capacity}, i.e. \[
@@ -61,10 +61,10 @@ The following theorem is the building block for the algorithms introduced in the
     Let us analyze the case $\phi + \transit_e \leq \theta < T_e(\phi)$ or equivalently $\phi  \leq \theta - \transit_e < \phi + q_e(\phi) /\capa_e$.
     With~\ref{def:feasible-flow:max-capacity} we conclude \begin{align*}
         q_e^h(\theta - \transit_e)
-        &= \int_0^{\theta-\transit_e} \infl[h]_e(t) \diff t - \int_0^{\theta} \outfl[h]_e(t) \diff t \\
-        &\geq \int_0^{\phi} \infl[h]_e(t)\diff t - \int_0^{\phi + \transit_e} \outfl[h]_e \diff t
+        &= \int_0^{\theta-\transit_e} \infl[h]_e(\psi) \diff \psi - \int_0^{\theta} \outfl[h]_e(\psi) \diff \psi \\
+        &\geq \int_0^{\phi} \infl[h]_e(\psi)\diff \psi - \int_0^{\phi + \transit_e} \outfl[h]_e(\psi) \diff \psi
         - \capa_e\cdot (\theta - \transit_e - \phi)\\
-        & = q_e(\phi) - \capa_e\cdot(\theta - \transit_e - \phi) > 0.
+        & = q_e(\phi) - \capa_e\cdot(\theta - \transit_e - \phi) >  0.
     \end{align*}
     With the same reasoning we infer $q_e^f(\theta - \transit_e) > 0$ and therefore $\outfl[h]_e(\theta) = \outfl[f]_e(\theta) = \capa_e$.
     Let us finally discuss the case $\theta > T_e(\phi)$;
@@ -73,17 +73,17 @@ The following theorem is the building block for the algorithms introduced in the
     \begin{enumerate}[label=\textbf{Case \Roman*.}, wide=0.5em]
         \item Here, $g_e = 0$ implies \begin{align*}
             q_e^h(\theta - \transit_e)
-            = \int_0^\phi \infl[h]_e(t) \diff t - \int_0^{T_e(\phi)} \outfl[h]_e(t)\diff t
-            = q_e(\phi) - \int_\phi^{\phi + q_e(\phi)/\capa_e} \outfl[h]_e(t + \transit_e)\diff t
+            = \int_0^\phi \infl[h]_e(\psi) \diff \psi - \int_0^{T_e(\phi)} \outfl[h]_e(\psi)\diff \psi
+            = q_e(\phi) - \int_\phi^{\phi + q_e(\phi)/\capa_e} \outfl[h]_e(\psi + \transit_e)\diff \psi
         \end{align*}
         And as property~\ref{def:feasible-flow:operate-at-capacity} holds for $t\leq T_e(\theta)$, we infer $q_e^h(\theta - \transit_e) = q_e(\phi) - \capa_e \cdot \frac{q_e(\phi)}{\capa_e} = 0$.
         Together with $\outfl[h]_e(\theta) = 0 = \infl[h]_e(\theta - \transit_e)$ this yields the claim.
 
         \item We have $g_e > 0 \,\land\, \left( q_e(\phi) = 0 \,\lor\, g_e \geq \capa_e \right)$.
         Then \begin{align*}
-            q_e^h(\theta - \transit_e) &= q_e(\phi) + g_e \cdot (\theta - \transit_e - \phi) - \int_{\phi + \transit_e}^{\theta} \outfl[h]_e(t)\diff t \\
+            q_e^h(\theta - \transit_e) &= q_e(\phi) + g_e \cdot (\theta - \transit_e - \phi) - \int_{\phi + \transit_e}^{\theta} \outfl[h]_e(\psi)\diff \psi \\
             &= q_e(\phi) + g_e\cdot (\theta - \transit_e - \phi) - q_e(\phi) - (\theta - T_e(\phi))\cdot \min\{\capa_e, g_e\} \\
-            &= g_e\cdot(\theta -\transit_e - \phi) - (\theta - T_e(\phi))\cdot \min\{\capa_e, g_e\}
+            &= g_e\cdot(\theta -\transit_e - \phi) - (\theta - T_e(\phi))\cdot \min\{\capa_e, g_e\}.
         \end{align*}
         Let us first assume $q_e(\phi) = 0$.
         Then the above reduces to $(g_e - \min\{\capa_e,g_e\})\cdot (\theta - T_e(\phi))$ which is positive if and only if $g_e > \capa_e$ holds.
@@ -91,25 +91,24 @@ The following theorem is the building block for the algorithms introduced in the
         If $q_e^h(\theta - \transit_e)$ is non-positive, we have $g_e \leq \capa_e$ which implies $\outfl[h]_e(\theta) = g_e = \infl[h]_e(\theta - \transit_e)$.
 
         For the case $q_e(\phi) > 0$ and $g_e \geq \capa_e$, we have \[
-            q_e^h(\theta - \transit_e) = g_e\cdot(\theta - \transit_e - \phi) - (\theta - T_e(\theta)) \cdot \capa_e = (g_e - \capa_e) \cdot (\theta - \transit_e - \phi) + q_e(\phi) > 0
+            q_e^h(\theta - \transit_e) = g_e\cdot(\theta - \transit_e - \phi) - (\theta - T_e(\phi)) \cdot \capa_e = (g_e - \capa_e) \cdot (\theta - \transit_e - \phi) + q_e(\phi) > 0
         \]
         and then the claim follows from $\outfl[h]_e(\theta) = \capa_e$.
 
         \item We do a case distinction on $\theta - \transit_e < T_{\depl}$.
         If this is true, then \begin{align*}
             q^h_e (\theta - \transit_e)
-            &= q_e(\phi) + \capa_e\cdot (\phi-\theta-\transit_e) - \capa_e\cdot (\theta - \phi - \transit_e)\\
-            &= q_e(\phi) - (\capa_e - g_e) \cdot (\theta - \phi - \transit_e)
-            > q_e(\phi) - (\capa_e - g_e) \cdot (T_{\depl} - \phi) = 0
+            &= q_e(\phi) + g_e\cdot (\theta-\transit_e-\phi) - \capa_e\cdot (\theta - \phi - \transit_e)\\
+            &= q_e(\phi) - (\capa_e - g_e) \cdot (\theta - \transit_e - \phi)
+            > q_e(\phi) - (\capa_e - g_e) \cdot (T_{\depl} - \phi) = 0.
         \end{align*}
         Moreover, we have $\outfl[h](\theta) = \capa_e$ in this case.
-
-        Finally, let us analyze $\theta - \transit_e \geq T_{\depl}$:
+        Finally, for $\theta - \transit_e \geq T_{\depl}$ we have
         \begin{align*}
             q^h_e (\theta - \transit_e)
             &= q^h_e(T_{\depl}) + g_e \cdot (\theta - \transit_e - T_{\depl}) - g_e \cdot (\theta - T_{\depl} - \transit_e) = q^h_e(T_{\depl})
         \end{align*}
-        and by the arguments above we have $q^h_e(T_{\depl}) = 0$.
+        and by the arguments above we deduce $q^h_e(T_{\depl}) = 0$.
         As $\outfl[h]_e(\theta) = g_e = \infl[h]_e(\theta - \transit_e)$ holds, this completes the proof of the claim.
     \end{enumerate}
 
@@ -123,7 +122,7 @@ The following theorem is the building block for the algorithms introduced in the
     holds with $\xi\coloneqq \max \{ \xi  \mid \xi + c^h_e(\xi) = \theta \}$.
     For $\theta < T_e(\phi)$, this property is already induced by the original flow $f$.
     For $\theta > T_e(\phi)$ we have $\xi > \phi$ because of the monotonicity of $T^h_e$ and $T^h_e(\xi) = \theta > T_e(\phi)$.
-    Therefore, by definition of our assignments the relations $\infl[h]_{i,e}(\xi) / \infl[h]_{i,e}(\xi)$ and $\outfl[h]_{i,e}(\theta) / \outfl[h]_{i,e}(\theta)$ coincide with $g_{i,e}/g_e$ in the case $g_e > 0$.
+    Therefore, by definition of our assignments the relations $\infl[h]_{i,e}(\xi) / \infl[h]_{e}(\xi)$ and $\outfl[h]_{i,e}(\theta) / \outfl[h]_{e}(\theta)$ coincide with $g_{i,e}/g_e$ in the case $g_e > 0$.
     For $g_e = 0$, the inflow rates $\infl[h]_{i,e}(\theta)$ and $\infl[h]_{e}(\xi)$ are zero as well.
 \end{proof}
 
@@ -146,7 +145,7 @@ The difference between Case I and Case III is that in Case I, $q_e(\phi) = 0$ is
 \subsection{Encoding Right Constant and Piecewise Linear Functions}
 
 Let us now discuss how the piecewise constant and piecewise linear functions are encoded.
-Let $f: \R \rightarrow \R$ be a piecewise function given by \[
+Let $f: \R \rightarrow \R$ be a piecewise linear function given by \[
     f(x) \coloneqq \begin{cases}
         f(\xi_1) +  (x - \xi_1) \cdot s_f & \text{for $x < \xi_1$,} \\
         f(\xi_i) + (x - \xi_i) \cdot \frac{f(\xi_{i+1}) - f(\xi_i)}{\xi_{i+1} - \xi_i} & \text{for $\xi_i \leq x < \xi_{i+1}, i \in \firstN{k-1}$},\\
@@ -198,9 +197,10 @@ class RightConstant:
 \end{minipage}\vspace{1em}
 
 
-In the next section, we will need the following operations on these functions.
+In the next section, we will need the following two operations on these functions.
 First, we want to be able to extend a piecewise linear function $f$ beginning at some time $\theta \geq \max_{i\in\firstN{k}} \xi_i$ by some slope $s$.
 This translates to Algorithm~\ref{alg:extend-piecewise-linear}.
+We only add a new entry to the lists \code{times} and \code{values} if $\theta > \max_{i\in\firstN{k}}$.
 
 \begin{algorithm}
   \begin{minted}[mathescape, linenos]{python}
@@ -215,8 +215,10 @@ def extend_with_slope(self, time: float, slope: float):
   \label{alg:extend-piecewise-linear}
 \end{algorithm}
 
-Secondly, right constant functions should be extendable beginning from time $\theta \in\R$ with $\theta \geq \sup_{i\in\firstN{k}} \xi_i$ by some value $v\in\R$.
+Similarly, right constant functions should be extendable beginning from some time $\theta \in\R$ with $\theta \geq \sup_{i\in\firstN{k}} \xi_i$ by some value $v\in\R$.
 The corresponding procedure is shown in Algorithm~\ref{alg:extend-right-constant}.
+Both of these extension procedures have a constant running time.
+
 \begin{algorithm}
   \begin{minted}[mathescape, linenos]{python}
 def extend(self, time: float, value: float):
@@ -229,8 +231,6 @@ def extend(self, time: float, value: float):
   \caption{Extension Procedure in \code{class RightConstant}}
   \label{alg:extend-right-constant}
 \end{algorithm}
-
-We conclude this section by mentioning that these extension procedures only use constant time.
 
 \subsection{Encoding Feasible Flows}
 
@@ -261,7 +261,7 @@ This can be done using an object representing a piecewise linear function becaus
 
 Next, the priority queue \code{outflow_changes} holds all upcoming events later than \code{phi} where some edge outflow will definitely change.
 It saves tuples $(e, \theta)$ with $\theta > \code{phi}$ interpreted as ``\code{outflow[e]} changes at time $\theta$''.
-This helps us extend at most as long as no edge outflow rate changes.
+This helps us later as we only want to extend the flow at most as long as no edge outflow rate changes in a single extension phase.
 
 Finally, we have a dictionary \code{depletions} which contains an edge $e$ if there is an upcoming queue depletion at some time $T_{\depl} > \phi$.
 In that case, $\code{depletions[e]}$ is a tuple $(T_{\depl}, T_{\depl}+ \transit_e, (g_{i,e})_{i\in I})$ where $(g_{i,e})_{i\in I}$ is the new outflow $(\outfl_{i,e})_{i\in I}$ starting from time $T_{\depl} + \transit_e$.
@@ -277,7 +277,7 @@ This is an object of the class \code{MultiComFlow} initialized using the operati
   \setlength{\itemsep}{0em}
 \item \code{phi = 0},
 \item \code{inflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i},
-\item \code{outflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i}
+\item \code{outflow[e][i] = RightConstant(times=[], values=[], first_value=0)} for all edges \code{e} and commodities \code{i},
 \item \code{queues[e] = PiecewiseLinear(times=[0], values=[0], first_slope=0,}\\\code{last_slope=0)} for all edges \code{e},
 \end{itemize}
 with an empty priority queue \code{outflow_changes} and an empty dictionary \code{depletions}.
@@ -289,16 +289,17 @@ During this extension interval $[\phi, \phi+\alpha)$ we keep all edge inflow and
 We imagine a scenario in which some external mechanism determines edge inflow rates $g\in\R_{\geq 0}^{I\times E}$ to extend $f$ by $\restrict{\infl_{i,e}}{[\phi, \phi+\alpha)} \equiv g_{i,e}$ for some small $\alpha > 0$.
 Moreover, we want to choose $\alpha$ at least so small, that no edge outflow rate changes within $[\phi, \phi + \alpha)$.
 That way $\bal{i}{v}$ remains constant during this interval and once the node inflow $\sum_{e\in\inEdges{v}}\outfl_{i,e}$ changes, the external mechanism can react to these changes.
-This enables the mechanism to preserve the flow conservation property~\ref{def:feasible-flow:flow-conservation} on intermediary nodes.
+This enables the mechanism to pre\-serve the flow conservation property~\ref{def:feasible-flow:flow-conservation} on intermediary nodes.
+This external mechanism will be introduced in the next section.
 
 After determining the new inflow rates $(g_{i,e})_{i\in I}$ of an edge $e$ beginning at time $\phi$, we assign $\restrict{\infl_{i,e}}{[\phi,\infty)} \coloneqq g_{i,e}$.
-Then we determine the outflow rate of $e$ beginning at $T_e(\phi) = \phi + \transit_e + q_e(\phi)/\capa_e$ according to properties~\ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity} of Definition~\ref{def:feasible-flow}:
+Then we determine the outflow rate of $e$ beginning at time $T_e(\phi) = \phi + \transit_e + q_e(\phi)/\capa_e$ according to properties~\ref{def:feasible-flow:deterministic-split} and~\ref{def:feasible-flow:operate-at-capacity} of Definition~\ref{def:feasible-flow}:
 
 In the extension method we are about to introduce we want to keep track of all future changes of outflow rates of any edge.
 This is done by queuing events of this type in the priority queue \code{outflow_changes}.
 In all three cases \textbf{I--III} as defined in Theorem~\ref{thm:extend-edge}, the outflow of $e$ changes at time $T_e(\phi)$.
 Only in case \textbf{III}, the outflow might change once again at time $T_{\depl} + \transit_e$, if during the interval $(\phi, T_{\depl})$ no other changes to the inflow of $e$ are made.
-Hence, in case~\textbf{III} we record a planned change event in the dictionary \code{depletions} for edge $e$ together with the current depletion time as well as change time.
+Hence, in case~\textbf{III} we record a planned change event in the dictionary \code{depletions} for edge $e$ together with the current depletion time as well as the planned change time $T_{\depl} + \transit_e$.
 
 \begin{algorithm}[ht]
     \begin{minted}[linenos, escapeinside=||]{python}
@@ -367,7 +368,7 @@ def _process_depletions():
 \label{alg:process-depletions}
 \end{algorithm}
 
-After determining the extension length and the new flow horizon \code{phi}, we need to process all queue depletions that happen before or at time \code{phi}.
+After determining the extension length via the new flow horizon \code{phi}, we need to process all queue depletions that happen before or at time \code{phi}.
 This procedure is depicted in Algorithm~\ref{alg:process-depletions}.
 For such a queue depletion of an edge \code{e}, we need to update the queue function \code{queues[e]} which will attain $0$ at its depletion time and should be extended by a $0$ slope.
 Furthermore, if the queue depletion induces a change of the edge outflow rate, an appropriate event is added to the priority queue \code{outflow_changes} and the outflow functions \code{outflow[e][i]} are updated for all commodities \code{i}.
@@ -446,6 +447,7 @@ def _extend_case_iii(self, e: Edge, new_inflow: List[float]):
 \label{alg:extend-cases}
 \end{algorithm}
 
+\clearpage
 
 \subsection{Computation of Approximated DPEs}\label{subsec:compute-dpes}
 
@@ -477,7 +479,7 @@ class Predictor(ABC):
 \end{classdef}
 
 
-In Section~\ref{subsec:implementation-predictors}, we will discuss the implementations of the different predictors that have been used throughout the experiments.
+In Section~\ref{subsec:implementation-predictors} we will discuss the implementations of the different predictors that have been used throughout the experiments.
 Here, we will assume that these implementations are already available.
 Each commodity has a predictor assigned to it which is used for its routing decisions.
 A commodity's network inflow rate is defined as an arbitrary piecewise constant function saved in the attribute \code{net_inflow}. 
@@ -499,7 +501,7 @@ In the remainder of this section, we introduce another class which encapsulates 
 Such a builder is constructed with the following three arguments:
 \begin{itemize}
   \item \code{network: Network}. Contains the graph, a list of commodities as well as capacities and travel times of the graph's edges.
-  \item \code{predictors: List[Predictor]}. Contains a list of all predictors that are used in the commodities.
+  \item \code{predictors: List[Predictor]}. Contains a list of all predictors that are used in the network's commodities.
   \item \code{reroute_interval: float}. The value $\varepsilon$ for building an $\varepsilon$-DPE. 
 \end{itemize}
 
@@ -537,10 +539,10 @@ The priority queue \code{_net_inflow_changes} is initialized with all events of 
 In the attribute \code{_next_reroute_time} we save the next point in time at which routes should be recalculated.
 Initially, it has the value $\code{_flow.phi}$.
 The attributes \code{_route_time} and \code{_costs} get updated every time new routes are computed:
-In \code{_route_time} we save the time at which the latest routes have computed (and at which time the predictions of queues have been taken) and the attribute \code{_costs[p]} saves the corresponding dynamic edge cost functions $(c_{p,e}(\emptyArg, \bar\theta, q))_{e\in E}$ with $\bar\theta = \code{_route_time}$ for a predictor $\code{p}$.
+In \code{_route_time} we save the time at which the latest routes have been computed (and at which time the predictions of queues have been taken) and the attribute \code{_costs[p]} saves the corresponding dynamic edge cost functions $(c_{p,e}(\emptyArg, \bar\theta, q))_{e\in E}$ with $\bar\theta = \code{_route_time}$ for a predictor $\code{p}$.
 As calculating shortest paths is computationally expensive, we employ a cache in the attribute \code{_active_edges}.
-Here, \code{_active_edges[c]} is a dictionary assigning active outgoing edges to nodes for the commodity \code{c}.
-These dictionaries are cleared at each reroute time step and filled only if we need to determine the active edges for some node, that means only if there is some positive inflow of that commodity into the node which needs to be assigned to outgoing edges.
+Here, \code{_active_edges[c]} is a dictionary assigning active outgoing edges $\predE(\bar\theta, \bar\theta, q)\cap \outEdges{v}$ to nodes $v$ for the commodity \code{c}.
+These dictionaries are cleared at each reroute time step and filled only on demand, that means only if there is some positive inflow of that commodity into the node which needs to be assigned to outgoing edges.
 Finally, the attribute \code{_handle_nodes} is a set containing all nodes whose inflow should be redistributed to outgoing edges in the next extension phase: Only a subset of nodes whose inflow has changed or — at reroute steps — all nodes.
  
 \begin{algorithm}
@@ -582,7 +584,7 @@ def build_until(self, horizon: float) -> MultiComFlow:
 \label{alg:extend-flow-builder}
 \end{algorithm}
 
-Once the user has successfully constructed such a builder and the attributes have been initialized, the user can call the function~\code{builder.build_until} on it as shown in~Algorithm~\ref{alg:extend-flow-builder}.
+Once the user has successfully constructed such a builder and the attributes have been initialized, the user can call the function~\code{builder.build_until} on it which is shown in~Algorithm~\ref{alg:extend-flow-builder}.
 This method computes an $\varepsilon$-DPE up to some given time horizon.
 In the following, we discuss the details of this method.
 
@@ -602,7 +604,7 @@ Lines~\ref{line:builder:restloop:0}--\ref{line:builder:mainloop:1} are executed 
 We first determine new constant inflow rates using the current dynamic costs functions in \code{_costs}.
 The maximum extension time is the minimum of the next reroute time and the next network inflow change time.
 Then, we call \code{_flow.extend} with these two arguments to extend the flow with the new inflow rates until either some edge outflow rate changes or the maximum extension time is reached.
-This function call returns the set of edges whose outflow rate changed at time \code{_flow.phi}.
+This function call returns the set of edges whose outflow rate changed at the new time \code{_flow.phi}.
 Hence, we assign \code{_handle_nodes} the set of target nodes of those edges. 
 
 \begin{algorithm}
@@ -638,6 +640,10 @@ We then distribute all inflow uniformly into all active outgoing edges. All othe
 
 The final ingredient of the flow builder is the method \code{_get_active_edges} for retrieving the currently active edges for a commodity and a node.
 It is shown in Algorithm~\ref{alg:builder:get_active_edges}.
+Of course, if the active edges of the corresponding node have already been computed, then we simply return the cached value from~\code{_active_edges}.
+Otherwise, we still have to compute them.
+We do a case distinction on whether the predictor of a commodity $i$ returns constant queue length functions only.
+
 \newcommand{\dist}{\textrm{dist}}
 
 \begin{algorithm}
@@ -667,11 +673,7 @@ def _get_active_edges(self, c: Commodity, s: Node) -> Set[Edge]:
 \label{alg:builder:get_active_edges}
 \end{algorithm}
 
-Of course, if the active edges of the corresponding node have already been computed, then we simply return the cached value from~\code{_active_edges}.
-Otherwise, we still have to compute them.
-We do a case distinction on whether the predictor of a commodity $i$ returns constant queue length functions only.
-
-In the case of constant queue lengths, all edge cost functions $c_{i,e}(\emptyArg,\bar\theta,q)$ are constant as well with $c_{i,e}(\emptyArg,\bar\theta,q)\equiv c_{i,e}(\bar\theta,q) \in \R_{>0}$.
+In the case of constant queue lengths, all edge cost functions $c_{i,e}(\emptyArg,\bar\theta,q)$ are constant as well with $c_{i,e}(\emptyArg,\bar\theta,q)\equivcolon c_{i,e}(\bar\theta,q) \in \R_{>0}$.
 If we denote \[
   \dist_{i,v}(\bar\theta, q)\coloneqq \min_{e_1\,\cdots\,e_k\in\paths_{v,t_i}} \sum_{l=1}^k c_{i,e_k}(\bar\theta, q)
 \]
@@ -682,7 +684,7 @@ leaving an edge $e=vw$ $\bar\theta$-predicted active at time $\theta$ if and onl
   \dist_{i,v}(\bar\theta, q) = c_{i,e}(\bar\theta, q) + \dist_{i,w}(\bar\theta, q).
 \]
 Using the static version of the Dijkstra Algorithm on the reverse graph yields the distance vector $(\dist_{i,v}(\bar\theta, q))_{v\in V_i}$.
-Thus, as expected we only need a single run of the Dijkstra Algorithm to compute the active edges of all nodes for that commodity.
+Thus, as expected we only need a single run of the static Dijkstra Algorithm to compute the active edges of all nodes for that commodity.
 This is implemented in lines~\ref{line:getactiveedges:static:0}--\ref{line:getactiveedges:static:1} of Algorithm~\ref{alg:builder:get_active_edges}.
 The implementation of the function~\code{static_dijkstra} is not included in this report, however it is straight forward and well covered in standard literature.  
 
@@ -735,7 +737,7 @@ class ConstantPredictor(Predictor):
 \label{alg:constant-predictor}
 \end{algorithm}
 
-For the linear predictor as well as the regularized linear predictor, we assume that the prediction horizon $H>0$ is finite.
+For the linear predictor and the regularized linear predictor, we assume that the prediction horizon $H>0$ is finite.
 The linear predictor can then be initialized using a value \code{horizon} representing $H$.
 To determine the gradient $\partial_-q_e(\phi)$, the method \code{gradient} has been implemented for the \code{class PiecewiseLinear}.
 The resulting linear predictor is shown in Algorithm~\ref{alg:linear-predictor}.
@@ -809,6 +811,7 @@ As explained in Section~\ref{sec:applied-predictors}, for each edge $e=vw$ we wa
   \right)^+,
 \]
 for $j\in\{1,\dots,k_f\}$, $i\in\{1,\dots,k_p\}$ and $N(e) = \outEdges{v} \cup \{e\} \cup \inEdges{w}$.
+
 For graphs with a large number of edges this quickly gets computationally infeasible. Hence, for such a graph we learn a fixed number of matrices and apply them on all edges.
 More specifically, let $\deg^+\coloneqq \max_{v\in V} \abs{ \inEdges{v} }$ be the maximum in-degree and $\deg^-\coloneqq \max_{v\in V} \abs{\outEdges{v}}$ the maximum out-degree of any node.
 We learn matrices $W^{+1},\dots,W^{+\deg^+}$, $W^0$, $W^{-1},\dots,W^{-\deg^-}$ and biases $\beta\in\R^{k_f}$.
@@ -816,7 +819,7 @@ These generalized parameters can now be applied to predict the queue lengths of 
 We arbitrarily order the neighboring edges using $\inEdges{v} \eqqcolon \{ e^{+1},\dots,e^{+\abs{\inEdges{v}}}\}$, $e\eqqcolon e^0$ and $\outEdges{w} \eqqcolon \{ e^{-1},\dots,e^{-\abs{\outEdges{w}}} \}$ and compute \[
   \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right) \coloneqq 
   \left(
-  \sum_{e^l\in N(e)} \sum_{i = 1}^{k_p} w^{l}_{i, j} \cdot {q_{e'}}{\left( 
+  \sum_{e^l\in N(e)} \sum_{i = 1}^{k_p} w^{l}_{i, j} \cdot {q_{e^l}}{\left( 
       \bar\theta - (i-1)\cdot\delta
   \right)}
   + \beta_j
@@ -826,8 +829,8 @@ We arbitrarily order the neighboring edges using $\inEdges{v} \eqqcolon \{ e^{+1
 For graphs of any size, we train the linear regression model on samples of queue functions that have previously been computed by the extension procedure of Section~\ref{subsec:compute-dpes}.
 In these training flows all commodities exclusively use the constant predictor.
 
-As previously noted, using this prediction method as described by the formulas above does not necessarily lead to a FIFO-respecting predictor.
-To force such a predictor to follow the FIFO rule, we have to make sure that the derivate of $\predq^\predML(\emptyArg,\bar\theta,q)$ never subceeds $-\capa_e$.
+As previously noted, using this prediction method as described by the formulas above does not necessarily lead to a FIFO-compatible predictor.
+To force the FIFO-compati\-bility of such a predictor, we have to make sure that the derivative of $\predq^\predML(\emptyArg,\bar\theta,q)$ never subceeds $-\capa_e$.
 We do this by sequentially reassigning \[
   \predq^\predML_e\left(\bar\theta + j\cdot\delta,\bar\theta,q \right)
   \coloneqq \max\left\{

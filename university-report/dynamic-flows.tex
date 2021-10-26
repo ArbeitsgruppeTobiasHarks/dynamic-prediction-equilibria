@@ -2,11 +2,7 @@
 
 We begin by defining the model of dynamic flows, also called flows over time.
 Here, Vickrey's fluid queuing model is used.
-The traffic network is represented as a directed Graph $(V, E)$ with a finite set of nodes $V$ and a finite set of edges $E$.
-Although, we allow parallel edges, we often write $e=vw\in E$ for a directed edge $e$ from node $v$ to node $w$.
-For a node $v$, we denote the set of \emph{outgoing edges} of $v$ as $\outEdges{v}\coloneqq \{ vw \in E \}$ and the set of \emph{incoming edges} as $\inEdges{v} \coloneqq \{ uv \in E \}$.
-
-Each edge $e$ has a positive \emph{rate capacity} $\capa_e > 0$ and a positive \emph{transit time} $\transit_e > 0$.
+Each edge $e\in E$ has a positive \emph{rate capacity} $\capa_e > 0$ and a positive \emph{transit time} $\transit_e > 0$.
 The rate capacity bounds the amount of flow an edge can transfer at a time, which can be imagined as the width of a conveyor belt.
 The transit time on the other is the time the conveyor belt needs to transfer particles from its beginning to its end.
 
@@ -38,7 +34,7 @@ This definition already leads to a good insight on how particles should behave i
 A particle of commodity $i$ is generated at the source $s_i$ at some time $\theta$ and immediately decides which outgoing edge $e=s_i v\in \outEdges{s_i}$ it should take.
 At this time, the cost of $e$ is $c_e(\theta) = \transit_e + \qulen_e(\theta) / \capa_e$, which means that the particle has to queue for $\qulen_e(\theta) / \capa_e$ time units before it can traverse the edge in $\transit_e$ time.
 It will thus arrive at $v$ at time $T_e(\theta) \coloneqq \theta + c_e(\theta)$.
-Once it arrives at an intermediary node $v\neq t_i$, it will again have an opportunity to update its routing decision by choosing a new outgoing edge in~$\outEdges{v}$ unless it arrives at its destination $t_i$. 
+Once it arrives at an intermediary node $v\neq t_i$, it will again have an opportunity to update its routing decision by choosing a new outgoing edge in~$\outEdges{v}$ until it arrives at its destination $t_i$. 
 
 To make the dynamic flows behave like imagined above, we have to make several restrictions forming the class of feasible dynamic flows:
 
@@ -72,11 +68,11 @@ To make the dynamic flows behave like imagined above, we have to make several re
 
 
 \begin{remark}
-    We highlight, that property~\ref{def:feasible-flow:deterministic-split} is defined slightly different in literature such as~\cite{Graf2020} where $\xi\coloneqq \min \{ \xi  \mid T_e(\xi) = \theta \}$ is defined as the earliest possible time to arrive at $w$ when traversing $e$.
+    We note that property~\ref{def:feasible-flow:deterministic-split} is defined slightly different in literature such as~\cite{Graf2020} in which $\xi\coloneqq \min \{ \xi  \mid T_e(\xi) = \theta \}$ is defined as the earliest possible time to arrive at $w$ when traversing $e$.
     However, the set $\{\theta \mid \min \{ \xi  \mid T_e(\xi) = \theta \} < \max \{ \xi  \mid T_e(\xi) = \theta \} \}$ has zero measure such that the effect on the definition vanishes.
 \end{remark}
 
-We note, that for a given feasible flow $f$ the costs $c_e$ follow the FIFO-rule and hence the results from Section~\ref{sec:fifo-costs} can be applied.
+We highlight that for a given feasible flow $f$ the costs $c_e$ follow the FIFO-rule and hence the results from Section~\ref{sec:fifo-costs} can be applied.
 \begin{proposition}
     The cost functions $c$ induced by a feasible flow $f$ follow the FIFO-rule.
 \end{proposition}

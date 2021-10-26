@@ -80,7 +80,7 @@ Given a FIFO cost function $c: \R\rightarrow\R_{\geq0}^E$ with nodes $s,t\in V$,
     l_{s,t}(\theta) = l_{w,t}(T_e(\theta)).
 \]
 Unfortunately, from the arrival times $(l_{s,w}(\theta))_{w\in V'}$ obtained by a simple run of the Dynamic Dijkstra Algorithm, we cannot determine all active edges:
-Usually, the idea is to backtrack all shortest paths by searching edges backwards starting from $t$ for which equality holds in $l_{s,w}(\theta) \leq T_e(l_{s,v}(\theta))$.
+Usually, the idea is to backtrack all shortest paths by searching edges $e=vw$ backwards starting from $t$ for which equality holds in $l_{s,w}(\theta) \leq T_e(l_{s,v}(\theta))$.
 This approach is described in Algorithm~\ref{alg:backward-search} which aims to return the set $E(\theta)\cap \outEdges{s}$.
 The vector $(l_{s,w}(\theta))_{w\in V'}$ as returned by the Dynamic Dijkstra Algorithm is passed to the function via the parameter \code{arrivals}.
 During the procedure, we only enqueue a node $u$ to the queue \code{queue}, if there exists a path from $u$ to $t$ in which each edge $e=vw$ fulfills $l_{s,w}(\theta)= T_e(l_{s,v}(\theta))$.
