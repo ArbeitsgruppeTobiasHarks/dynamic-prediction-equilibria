@@ -52,6 +52,7 @@
 \author{Michael Markl}
 \title{Computation of Dynamic~Prediction~Equilibria}
 \subtitle{A software project as part of the M.Sc. Mathematics at~the~University~of~Augsburg.}
+\publishers{Supervised by Prof. Dr. Tobias Harks}
 
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\Z}{\mathbb{Z}}
@@ -148,6 +149,31 @@
     
     \clearpage
     \input{computational-results.tex}
+
+    \clearpage
+    \section{Conclusions}
+
+    In this report we have introduced a method to compute $\varepsilon$-DPEs.
+    We introduced several predictors and their implementations and showed how machine learning methods can be embedded in this simulation.
+    This approach can be used to analyze the use of machine learning based navigation systems in everyday traffic.
+    The benefit over other traffic simulations is that it follows a very concise and clear mathematical model that can also be analyzed theoretically.
+
+    We want to conclude this report with several aspects for future work.
+
+    First, the current version of the software does not come with a general-graph visualization of the calculated flows.
+    It is clear, that a good visualization can improve the understanding and intuition of the underlying model.
+    Moreover, it is interesting to see which edges become bottlenecks for a given scenario and network and inspect how changes to these edges or the insertion of edges influences the resulting flow.
+
+    Second, the machine learning model used here can still be improved as can be seen in Section~\ref{sec:results}.
+    It might be worth changing the feature set given to the learning algorithm:
+    The queue length of surrounding edges might not be the only indicator of an upcoming queue at the future.
+    For example if a surrounding edge has a very high capacity and transports an amount of flow close to its capacity, this flow cannot be detected in the current feature set, because no queue forms in front of the edge. 
+    However, changing the feature set to include more than the past queue lenghts also changes the mathematical model of the predictor functions $\predq_{i,e}(\emptyArg, \emptyArg, \emptyArg)$.
+    Changing the arguments of this function might imply that the existence of equilibria as given by Theorem~\ref{thm:dpe-existence} does not hold anymore.
+    
+    Finally, the quality of approximation of $\varepsilon$-DPEs is still to be analyzed.
+    A desirable result would be that for $\varepsilon$ tending to $0$, the $\varepsilon$-DPE converges to a real DPE.
+    However, in this report we leave this question open for further research.
 
     \clearpage
     \printbibliography
