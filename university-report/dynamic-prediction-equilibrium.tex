@@ -107,8 +107,8 @@ Another approach is the so-called \emph{constant predictor} $\predq^\predC$ whic
     \predq^\predC_{e}(\theta, \bar\theta, q) \coloneqq q_e(\bar\theta)
 \]
 for all $e\in E$, $\theta,\bar\theta\in\R$ and $q\in \QueueFct^E$.
-Here, the edge costs are constant in the argument $\theta$ with $\predc^\predZ_e(\emptyArg, \bar\theta, q)\equiv \transit_e + q_e(\bar\theta)/\capa_e$ for all edges $e\in E$.
-If all commodities use the constant predictor, the dynamic flow of a DPE is the same as an instantaneous dynamic equilibrium (IDE) as introduced in~\cite[Definition~2.1]{Graf2020}.
+Here, the edge costs are constant in the argument $\theta$ with $\predc^\predC_e(\emptyArg, \bar\theta, q)\equiv \transit_e + q_e(\bar\theta)/\capa_e$ for all edges $e\in E$.
+If all commodities use the constant predictor, the dynamic flow of a DPE is simply an instantaneous dynamic equilibrium (IDE) as introduced in~\cite[Definition~2.1]{Graf2020}.
 
 A more sophisticated variant is the \emph{linear predictor} $\predq^\predL$ which predicts that the queue length extends with the current derivative up to some prediction horizon $H\in \R_{>0} \cup \{ \infty \}$.
 Starting from $H$ we assume a constant course.
