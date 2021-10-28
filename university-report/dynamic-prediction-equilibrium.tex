@@ -17,7 +17,7 @@ where $\QueueFct\coloneqq \contFcts{\R}{\R_{\geq0}}$ denotes the set of all cont
 Based on the predicted queue lengths we can also determine \emph{predicted edge costs} by \[
     \predc_{i,e}(\theta, \bar\theta, q) \coloneqq \transit_e + \frac{\predq_{i,e}(\theta, \bar\theta, q)}{\capa_e}.
 \]
-The \emph{predicted traversal time of an edge $e=vw$} is the predicted arrival time at $w$ when entering edge $e$ at time $\theta$ defined as $\predT_{i,e}(\theta, \bar\theta, q) \coloneqq \theta + \predc(\theta, \bar\theta, q)$.
+The \emph{predicted traversal time of an edge $e=vw$} is the predicted arrival time at $w$ when entering edge $e$ at time $\theta$ defined as $\predT_{i,e}(\theta, \bar\theta, q) \coloneqq \theta + \predc_{i,e}(\theta, \bar\theta, q)$.
 The \emph{predicted traversal time of a path $P=e_1\,e_2\,\cdots\,e_k$} is thus defined as \[
     \predT_{i,P}(\theta,\bar\theta, q) \coloneqq \left(
         \predT_{i,e_k}(\emptyArg, \bar\theta, q) \circ \cdots \circ \predT_{i,e_1}(\emptyArg, \bar\theta, q)
@@ -45,7 +45,7 @@ for all $v\in V_i$ and $e=vw\in E$.
 \begin{definition}
 An edge $e=vw$ is called \emph{active} for commodity $i\in I$ at time $\theta\in\R$ as predicted at time~$\bar\theta$, if the equation \[
     \predl_{i,v}(\theta, \bar\theta, q) = \predl_{i,w}{\left(
-        \predT_{i, e}(\theta, \bar\theta, q)
+        \predT_{i, e}(\theta, \bar\theta, q), \bar\theta, q
     \right)}
 \]
 holds true.

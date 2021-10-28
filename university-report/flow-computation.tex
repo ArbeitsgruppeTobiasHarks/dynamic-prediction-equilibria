@@ -238,7 +238,7 @@ We now discuss the data structure used for representing and extending partial dy
 
 \begin{classdef}
     \begin{minted}[mathescape, linenos]{python}
-class MultiComFlow
+class MultiComFlow:
   phi: float
   inflow: Dict[Edge,List[RightConstant]]
   outflow: Dict[Edge, List[RightConstant]]
