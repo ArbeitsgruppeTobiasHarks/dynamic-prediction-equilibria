@@ -7,15 +7,15 @@ jobs:
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
-
       - name: Install and Build 🔧
-        working-directory: ./slides
         run: |
+          echo $PWD
+          ls -la
           npm ci
           npm run build
-
+        working-directory: ${{ github.workspace }}/slides
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.2.2
         with:
           branch: gh-pages # The branch the action should deploy to.
-          folder: ./slides/dist # The folder the action should deploy.
+          folder: ${{ github.workspace }}/slides/dist # The folder the action should deploy.
