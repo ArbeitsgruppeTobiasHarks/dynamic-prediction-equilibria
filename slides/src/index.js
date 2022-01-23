@@ -118,7 +118,7 @@ const Node = ({ label, pos }) => {
   </>
 }
 
-const Edge = ({ from, to, width = 10 }) => {
+const Edge = ({ from, to, width = 10, flowSteps = [] }) => {
   const padding = 40
   const d = [to[0] - from[0], to[1] - from[1]]
   const norm = Math.sqrt(d[0] ** 2 + d[1] ** 2)
@@ -127,12 +127,31 @@ const Edge = ({ from, to, width = 10 }) => {
   const start = [from[0] + pad[0], from[1] + pad[1]]
   const deg = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI
   //return <path d={`M${start[0]},${start[1]}L${end[0]},${end[1]}`} />
+  const scaledNorm = norm - 2 * padding - width
+  const scale = scaledNorm / norm
+
   return <g transform={`rotate(${deg}, ${start[0]}, ${start[1]})`}>
-    <path stroke="black" fill="lightgray" d={`M${start[0] + norm - 2 * padding - width}, ${start[1] - width} l${width}, ${width} l${-width}, ${width} z`} />
+    <path stroke="black" fill="lightgray" d={`M${start[0] + scaledNorm}, ${start[1] - width} l${width}, ${width} l${-width}, ${width} z`} />
     <rect
       x={start[0]} y={start[1] - width / 2}
-      width={norm - 2 * padding - width} height={width}
-      stroke="black" fill="white"
+      width={scaledNorm} height={width} fill="white" stroke="none"
+    />
+    {
+      flowSteps.map(({ from, to, values }) => {
+        const s = values.reduce((acc, { value }) => acc + value, 0)
+        let y = start[1] - s / 2
+        return values.map(({ color, value }) => {
+          const myY = y
+          y += value
+          return (
+            <rect fill={color} x={start[0] + from * scale} y={myY} width={(to - from) * scale} height={value} />
+          );
+        })
+      }).flat()
+    }
+    <rect
+      x={start[0]} y={start[1] - width / 2}
+      width={scaledNorm} height={width} stroke="black" fill="none"
     />
   </g>
 
@@ -142,10 +161,15 @@ const FlowModelSvg = () => {
   const sPos = [25, 25]
   const vPos = [250, 25]
   const tPos = [475, 25]
+
+  const RED = '#a00'
+  const GREEN = '#0a0'
   return <svg width={500} height={200}>
 
     <Edge from={sPos} to={vPos} width={20} />
-    <Edge from={vPos} to={tPos} />
+    <Edge from={vPos} to={tPos} width={10} flowSteps={[
+      { from: 20, to: 50, values: [{ color: RED, value: 5 }, { color: GREEN, value: 5 }] }
+    ]} />
     <Node pos={sPos} label={<TeX>s</TeX>} />
     <Node pos={vPos} label={<TeX>v</TeX>} />
     <Node pos={tPos} label={<TeX>t</TeX>} />
