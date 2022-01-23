@@ -106,6 +106,52 @@ const CustomSlide = ({ section, intro = false, children }) => {
   </Slide>
 }
 
+const Node = ({ label, pos }) => {
+  const radius = 20
+  const [cx, cy] = pos
+  return <>
+    <circle cx={cx} cy={cy} r={radius} stroke="black" fill="white" />
+    {label ? (<foreignObject x={cx - radius} y={cy - radius} width={2 * radius} height={2 * radius}>
+      <div style={{ width: 2 * radius, height: 2 * radius, display: 'grid', justifyContent: 'center', alignItems: 'center' }}>
+        {label}
+      </div></foreignObject>) : null}
+  </>
+}
+
+const Edge = ({ from, to, width = 10 }) => {
+  const padding = 40
+  const d = [to[0] - from[0], to[1] - from[1]]
+  const norm = Math.sqrt(d[0] ** 2 + d[1] ** 2)
+  // start = from + (to - from)/|to - from| * 30
+  const pad = [d[0] / norm * padding, d[1] / norm * padding]
+  const start = [from[0] + pad[0], from[1] + pad[1]]
+  const deg = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI
+  //return <path d={`M${start[0]},${start[1]}L${end[0]},${end[1]}`} />
+  return <g transform={`rotate(${deg}, ${start[0]}, ${start[1]})`}>
+    <path stroke="black" fill="lightgray" d={`M${start[0] + norm - 2 * padding - width}, ${start[1] - width} l${width}, ${width} l${-width}, ${width} z`} />
+    <rect
+      x={start[0]} y={start[1] - width / 2}
+      width={norm - 2 * padding - width} height={width}
+      stroke="black" fill="white"
+    />
+  </g>
+
+}
+
+const FlowModelSvg = () => {
+  const sPos = [25, 25]
+  const vPos = [250, 25]
+  const tPos = [475, 25]
+  return <svg width={500} height={200}>
+
+    <Edge from={sPos} to={vPos} width={20} />
+    <Edge from={vPos} to={tPos} />
+    <Node pos={sPos} label={<TeX>s</TeX>} />
+    <Node pos={vPos} label={<TeX>v</TeX>} />
+    <Node pos={tPos} label={<TeX>t</TeX>} />
+  </svg>
+}
+
 const Presentation = () => (
   <Deck theme={theme} template={template}>
     <Slide>
@@ -123,8 +169,8 @@ const Presentation = () => (
           <ListItem>Edge travel time <TeX>\tau_e > 0</TeX> for <TeX>e\in E</TeX></ListItem>
           <ListItem>Edge capacity <TeX>\nu_e> 0</TeX> for <TeX>e\in E</TeX></ListItem>
         </UnorderedList>
-        <Box style={{ flex: 1, aspectRatio: 1 }} backgroundColor="gray">
-
+        <Box style={{ flex: 1 }}>
+          <FlowModelSvg />
         </Box>
       </FlexBox>
     </CustomSlide>
