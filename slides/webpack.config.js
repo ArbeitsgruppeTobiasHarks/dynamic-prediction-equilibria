@@ -20,7 +20,7 @@ const babelLoader = {
  */
 
 module.exports = {
-  mode: 'development',
+  mode: "development",
   entry: './src/index.js', // Default for boilerplate generation.
   output: {
     path: path.resolve('dist'),
@@ -48,14 +48,17 @@ module.exports = {
       {
         test: /\.(png|svg|jpg|gif)$/,
         use: [require.resolve('file-loader')]
-      }
+      },
     ]
   },
   // Default for boilerplate generation.
   plugins: [
     new HtmlWebpackPlugin({
-      title: 'Spectacle presentation',
+      title: 'Machine-Learned Prediction Equilibrium for Dynamic Traffic Assignment',
       template: './src/index.html'
     })
-  ]
+  ],
+  resolve: {
+    fallback:  { "util": false, "assert": false }
+  }
 };
