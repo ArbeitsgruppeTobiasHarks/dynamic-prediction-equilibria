@@ -118,12 +118,19 @@ const Node = ({ label, pos }) => {
   </>
 }
 
-const Edge = ({ from, to, width = 10, flowSteps = [] }) => {
+const d = {
+  M: (x, y) => `M${x} ${y}`,
+  c: (dx1, dy1, dx2, dy2, x, y) => `c${dx1} ${dy1} ${dx2} ${dy2} ${x} ${y}`,
+  l: (x, y) => `l${x} ${y}`,
+  z: 'z'
+}
+
+const Edge = ({ from, to, width = 10, flowSteps = [], queueSteps = [] }) => {
   const padding = 40
-  const d = [to[0] - from[0], to[1] - from[1]]
-  const norm = Math.sqrt(d[0] ** 2 + d[1] ** 2)
+  const delta = [to[0] - from[0], to[1] - from[1]]
+  const norm = Math.sqrt(delta[0] ** 2 + delta[1] ** 2)
   // start = from + (to - from)/|to - from| * 30
-  const pad = [d[0] / norm * padding, d[1] / norm * padding]
+  const pad = [delta[0] / norm * padding, delta[1] / norm * padding]
   const start = [from[0] + pad[0], from[1] + pad[1]]
   const deg = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI
   //return <path d={`M${start[0]},${start[1]}L${end[0]},${end[1]}`} />
@@ -131,7 +138,7 @@ const Edge = ({ from, to, width = 10, flowSteps = [] }) => {
   const scale = scaledNorm / norm
 
   return <g transform={`rotate(${deg}, ${start[0]}, ${start[1]})`}>
-    <path stroke="black" fill="lightgray" d={`M${start[0] + scaledNorm}, ${start[1] - width} l${width}, ${width} l${-width}, ${width} z`} />
+    <path stroke="black" fill="lightgray" d={d.M(start[0] + scaledNorm, start[1] - width) + d.l(width, width) + d.l(-width, width) + d.z} />
     <rect
       x={start[0]} y={start[1] - width / 2}
       width={scaledNorm} height={width} fill="white" stroke="none"
@@ -143,32 +150,59 @@ const Edge = ({ from, to, width = 10, flowSteps = [] }) => {
         return values.map(({ color, value }) => {
           const myY = y
           y += value
-          return (
-            <rect fill={color} x={start[0] + from * scale} y={myY} width={(to - from) * scale} height={value} />
-          );
+          return <rect fill={color} x={start[0] + from * scale} y={myY} width={(to - from) * scale} height={value} />
         })
       }).flat()
     }
+    <g mask="url(#fade-mask)">
+      {
+        queueSteps.map(({ from, to, values }) => {
+          const s = values.reduce((acc, { value }) => acc + value, 0)
+          let x = start[0] - width
+          return values.map(({ color, value }) => {
+            const myX = x
+            x += value
+            return <rect fill={color} x={myX} y={start[1] - width + from * scale} width={value} height={(to - from) * scale} />
+          })
+        }).flat()
+      }
+    </g>
+    {queueSteps.length > 0 ? <path stroke="gray" fill="none" d={d.M(...start) + d.c(-width / 2, 0, -width / 2, 0, -width / 2, -width)} /> : null}
     <rect
       x={start[0]} y={start[1] - width / 2}
       width={scaledNorm} height={width} stroke="black" fill="none"
     />
   </g>
-
 }
 
+const SvgDefs = () => (<>
+  <linearGradient id="fade-grad" x1="0" y1="1" y2="0" x2="0">
+    <stop offset="0" stopColor='white' stopOpacity="0.5" />
+    <stop offset="1" stopColor='white' stopOpacity="0.2" />
+  </linearGradient>
+  <mask id="fade-mask" maskContentUnits="objectBoundingBox">
+    <rect width="1" height="1" fill="url(#fade-grad)" />
+  </mask>
+</>
+)
+
 const FlowModelSvg = () => {
-  const sPos = [25, 25]
-  const vPos = [250, 25]
-  const tPos = [475, 25]
+  const sPos = [25, 100]
+  const vPos = [250, 100]
+  const tPos = [475, 100]
 
   const RED = '#a00'
   const GREEN = '#0a0'
-  return <svg width={500} height={200}>
+  return <svg width={500} height={500}>
+
+    <SvgDefs />
 
     <Edge from={sPos} to={vPos} width={20} />
     <Edge from={vPos} to={tPos} width={10} flowSteps={[
       { from: 20, to: 50, values: [{ color: RED, value: 5 }, { color: GREEN, value: 5 }] }
+    ]} queueSteps={[
+      { from: -50, to: 0, values: [{ color: RED, value: 5 }, { color: GREEN, value: 5 }] },
+      { from: -100, to: -50, values: [{ color: RED, value: 10 }] }
     ]} />
     <Node pos={sPos} label={<TeX>s</TeX>} />
     <Node pos={vPos} label={<TeX>v</TeX>} />
@@ -187,7 +221,7 @@ const Presentation = () => (
 
     <CustomSlide intro section="I. The Flow Model">
       <SubHeading textAlign="left">The Physical Flow Model</SubHeading>
-      <FlexBox flexDirection="row">
+      <FlexBox flexDirection="row" alignItems="start">
         <UnorderedList style={{ flex: 1 }}>
           <ListItem>An undirected graph <TeX>G=(V,E)</TeX></ListItem>
           <ListItem>Edge travel time <TeX>\tau_e > 0</TeX> for <TeX>e\in E</TeX></ListItem>
