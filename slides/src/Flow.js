@@ -4,6 +4,13 @@ export class Flow {
         this.outflow = outflow
         this.queues = queues
     }
+
+    static fromJson(json) {
+        const inflow = json.inflow.map(inflows => inflows.map(rightConstant => RightConstant.fromJson(rightConstant)))
+        const outflow = json.outflow.map(outflows => outflows.map(rightConstant => RightConstant.fromJson(rightConstant)))
+        const queues = json.queues.map(queue => PiecewiseLinear.fromJson(queue))
+        return new Flow(inflow, outflow, queues)
+    }
 }
 
 export class Network {
@@ -52,6 +59,10 @@ export class RightConstant {
             return this.values[rnk]
         }
     }
+
+    static fromJson(json) {
+        return new RightConstant(json.times, json.values)
+    }
 }
 
 function elemLRank(arr, x) {
@@ -97,6 +108,10 @@ export class PiecewiseLinear {
             return this.values[this.values.length - 1] + (at - this.times[this.times.length - 1]) * last_grad
         }
         return this.values[rnk] + (at - this.times[rnk]) * this.gradient(rnk)
+    }
+
+    static fromJson(json) {
+        return new PiecewiseLinear(json.times, json.values, json.lastSlope, json.firstSlope)
     }
 }
 

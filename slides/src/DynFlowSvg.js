@@ -42,18 +42,18 @@ export const calcOutflowSteps = (outflow, colors) => {
     return flowSteps
 }
 
-export const splitOutflowSteps = (outflowSteps, queue, transitTime, t) => {
+export const splitOutflowSteps = (outflowSteps, queue, transitTime, capacity, t) => {
     const queueSteps = []
     const inEdgeSteps = []
 
-    const queueLength = queue.eval(t)
+    const queueLength = queue.eval(t) / capacity
 
     for (let step of outflowSteps) {
         const relStart = step.start - t
         const relEnd = step.end - t
 
-        const queueStart = Math.max(relStart - transitTime, -queueLength)
-        const queueEnd = Math.min(relEnd - transitTime, 0)
+        const queueStart = Math.max((relStart - transitTime), -queueLength)
+        const queueEnd = Math.min((relEnd - transitTime), 0)
         if (queueStart < queueEnd) {
             queueSteps.push({ start: queueStart, end: queueEnd, values: step.values })
         }
