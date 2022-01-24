@@ -1,5 +1,5 @@
-import React from 'react';
-
+import React, { useState } from 'react';
+import { useInterval } from 'usehooks-ts'
 import TeX from '@matejmazur/react-katex'
 import { BaseEdge, calcOutflowSteps, splitOutflowSteps, SvgDefs, Vertex } from "./DynFlowSvg";
 import { Flow, PiecewiseLinear, RightConstant } from "./Flow";
@@ -25,7 +25,8 @@ export const Example1Svg = () => {
     const sPos = [25, 100]
     const vPos = [225, 100]
     const tPos = [425, 100]
-    const t = 100
+    const [t, setT] = useState(-100)
+    useInterval(() => setT(t => t + 1), 1/60)
     return <svg width={500} height={500}>
         <SvgDefs />
         <FlowEdge outflowSteps={outflowSteps[0]} from={sPos} to={vPos} capacity={capacity[0]} transitTime={transitTime[0]} queue={flow.queues[0]} t={t} />
