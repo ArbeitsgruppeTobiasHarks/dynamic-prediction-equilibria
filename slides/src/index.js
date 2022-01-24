@@ -13,7 +13,8 @@ import {
   Text,
   Box
 } from 'spectacle';
-import { animated, useSpring, useChain } from 'react-spring';
+import { animated, useSpring, useChain, useTransition } from 'react-spring';
+import { FlowModelSvg } from './DynFlowSvg';
 
 
 const theme = {
@@ -64,7 +65,7 @@ const CustomSlide = ({ section, intro = false, children }) => {
   if (!intro) {
     return <FlexBox width="1" flexDirection="row" justifyContent="space-between" borderBottom="1px solid black">
       <Text fontFamily="head" fontSize="head" margin="0px" padding="0px" style={{ letterSpacing: "-1px" }}>
-        {TITLE + (!value ? (" — " + section) : "")}
+        {TITLE + " — " + section}
       </Text>
       <Text fontFamily="head" fontSize="head" margin="0px" padding="0px" style={{ letterSpacing: "-.5px" }}>{PRESENTER}</Text>
     </FlexBox>
@@ -106,116 +107,34 @@ const CustomSlide = ({ section, intro = false, children }) => {
   </Slide>
 }
 
-const Node = ({ label, pos }) => {
-  const radius = 20
-  const [cx, cy] = pos
-  return <>
-    <circle cx={cx} cy={cy} r={radius} stroke="black" fill="white" />
-    {label ? (<foreignObject x={cx - radius} y={cy - radius} width={2 * radius} height={2 * radius}>
-      <div style={{ width: 2 * radius, height: 2 * radius, display: 'grid', justifyContent: 'center', alignItems: 'center' }}>
-        {label}
-      </div></foreignObject>) : null}
-  </>
+
+const EdgeFromFlow = () => {
+
 }
 
-const d = {
-  M: (x, y) => `M${x} ${y}`,
-  c: (dx1, dy1, dx2, dy2, x, y) => `c${dx1} ${dy1} ${dx2} ${dy2} ${x} ${y}`,
-  l: (x, y) => `l${x} ${y}`,
-  z: 'z'
-}
 
-const Edge = ({ from, to, width = 10, flowSteps = [], queueSteps = [] }) => {
-  const padding = 40
-  const delta = [to[0] - from[0], to[1] - from[1]]
-  const norm = Math.sqrt(delta[0] ** 2 + delta[1] ** 2)
-  // start = from + (to - from)/|to - from| * 30
-  const pad = [delta[0] / norm * padding, delta[1] / norm * padding]
-  const start = [from[0] + pad[0], from[1] + pad[1]]
-  const deg = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI
-  //return <path d={`M${start[0]},${start[1]}L${end[0]},${end[1]}`} />
-  const scaledNorm = norm - 2 * padding - width
-  const scale = scaledNorm / norm
-
-  return <g transform={`rotate(${deg}, ${start[0]}, ${start[1]})`}>
-    <path stroke="black" fill="lightgray" d={d.M(start[0] + scaledNorm, start[1] - width) + d.l(width, width) + d.l(-width, width) + d.z} />
-    <rect
-      x={start[0]} y={start[1] - width / 2}
-      width={scaledNorm} height={width} fill="white" stroke="none"
-    />
-    {
-      flowSteps.map(({ from, to, values }) => {
-        const s = values.reduce((acc, { value }) => acc + value, 0)
-        let y = start[1] - s / 2
-        return values.map(({ color, value }) => {
-          const myY = y
-          y += value
-          return <rect fill={color} x={start[0] + from * scale} y={myY} width={(to - from) * scale} height={value} />
-        })
-      }).flat()
-    }
-    <g mask="url(#fade-mask)">
-      {
-        queueSteps.map(({ from, to, values }) => {
-          const s = values.reduce((acc, { value }) => acc + value, 0)
-          let x = start[0] - width
-          return values.map(({ color, value }) => {
-            const myX = x
-            x += value
-            return <rect fill={color} x={myX} y={start[1] - width + from * scale} width={value} height={(to - from) * scale} />
-          })
-        }).flat()
-      }
-    </g>
-    {queueSteps.length > 0 ? <path stroke="gray" fill="none" d={d.M(...start) + d.c(-width / 2, 0, -width / 2, 0, -width / 2, -width)} /> : null}
-    <rect
-      x={start[0]} y={start[1] - width / 2}
-      width={scaledNorm} height={width} stroke="black" fill="none"
-    />
-  </g>
-}
-
-const SvgDefs = () => (<>
-  <linearGradient id="fade-grad" x1="0" y1="1" y2="0" x2="0">
-    <stop offset="0" stopColor='white' stopOpacity="0.5" />
-    <stop offset="1" stopColor='white' stopOpacity="0.2" />
-  </linearGradient>
-  <mask id="fade-mask" maskContentUnits="objectBoundingBox">
-    <rect width="1" height="1" fill="url(#fade-grad)" />
-  </mask>
-</>
-)
-
-const FlowModelSvg = () => {
-  const sPos = [25, 100]
-  const vPos = [250, 100]
-  const tPos = [475, 100]
-
-  const RED = '#a00'
-  const GREEN = '#0a0'
-  return <svg width={500} height={500}>
-
-    <SvgDefs />
-
-    <Edge from={sPos} to={vPos} width={20} />
-    <Edge from={vPos} to={tPos} width={10} flowSteps={[
-      { from: 20, to: 50, values: [{ color: RED, value: 5 }, { color: GREEN, value: 5 }] }
-    ]} queueSteps={[
-      { from: -50, to: 0, values: [{ color: RED, value: 5 }, { color: GREEN, value: 5 }] },
-      { from: -100, to: -50, values: [{ color: RED, value: 10 }] }
-    ]} />
-    <Node pos={sPos} label={<TeX>s</TeX>} />
-    <Node pos={vPos} label={<TeX>v</TeX>} />
-    <Node pos={tPos} label={<TeX>t</TeX>} />
-  </svg>
+const steppedFlow = () => {
+  return <Stepper values={[0, 5]}>
+    {(value, step, isActive) => {
+      const [flip, set] = useState(false)
+      const { number } = useTransition({
+        from: { number: 0 },
+        number: 1,
+        delay: 200,
+        config: config.molasses,
+        onRest: () => set(!flip),
+      })
+      return <div />
+    }}
+  </Stepper>
 }
 
 const Presentation = () => (
   <Deck theme={theme} template={template}>
     <Slide>
       <Heading>{TITLE}</Heading>
-      <Text textAlign="center" fontSize="h2">Lukas Graf¹, Tobias Harks¹, Kostas Kollias², and Michael Markl¹
-        <div style={{ fontSize: "0.8em", margin: "1em 0" }}><b>1</b>: University of Augsburg, <b>2</b>: Google</div>
+      <Text className="authors" textAlign="center" fontSize="h2">Lukas Graf<sup>1</sup>, Tobias Harks<sup>1</sup>, Kostas Kollias<sup>2</sup>, and Michael Markl<sup>1</sup>
+        <div style={{ fontSize: "0.8em", margin: "2em 0", display: "flex", justifyContent: "center" }}><span style={{ width: "300px" }}><b>1</b>: University of Augsburg</span><span style={{width: "300px"}}><b>2</b>: Google</span></div>
       </Text>
     </Slide>
 
@@ -223,7 +142,7 @@ const Presentation = () => (
       <SubHeading textAlign="left">The Physical Flow Model</SubHeading>
       <FlexBox flexDirection="row" alignItems="start">
         <UnorderedList style={{ flex: 1 }}>
-          <ListItem>An undirected graph <TeX>G=(V,E)</TeX></ListItem>
+          <ListItem>A directed graph <TeX>G=(V,E)</TeX></ListItem>
           <ListItem>Edge travel time <TeX>\tau_e > 0</TeX> for <TeX>e\in E</TeX></ListItem>
           <ListItem>Edge capacity <TeX>\nu_e> 0</TeX> for <TeX>e\in E</TeX></ListItem>
         </UnorderedList>
