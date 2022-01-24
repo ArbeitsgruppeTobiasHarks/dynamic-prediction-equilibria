@@ -106,6 +106,7 @@ export const SvgDefs = () => (<>
 
 export const BaseEdge = ({ from, to, width = 10, inEdgeSteps = [], queueSteps = [] }) => {
     const padding = 40
+    const arrowHeadWidth = 10
     const delta = [to[0] - from[0], to[1] - from[1]]
     const norm = Math.sqrt(delta[0] ** 2 + delta[1] ** 2)
     // start = from + (to - from)/|to - from| * 30
@@ -113,11 +114,11 @@ export const BaseEdge = ({ from, to, width = 10, inEdgeSteps = [], queueSteps = 
     const edgeStart = [from[0] + pad[0], from[1] + pad[1]]
     const deg = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI
     //return <path d={`M${start[0]},${start[1]}L${end[0]},${end[1]}`} />
-    const scaledNorm = norm - 2 * padding - width
+    const scaledNorm = norm - 2 * padding - arrowHeadWidth
     const scale = scaledNorm / norm
 
     return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]})`}>
-        <path stroke="black" fill="lightgray" d={d.M(edgeStart[0] + scaledNorm, edgeStart[1] - width) + d.l(width, width) + d.l(-width, width) + d.z} />
+        <path stroke="black" fill="lightgray" d={d.M(edgeStart[0] + scaledNorm, edgeStart[1] - width) + d.l(arrowHeadWidth, width) + d.l(-arrowHeadWidth, width) + d.z} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
             width={scaledNorm} height={width} fill="white" stroke="none"
