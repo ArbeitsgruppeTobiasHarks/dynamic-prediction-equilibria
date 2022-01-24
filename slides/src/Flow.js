@@ -86,7 +86,6 @@ class PiecewiseLinear {
         if (rnk === -1) return this.firstSlope
         if (rnk === this.times.length - 1) return this.lastSlope
         return (this.values[rnk + 1] - this.values[rnk]) / (this.times[rnk + 1] - this.times[rnk])
-
     }
 
     _evalWithRank(at, rnk) {
@@ -98,9 +97,7 @@ class PiecewiseLinear {
             return this.values[this.values.length - 1] + (at - this.times[this.times.length - 1]) * last_grad
         }
         return this.values[rnk] + (at - this.times[rnk]) * this.gradient(rnk)
-
     }
-
 }
 
 function elemRank(arr, x) {
