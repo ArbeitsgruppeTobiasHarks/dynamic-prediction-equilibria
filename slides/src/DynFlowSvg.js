@@ -13,7 +13,7 @@ export const FlowModelSvg = () => {
         <SvgDefs />
 
         <BaseEdge from={sPos} to={vPos} width={20} />
-        <BaseEdge from={vPos} to={tPos} width={10} flowSteps={[
+        <BaseEdge from={vPos} to={tPos} width={10} inEdgeSteps={[
             { start: 0, end: 200, values: [{ color: RED, value: 5 }, { color: GREEN, value: 5 }] }
         ]} queueSteps={[
             { start: -50, end: 0, values: [{ color: RED, value: 5 }, { color: GREEN, value: 5 }] },
@@ -25,8 +25,7 @@ export const FlowModelSvg = () => {
     </svg>
 }
 
-export const calcFlowSteps = (flow, edge, colors) => {
-    const outflow = flow.outflow[edge.id]
+export const calcOutflowSteps = (outflow, colors) => {
     const outflowTimes = merge(outflow.map(pwConstant => pwConstant.times))
     // Every two subsequent values in outflowTimes corresponds to a flow step.
     const flowSteps = []
@@ -43,7 +42,7 @@ export const calcFlowSteps = (flow, edge, colors) => {
     return flowSteps
 }
 
-export const splitFlowSteps = (outflowSteps, queue, travelTime, t) => {
+export const splitOutflowSteps = (outflowSteps, queue, transitTime, t) => {
     const queueSteps = []
     const inEdgeSteps = []
 
@@ -53,14 +52,14 @@ export const splitFlowSteps = (outflowSteps, queue, travelTime, t) => {
         const relStart = step.start - t
         const relEnd = step.end - t
 
-        const queueStart = Math.max(relStart - travelTime, -queueLength)
-        const queueEnd = Math.min(relEnd - travelTime, 0)
+        const queueStart = Math.max(relStart - transitTime, -queueLength)
+        const queueEnd = Math.min(relEnd - transitTime, 0)
         if (queueStart < queueEnd) {
             queueSteps.push({ start: queueStart, end: queueEnd, values: step.values })
         }
 
         const inEdgeStart = Math.max(relStart, 0)
-        const inEdgeEnd = Math.min(relEnd, travelTime)
+        const inEdgeEnd = Math.min(relEnd, transitTime)
         if (inEdgeStart < inEdgeEnd) {
             inEdgeSteps.push({ start: inEdgeStart, end: inEdgeEnd, values: step.values })
         }
@@ -72,14 +71,14 @@ export const splitFlowSteps = (outflowSteps, queue, travelTime, t) => {
 
 
 const merge = (lists) => {
-    const merged = [0]
-    let curVal = 0
     const indices = lists.map(() => 0)
+    let curVal = Math.min(...lists.map(list => list[0]))
+    const merged = [curVal]
     while (true) {
-        let min = curVal
+        let min = Infinity
         let listIndex = -1
         for (let i = 0; i < lists.length; i++) {
-            if (indices[i] < lists[i].length - 1 && lists[i][indices[i] + 1] < min) {
+            if (indices[i] < lists[i].length - 1 && lists[i][indices[i] + 1] <= min) {
                 min = lists[i][indices[i] + 1]
                 listIndex = i
             }
@@ -94,7 +93,7 @@ const merge = (lists) => {
     }
 }
 
-const SvgDefs = () => (<>
+export const SvgDefs = () => (<>
     <linearGradient id="fade-grad" x1="0" y1="1" y2="0" x2="0">
         <stop offset="0" stopColor='white' stopOpacity="0.5" />
         <stop offset="1" stopColor='white' stopOpacity="0.2" />
@@ -105,7 +104,7 @@ const SvgDefs = () => (<>
 </>
 )
 
-const BaseEdge = ({ from, to, width = 10, flowSteps = [], queueSteps = [] }) => {
+export const BaseEdge = ({ from, to, width = 10, inEdgeSteps = [], queueSteps = [] }) => {
     const padding = 40
     const delta = [to[0] - from[0], to[1] - from[1]]
     const norm = Math.sqrt(delta[0] ** 2 + delta[1] ** 2)
@@ -124,7 +123,7 @@ const BaseEdge = ({ from, to, width = 10, flowSteps = [], queueSteps = [] }) => 
             width={scaledNorm} height={width} fill="white" stroke="none"
         />
         {
-            flowSteps.map(({ start, end, values }) => {
+            inEdgeSteps.map(({ start, end, values }) => {
                 const s = values.reduce((acc, { value }) => acc + value, 0)
                 let y = edgeStart[1] - s / 2
                 return values.map(({ color, value }) => {
@@ -155,7 +154,7 @@ const BaseEdge = ({ from, to, width = 10, flowSteps = [], queueSteps = [] }) => 
     </g>
 }
 
-const Vertex = ({ label, pos }) => {
+export const Vertex = ({ label, pos }) => {
     const radius = 20
     const [cx, cy] = pos
     return <>

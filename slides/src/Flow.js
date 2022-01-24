@@ -1,4 +1,4 @@
-class Flow {
+export class Flow {
     constructor(inflow, outflow, queues) {
         this.inflow = inflow
         this.outflow = outflow
@@ -6,7 +6,7 @@ class Flow {
     }
 }
 
-class Network {
+export class Network {
     constructor(nodes, edges) {
         this.nodesMap = nodes.reduce((acc, node) => {
             acc[node.id] = node
@@ -16,7 +16,7 @@ class Network {
     }
 }
 
-class GraphNode {
+export class NetNode {
     constructor(id, label, x, y) {
         this.id = id
         this.label = label
@@ -25,7 +25,7 @@ class GraphNode {
     }
 }
 
-class Edge {
+export class Edge {
     constructor(id, idFrom, idTo, capacity) {
         this.id = id
         this.idFrom = idFrom
@@ -34,7 +34,7 @@ class Edge {
     }
 }
 
-class RightConstant {
+export class RightConstant {
     constructor(times, values) {
         this.times = times
         this.values = values
@@ -69,7 +69,7 @@ function elemLRank(arr, x) {
     return high - 1
 }
 
-class PiecewiseLinear {
+export class PiecewiseLinear {
     constructor(times, values, lastSlope, firstSlope) {
         this.times = times
         this.values = values

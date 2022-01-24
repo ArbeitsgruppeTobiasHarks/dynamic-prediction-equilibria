@@ -15,6 +15,7 @@ import {
 } from 'spectacle';
 import { animated, useSpring, useChain, useTransition } from 'react-spring';
 import { FlowModelSvg } from './DynFlowSvg';
+import { Example1Svg } from './example1';
 
 
 const theme = {
@@ -147,7 +148,7 @@ const Presentation = () => (
           <ListItem>Edge capacity <TeX>\nu_e> 0</TeX> for <TeX>e\in E</TeX></ListItem>
         </UnorderedList>
         <Box style={{ flex: 1 }}>
-          <FlowModelSvg />
+          <Example1Svg />
         </Box>
       </FlexBox>
     </CustomSlide>
