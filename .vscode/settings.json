@@ -10,5 +10,6 @@
     },
     "ltex.latex.environments": {
         "minted": "ignore"
-    }
+    },
+    "js/ts.implicitProjectConfig.checkJs": true
 }
