@@ -111,7 +111,7 @@ export class PiecewiseLinear {
     }
 
     static fromJson(json) {
-        return new PiecewiseLinear(json.times, json.values, json.lastSlope, json.firstSlope)
+        return new PiecewiseLinear(json.times, json.values, json.last_slope, json.first_slope)
     }
 }
 

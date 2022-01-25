@@ -10,7 +10,9 @@ def build_example1():
     network = Network()
     network.add_edge(0, 1, 200, 20)
     network.add_edge(1, 2, 200, 10)
-    network.add_commodity(0, 2, RightConstant([-1, 0, 500, 800], [0, 10, 20, 0]), PredictorType.ZERO)
+    network.add_edge(3, 1, 200, 10)
+    network.add_commodity(0, 2, RightConstant([-1, 0, 500, 700, 1000], [0, 10, 20, 10, 0]), PredictorType.ZERO)
+    network.add_commodity(3, 2, RightConstant([-1, 900, 1000], [0, 10, 0]), PredictorType.ZERO)
     
 
     horizon = 2000

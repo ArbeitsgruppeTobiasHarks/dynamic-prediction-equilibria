@@ -52,8 +52,8 @@ export const splitOutflowSteps = (outflowSteps, queue, transitTime, capacity, t)
         const relStart = step.start - t
         const relEnd = step.end - t
 
-        const queueStart = Math.max((relStart - transitTime), -queueLength)
-        const queueEnd = Math.min((relEnd - transitTime), 0)
+        const queueStart = Math.max(transitTime - relEnd, -queueLength)
+        const queueEnd = Math.min(transitTime - relStart, 0)
         if (queueStart < queueEnd) {
             queueSteps.push({ start: queueStart, end: queueEnd, values: step.values })
         }
@@ -137,7 +137,6 @@ export const BaseEdge = ({ from, to, width = 10, inEdgeSteps = [], queueSteps = 
         <g mask="url(#fade-mask)">
             {
                 queueSteps.map(({ start, end, values }) => {
-                    const s = values.reduce((acc, { value }) => acc + value, 0)
                     let x = edgeStart[0] - width
                     return values.map(({ color, value }) => {
                         const myX = x
