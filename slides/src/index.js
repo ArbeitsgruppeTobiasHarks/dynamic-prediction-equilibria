@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import ReactDOM from 'react-dom';
-import TeX from '@matejmazur/react-katex'
+import LaTex from '@matejmazur/react-katex'
 import {
   FlexBox,
   Heading,
@@ -11,10 +11,10 @@ import {
   Slide,
   Deck,
   Text,
-  Box
+  Box,
+  Appear
 } from 'spectacle';
-import { animated, useSpring, useChain, useTransition } from 'react-spring';
-import { FlowModelSvg } from './DynFlowSvg';
+import { animated, useSpring, useChain } from 'react-spring';
 import { Example1Svg } from './example1';
 
 
@@ -37,7 +37,7 @@ const theme = {
     h2: '32px',
     h3: '28px',
     head: '16px',
-    text: '20px'
+    text: '18px',
   }
 }
 
@@ -108,52 +108,104 @@ const CustomSlide = ({ section, intro = false, children }) => {
   </Slide>
 }
 
-
-const EdgeFromFlow = () => {
-
-}
-
-
-const steppedFlow = () => {
-  return <Stepper values={[0, 5]}>
-    {(value, step, isActive) => {
-      const [flip, set] = useState(false)
-      const { number } = useTransition({
-        from: { number: 0 },
-        number: 1,
-        delay: 200,
-        config: config.molasses,
-        onRest: () => set(!flip),
-      })
-      return <div />
-    }}
-  </Stepper>
-}
-
 const Presentation = () => (
   <Deck theme={theme} template={template}>
     <Slide>
       <Heading>{TITLE}</Heading>
       <Text className="authors" textAlign="center" fontSize="h2">Lukas Graf<sup>1</sup>, Tobias Harks<sup>1</sup>, Kostas Kollias<sup>2</sup>, and Michael Markl<sup>1</sup>
-        <div style={{ fontSize: "0.8em", margin: "2em 0", display: "flex", justifyContent: "center" }}><span style={{ width: "300px" }}><b>1</b>: University of Augsburg</span><span style={{width: "300px"}}><b>2</b>: Google</span></div>
+        <div style={{ fontSize: "0.8em", margin: "2em 0", display: "flex", justifyContent: "center" }}><span style={{ width: "300px" }}><b>1</b>: University of Augsburg</span><span style={{ width: "300px" }}><b>2</b>: Google</span></div>
       </Text>
     </Slide>
 
     <CustomSlide intro section="I. The Flow Model">
       <SubHeading textAlign="left">The Physical Flow Model</SubHeading>
-      <FlexBox flexDirection="row" alignItems="start">
-        <UnorderedList style={{ flex: 1 }}>
-          <ListItem>A directed graph <TeX>G=(V,E)</TeX></ListItem>
-          <ListItem>Edge travel time <TeX>\tau_e > 0</TeX> for <TeX>e\in E</TeX></ListItem>
-          <ListItem>Edge capacity <TeX>\nu_e> 0</TeX> for <TeX>e\in E</TeX></ListItem>
-        </UnorderedList>
-        <Box style={{ flex: 1 }}>
-          <Example1Svg />
-        </Box>
-      </FlexBox>
+      <Box>
+        <div>
+          <Box style={{ float: "right" }}>
+            <Example1Svg />
+          </Box>
+          <UnorderedList style={{ margin: "0" }}>
+            <ListItem>Directed graph {TeX`G=(V,E)`}</ListItem>
+            <ListItem>Edge travel time {TeX`\tau_e > 0`} and edge capacity {TeX`\nu_e> 0`} for {TeX`e\in E`}</ListItem>
+            <ListItem>Commodities {TeX`i\in I`} with source and sink {TeX`s_i, t_i\in V`} and <br />network inflow rate {TeX`u_i: \mathbb R_{\geq 0} \to \mathbb R_{\geq 0}`}</ListItem>
+          </UnorderedList>
+          <Appear><Definition>
+            A <i>dynamic flow</i> {TeX`f=(f^+, f^-)`} consists of
+            <UnorderedList style={{ margin: "0" }}>
+              <ListItem>edge inflow rates {TeX`f^+_{i,e}:\mathbb R_{\geq 0}\to \mathbb R_{\geq 0}`} for {TeX`i\in I, e\in E`} and</ListItem>
+              <ListItem>edge outflow rates {TeX`f^-_{i,e}: \mathbb R_{\geq 0}\to \mathbb R_{\geq 0}`} for {TeX`i\in I, e\in E`}.</ListItem>
+            </UnorderedList>
+          </Definition></Appear>
+          <Appear><Notation>
+            {TeX`f_e^+ \coloneqq \sum_{i\in I} f_{i,e}^+,`}
+            <Appear tagName='span'>{TeX`~~f_e^- \coloneqq \sum_{i\in I} f_{i,e}^-,`}</Appear>
+            <Appear tagName='span'>{TeX`~~q_e(\theta) \coloneqq \int_0^\theta f^+_e(z) - f^-_e(z+\tau_e) \,\mathrm dz`}</Appear>
+          </Notation></Appear>
+          <Appear><Definition>
+            A dynamic flow {TeX`f`} is <i>feasible</i> if it fulfills the following conditions:
+            <UnorderedList style={{ margin: "0" }}>
+              <ShowCaseFormula text="Flow is conserved:" formula={
+                BTeX`\sum_{e\in\delta_v^+} f^+_{i,e}(\theta) - \sum_{e\in\delta_v^-} f^-_{i,e}(\theta) 
+                  \begin{cases}
+                  = u_i(\theta), & \text{if $v = s_i$}, \\
+                  = 0, & \text{if $v \notin \{s_i, t_i \}$}, \\
+                  \leq 0, & \text{if $v = t_i$}.
+                  \end{cases}`
+              } />
+              <ShowCaseFormula text="Queues operate at capacity:" formula={BTeX`f_e^-(\theta) = \begin{cases}
+                \nu_e,&\text{if $q_e(\theta - \tau_e) > 0$,} \\
+                \min\{ f_e^+(\theta- \tau_e), \nu_e \}, &\text{otherwise.}
+              \end{cases}`} />
+              <ShowCaseFormula text="Capacity is split fairly:" formula={BTeX`
+                    f_{i,e}^-(\theta) = f_e^-(\theta) \cdot \frac{f_{i,e}^+(\xi)}{f_e^+(\xi)}
+                    \quad\text{for $\xi\coloneqq \min\{\xi\leq\theta \mid \xi + \tau_e + \frac{q_e(\xi)}{\nu_e} = \theta \}$ with $f_e^+(\xi) > 0$}`} />
+            </UnorderedList>
+          </Definition></Appear>
+
+        </div>
+      </Box>
     </CustomSlide>
 
-  </Deck>
+  </Deck >
 );
+
+const ShowCaseFormula = ({ formula, text }) => {
+  return <Stepper values={[true, false]}>
+    {(value, step, isActive) => {
+      return <ListItem style={{ display: value === false ? 'list-item' : 'block' }}>
+        <div style={
+          {
+            display: 'flex', flexDirection: 'row', alignItems: 'center', height: '30px', transition: 'transform 0.2s',
+            transform: value === false ? 'translateY(0px)' : 'translateY(20px)'
+          }}>
+          <div>{text}</div>
+          <div style={{ paddingLeft: '15px', transition: 'transform 0.2s', transform: value === false ? 'scale(.5)' : 'scale(1)', transformOrigin: 'left' }}>{formula}</div>
+        </div></ListItem>
+    }}
+  </Stepper>
+}
+
+const TeX = (template) => {
+  return <LaTex>{String.raw(template)}</LaTex>
+}
+
+const BTeX = (template) => {
+  return <LaTex block>{String.raw(template)}</LaTex>
+}
+
+const Notation = ({ children }) => {
+  return <Box margin="32px" style={{ fontSize: theme.fontSizes.text, fontFamily: "Open Sans" }}>
+    <span><i>Notation. </i></span>
+    {children}
+  </Box>
+}
+
+const Definition = ({ children }) => {
+  return <Box margin="32px" style={{ fontSize: theme.fontSizes.text, fontFamily: "Open Sans" }}>
+    <span><b>Definition. </b></span>
+    {children}
+  </Box>
+
+}
 
 ReactDOM.render(<Presentation />, document.getElementById('root'));

@@ -104,7 +104,7 @@ export const SvgDefs = () => (<>
 </>
 )
 
-export const BaseEdge = ({ from, to, width = 10, inEdgeSteps = [], queueSteps = [] }) => {
+export const BaseEdge = ({ visible, from, to, width = 10, inEdgeSteps = [], queueSteps = [] }) => {
     const padding = 40
     const arrowHeadWidth = 10
     const delta = [to[0] - from[0], to[1] - from[1]]
@@ -117,7 +117,7 @@ export const BaseEdge = ({ from, to, width = 10, inEdgeSteps = [], queueSteps = 
     const scaledNorm = norm - 2 * padding - arrowHeadWidth
     const scale = scaledNorm / norm
 
-    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]})`}>
+    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]})`} style={{transition: "opacity 0.2s"}} opacity={visible ? 1 : 0}>
         <path stroke="black" fill="lightgray" d={d.M(edgeStart[0] + scaledNorm, edgeStart[1] - width) + d.l(arrowHeadWidth, width) + d.l(-arrowHeadWidth, width) + d.z} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
@@ -138,7 +138,7 @@ export const BaseEdge = ({ from, to, width = 10, inEdgeSteps = [], queueSteps = 
             {
                 queueSteps.map(({ start, end, values }) => {
                     let x = edgeStart[0] - width
-                    return values.map(({ color, value }) => {
+                    return values.slice(0).reverse().map(({ color, value }) => {
                         const myX = x
                         x += value
                         return <rect fill={color} x={myX} y={edgeStart[1] - width + start * scale} width={value} height={(end - start) * scale} />
@@ -146,7 +146,8 @@ export const BaseEdge = ({ from, to, width = 10, inEdgeSteps = [], queueSteps = 
                 }).flat()
             }
         </g>
-        {queueSteps.length > 0 ? <path stroke="gray" fill="none" d={d.M(...edgeStart) + d.c(-width / 2, 0, -width / 2, 0, -width / 2, -width)} /> : null}
+        <path stroke="gray" style={{ transition: "opacity 0.2s" }} opacity={queueSteps.length > 0 ? 1 : 0}
+            fill="none" d={d.M(...edgeStart) + d.c(-width / 2, 0, -width / 2, 0, -width / 2, -width)} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
             width={scaledNorm} height={width} stroke="black" fill="none"
@@ -154,21 +155,24 @@ export const BaseEdge = ({ from, to, width = 10, inEdgeSteps = [], queueSteps = 
     </g>
 }
 
-export const Vertex = ({ label, pos }) => {
+export const Vertex = ({ label, pos, visible = true }) => {
     const radius = 20
     const [cx, cy] = pos
-    return <>
+    return <g style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
         <circle cx={cx} cy={cy} r={radius} stroke="black" fill="white" />
         {label ? (<foreignObject x={cx - radius} y={cy - radius} width={2 * radius} height={2 * radius}>
             <div style={{ width: 2 * radius, height: 2 * radius, display: 'grid', justifyContent: 'center', alignItems: 'center' }}>
                 {label}
             </div></foreignObject>) : null}
-    </>
+    </g>
 }
 
-const d = {
+export const d = {
     M: (x, y) => `M${x} ${y}`,
     c: (dx1, dy1, dx2, dy2, x, y) => `c${dx1} ${dy1} ${dx2} ${dy2} ${x} ${y}`,
     l: (x, y) => `l${x} ${y}`,
+    h: (x) => `h${x}`,
+    v: (y) => `v${y}`,
+    m: (x, y) => `m${x} ${y}`,
     z: 'z'
 }
