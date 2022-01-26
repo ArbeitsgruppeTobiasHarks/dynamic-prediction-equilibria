@@ -64,12 +64,14 @@ const PRESENTER = "Michael Markl"
 
 const CustomSlide = ({ section, intro = false, children }) => {
   if (!intro) {
-    return <FlexBox width="1" flexDirection="row" justifyContent="space-between" borderBottom="1px solid black">
-      <Text fontFamily="head" fontSize="head" margin="0px" padding="0px" style={{ letterSpacing: "-1px" }}>
-        {TITLE + " — " + section}
+    return <Slide><FlexBox width="1" flexDirection="row" justifyContent="space-between" borderBottom="1px solid black">
+      <Text fontFamily="head" fontSize="head" margin="0px" padding="0px" style={{ letterSpacing: "-.5px" }}>
+        {TITLE}<span style={{ padding: "0 10px" }}> — </span>{section}
       </Text>
       <Text fontFamily="head" fontSize="head" margin="0px" padding="0px" style={{ letterSpacing: "-.5px" }}>{PRESENTER}</Text>
     </FlexBox>
+    {children}
+    </Slide>
   }
 
   return <Slide>
@@ -144,21 +146,21 @@ const Presentation = () => (
           <Appear><Definition>
             A dynamic flow {TeX`f`} is <i>feasible</i> if it fulfills the following conditions:
             <UnorderedList style={{ margin: "0" }}>
-              <ShowCaseFormula text="Flow is conserved:" formula={
+              <ShowcaseFormula text="Flow is conserved:" formula={
                 BTeX`\sum_{e\in\delta_v^+} f^+_{i,e}(\theta) - \sum_{e\in\delta_v^-} f^-_{i,e}(\theta) 
-                  \begin{cases}
-                  = u_i(\theta), & \text{if $v = s_i$}, \\
-                  = 0, & \text{if $v \notin \{s_i, t_i \}$}, \\
-                  \leq 0, & \text{if $v = t_i$}.
-                  \end{cases}`
+              \begin{cases}
+              = u_i(\theta), & \text{if $v = s_i$}, \\
+              = 0, & \text{if $v \notin \{s_i, t_i \}$}, \\
+              \leq 0, & \text{if $v = t_i$}.
+              \end{cases}`
               } />
-              <ShowCaseFormula text="Queues operate at capacity:" formula={BTeX`f_e^-(\theta) = \begin{cases}
-                \nu_e,&\text{if $q_e(\theta - \tau_e) > 0$,} \\
-                \min\{ f_e^+(\theta- \tau_e), \nu_e \}, &\text{otherwise.}
-              \end{cases}`} />
-              <ShowCaseFormula text="Capacity is split fairly:" formula={BTeX`
-                    f_{i,e}^-(\theta) = f_e^-(\theta) \cdot \frac{f_{i,e}^+(\xi)}{f_e^+(\xi)}
-                    \quad\text{for $\xi\coloneqq \min\{\xi\leq\theta \mid \xi + \tau_e + \frac{q_e(\xi)}{\nu_e} = \theta \}$ with $f_e^+(\xi) > 0$}`} />
+              <ShowcaseFormula text="Queues operate at capacity:" formula={BTeX`f_e^-(\theta) = \begin{cases}
+            \nu_e,&\text{if $q_e(\theta - \tau_e) > 0$,} \\
+            \min\{ f_e^+(\theta- \tau_e), \nu_e \}, &\text{otherwise.}
+          \end{cases}`} />
+              <ShowcaseFormula text="Capacity is split fairly:" formula={BTeX`
+                f_{i,e}^-(\theta) = f_e^-(\theta) \cdot \frac{f_{i,e}^+(\xi)}{f_e^+(\xi)}
+                \quad\text{for $\xi\coloneqq \min\{\xi\leq\theta \mid \xi + \tau_e + \frac{q_e(\xi)}{\nu_e} = \theta \}$ with $f_e^+(\xi) > 0$}`} />
             </UnorderedList>
           </Definition></Appear>
 
@@ -166,10 +168,16 @@ const Presentation = () => (
       </Box>
     </CustomSlide>
 
+    <CustomSlide section="I. The Flow Model">
+      <SubHeading textAlign="left">The Behavioral Model</SubHeading>
+      <Box>
+      </Box>
+    </CustomSlide>
+
   </Deck >
 );
 
-const ShowCaseFormula = ({ formula, text }) => {
+const ShowcaseFormula = ({ formula, text }) => {
   return <Stepper values={[true, false]}>
     {(value, step, isActive) => {
       return <ListItem style={{ display: value === false ? 'list-item' : 'block' }}>
