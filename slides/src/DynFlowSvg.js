@@ -93,18 +93,18 @@ const merge = (lists) => {
     }
 }
 
-export const SvgDefs = () => (<>
-    <linearGradient id="fade-grad" x1="0" y1="1" y2="0" x2="0">
+export const SvgDefs = ({ svgIdPrefix }) => (<>
+    <linearGradient id={`${svgIdPrefix}fade-grad`} x1="0" y1="1" y2="0" x2="0">
         <stop offset="0" stopColor='white' stopOpacity="0.5" />
         <stop offset="1" stopColor='white' stopOpacity="0.2" />
     </linearGradient>
-    <mask id="fade-mask" maskContentUnits="objectBoundingBox">
-        <rect width="1" height="1" fill="url(#fade-grad)" />
+    <mask id={`${svgIdPrefix}fade-mask`} maskContentUnits="objectBoundingBox">
+        <rect width="1" height="1" fill={`url(#${svgIdPrefix}fade-grad)`} />
     </mask>
 </>
 )
 
-export const BaseEdge = ({ visible, from, to, width = 10, inEdgeSteps = [], queueSteps = [] }) => {
+export const BaseEdge = ({ svgIdPrefix, visible, from, to, width = 10, inEdgeSteps = [], queueSteps = [] }) => {
     const padding = 40
     const arrowHeadWidth = 10
     const delta = [to[0] - from[0], to[1] - from[1]]
@@ -117,7 +117,7 @@ export const BaseEdge = ({ visible, from, to, width = 10, inEdgeSteps = [], queu
     const scaledNorm = norm - 2 * padding - arrowHeadWidth
     const scale = scaledNorm / norm
 
-    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]})`} style={{transition: "opacity 0.2s"}} opacity={visible ? 1 : 0}>
+    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
         <path stroke="black" fill="lightgray" d={d.M(edgeStart[0] + scaledNorm, edgeStart[1] - width) + d.l(arrowHeadWidth, width) + d.l(-arrowHeadWidth, width) + d.z} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
@@ -134,7 +134,7 @@ export const BaseEdge = ({ visible, from, to, width = 10, inEdgeSteps = [], queu
                 })
             }).flat()
         }
-        <g mask="url(#fade-mask)">
+        <g mask={`url(#${svgIdPrefix}fade-mask)`}>
             {
                 queueSteps.map(({ start, end, values }) => {
                     let x = edgeStart[0] - width
@@ -154,6 +154,14 @@ export const BaseEdge = ({ visible, from, to, width = 10, inEdgeSteps = [], queu
         />
     </g>
 }
+
+
+export const FlowEdge = ({ svgIdPrefix, from, to, outflowSteps, queue, t, capacity, transitTime, visible = true }) => {
+    const { inEdgeSteps, queueSteps } = splitOutflowSteps(outflowSteps, queue, transitTime, capacity, t)
+
+    return <BaseEdge svgIdPrefix={svgIdPrefix} visible={visible} from={from} to={to} width={capacity} inEdgeSteps={inEdgeSteps} queueSteps={queueSteps} />
+}
+
 
 export const Vertex = ({ label, pos, visible = true }) => {
     const radius = 20

@@ -4,22 +4,22 @@ import TeX from '@matejmazur/react-katex'
 import { calcOutflowSteps, d, FlowEdge, SvgDefs, Vertex } from "./DynFlowSvg";
 import { Flow } from "./Flow";
 
-import example1FlowData from "./example1FlowData.js"
+import example2FlowData from "./example2FlowData.js"
 import { Stepper } from 'spectacle';
 
 const transitTime = [200, 200, 200]
-const capacity = [20, 10, 10]
+const capacity = [10, 20, 20]
 
-const flow = Flow.fromJson(example1FlowData)
+const flow = Flow.fromJson(example2FlowData)
 
 const outflowSteps = flow.outflow.map(outflow => calcOutflowSteps(outflow, ['#a00', '#0a0']))
 
-export const Example1Svg = () => {
+export const Example2Svg = () => {
     const sPos = [25, 150]
-    const vPos = [225, 150]
-    const tPos = [425, 150]
-    const s2Pos = [225 - 200 / Math.sqrt(2), 150 + 200 / Math.sqrt(2)]
-    return <Stepper values={[400, 800, 1200, 1200.00001, 1450, 1900]} alwaysVisible>
+    const dxy = Math.sqrt(200**2 / 2) 
+    const vPos = [25 + 100, 150 + Math.sqrt(200**2 - 100**2)]
+    const tPos = [25 + 200, 150]
+    return <Stepper values={[200]} alwaysVisible>
         {
             (value, step, isActive) => {
                 const [t, setT] = useState(typeof value === 'number' ? value : 0)
@@ -31,22 +31,21 @@ export const Example1Svg = () => {
                     })
                 }, 1 / 30)
                 const width = 450
-                const height = s2Pos[1] + 25
-                const svgIdPrefix = 'example1-'
+                const height = vPos[1] + 25
+                const svgIdPrefix = "example2-"
                 return <div style={{ position: 'relative' }}>
                     <svg width={width} height={height}>
                         <SvgDefs svgIdPrefix={svgIdPrefix} />
-                        <FlowEdge svgIdPrefix={svgIdPrefix} outflowSteps={outflowSteps[0]} from={sPos} to={vPos} capacity={capacity[0]} transitTime={transitTime[0]} queue={flow.queues[0]} t={t} />
-                        <FlowEdge svgIdPrefix={svgIdPrefix} outflowSteps={outflowSteps[1]} from={vPos} to={tPos} capacity={capacity[1]} transitTime={transitTime[1]} queue={flow.queues[1]} t={t} />
-                        <FlowEdge svgIdPrefix={svgIdPrefix} visible={t > 1200} outflowSteps={outflowSteps[2]} from={s2Pos} to={vPos} capacity={capacity[2]} transitTime={transitTime[2]} queue={flow.queues[2]} t={t} />
+                        <FlowEdge svgIdPrefix={svgIdPrefix} outflowSteps={outflowSteps[0]} from={sPos} to={tPos} capacity={capacity[0]} transitTime={transitTime[0]} queue={flow.queues[0]} t={t} />
+                        <FlowEdge svgIdPrefix={svgIdPrefix}  outflowSteps={outflowSteps[1]} from={sPos} to={vPos} capacity={capacity[1]} transitTime={transitTime[1]} queue={flow.queues[1]} t={t} />
+                        <FlowEdge svgIdPrefix={svgIdPrefix}  outflowSteps={outflowSteps[2]} from={vPos} to={tPos} capacity={capacity[2]} transitTime={transitTime[2]} queue={flow.queues[2]} t={t} />
 
-                        <Vertex pos={sPos} label={<TeX>s_1</TeX>} />
-                        <Vertex pos={tPos} label={<TeX>t_1</TeX>} />
+                        <Vertex pos={sPos} label={<TeX>s</TeX>} />
                         <Vertex pos={vPos} label={<TeX>v</TeX>} />
-                        <Vertex pos={s2Pos} label={<TeX>s_2</TeX>} visible={t > 1200} />
+                        <Vertex pos={tPos} label={<TeX>t</TeX>} />
 
                         <rect fill="white" x={vPos[0] - 25} y={0} width={50} height={50} rx={5} ry={5} stroke="lightgray" />
-                        <PlayPause play={t !== (value || 0)} x={vPos[0] - 10} y={5} size={20} />
+                        <PlayPause play={t !== value} x={vPos[0] - 10} y={5} size={20} />
                         <text x={vPos[0]} y={45} fontFamily='Open Sans, Sans Serif' fontSize={15} textAnchor='middle'>Time</text>
                     </svg>
                 </div>

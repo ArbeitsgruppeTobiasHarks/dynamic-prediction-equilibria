@@ -5,7 +5,7 @@ import {
   FlexBox,
   Heading,
   UnorderedList,
-  ListItem,
+  ListItem as OriginalListItem,
   Progress,
   Stepper,
   Slide,
@@ -16,6 +16,9 @@ import {
 } from 'spectacle';
 import { animated, useSpring, useChain } from 'react-spring';
 import { Example1Svg } from './example1';
+import { Example2Svg } from './example2';
+
+const ListItem = (props) => <OriginalListItem style={{ margin: "10px" }}  {...props} />
 
 
 const theme = {
@@ -52,12 +55,12 @@ const template = () => (
     <Box padding="0 1em">
     </Box>
     <Box padding="1em">
-      <Progress />
+
     </Box>
   </FlexBox>
 );
 
-const SubHeading = (props) => <Text textAlign="center" fontSize="h3" {...props} />
+const SubHeading = (props) => <Text color="secondary" textAlign="center" fontSize="h3" {...props} />
 
 const TITLE = "Machine-Learned Prediction Equilibrium for Dynamic Traffic Assignment"
 const PRESENTER = "Michael Markl"
@@ -70,7 +73,7 @@ const CustomSlide = ({ section, intro = false, children }) => {
       </Text>
       <Text fontFamily="head" fontSize="head" margin="0px" padding="0px" style={{ letterSpacing: "-.5px" }}>{PRESENTER}</Text>
     </FlexBox>
-    {children}
+      {children}
     </Slide>
   }
 
@@ -126,10 +129,11 @@ const Presentation = () => (
           <Box style={{ float: "right" }}>
             <Example1Svg />
           </Box>
-          <UnorderedList style={{ margin: "0" }}>
-            <ListItem>Directed graph {TeX`G=(V,E)`}</ListItem>
-            <ListItem>Edge travel time {TeX`\tau_e > 0`} and edge capacity {TeX`\nu_e> 0`} for {TeX`e\in E`}</ListItem>
-            <ListItem>Commodities {TeX`i\in I`} with source and sink {TeX`s_i, t_i\in V`} and <br />network inflow rate {TeX`u_i: \mathbb R_{\geq 0} \to \mathbb R_{\geq 0}`}</ListItem>
+          <Text style={{ margin: "0 32px", padding: "0" }}>We are given</Text>
+          <UnorderedList style={{ margin: "0 32px" }}>
+            <ListItem>a directed graph {TeX`G=(V,E)`},</ListItem>
+            <ListItem>edge travel times {TeX`\tau_e > 0`} and edge capacities {TeX`\nu_e> 0`} for {TeX`e\in E`}, and</ListItem>
+            <ListItem>commodities {TeX`i\in I`} each with source and sink nodes {TeX`s_i, t_i\in V`} and <br />a network inflow rate {TeX`u_i: \mathbb R_{\geq 0} \to \mathbb R_{\geq 0}`}.</ListItem>
           </UnorderedList>
           <Appear><Definition>
             A <i>dynamic flow</i> {TeX`f=(f^+, f^-)`} consists of
@@ -171,7 +175,56 @@ const Presentation = () => (
     <CustomSlide section="I. The Flow Model">
       <SubHeading textAlign="left">The Behavioral Model</SubHeading>
       <Box>
+        <UnorderedList margin="0 32px">
+          <ListItem>The <i>exit time</i> when entering edge {TeX`e`} at time {TeX`\theta`} is given by {TeX`T_e(\theta)\coloneqq \theta + \tau_e + \frac{q_e(\theta)}{\nu_e}`}</ListItem>
+          <ListItem>Each commodity {TeX`i\in I`} is equipped with a set of <i>predictors</i> {BTeX`
+          \hat q_{i,e} : \mathbb R_{\geq0} \times \mathbb R_{\geq 0} \times C(\mathbb R_{\geq0}, \mathbb R_{\geq0})^{E} \to \mathbb R_{\geq 0},
+          \quad
+          (\theta, \bar\theta, q)\mapsto\hat q_{i,e}(\theta; \bar\theta; q),`}
+            where {TeX`\hat q_{i,e}(\theta; \bar\theta; q)`} describes the <i>predicted queue length </i>
+            of edge {TeX`e`} at time {TeX`\theta`} as predicted at time {TeX`\bar\theta`} using the historical queue functions {TeX`q`}.</ListItem>
+          <ListItem>The <i>predicted exit time</i> when entering an edge {TeX`e`} at time {TeX`\theta`} is given by {TeX`\hat T_{i,e}(\theta; \bar\theta; q)\coloneqq \theta + \tau_e + \frac{\hat q_{i,e}(\theta; \bar\theta, q)}{\nu_e}`}.</ListItem>
+          <ListItem>The <i>predicted exit time</i> when entering a path {TeX`P=(e_1, \dots, e_k)`} at time {TeX`\theta`} is given by
+            {BTeX`\hat T_{i,P}(\theta; \bar\theta; q)
+            \coloneqq \left(\hat T_{e_k}(\,\boldsymbol{\cdot}\,;\bar\theta;q) \circ \cdots \circ \hat T_{e_1}(\,\boldsymbol{\cdot}\,;\bar\theta;q)\right)(\theta).
+            `}
+          </ListItem>
+          <ListItem>
+            The <i>predicted earliest arrival</i> at {TeX`t_i`} when starting at time {TeX`\theta`} at {TeX`v`} is given by
+            {BTeX`\hat l_{i,v}(\theta; \bar\theta; q)
+            \coloneqq \min_{P\text{ simple } v\text{-}t_i\text{-path}} \hat T_{i,P}(\theta;\bar\theta;q).
+            `}
+          </ListItem>
+        </UnorderedList>
+        <Definition>
+          A pair {TeX`(\hat q, f)`} of predictors {TeX`\hat q = (\hat q_{i,e})_{i\in I, e\in E}`} and
+          a dynamic flow {TeX`f`} is a <i>dynamic prediction equilibrium (DPE)</i>, if for all edges {TeX`e=vw`} and all {TeX`\theta \geq 0`} it holds that
+          {BTeX`
+              f^+_{i,e}(\theta) > 0 \implies \hat l_{i,v}(\theta;\bar\theta; q) \leq \hat l_{i,w}(\hat T_{i,e}( \theta;\bar\theta; q ); \bar\theta; q).
+          `}
+        </Definition>
       </Box>
+    </CustomSlide>
+
+    <CustomSlide intro section="II. Existence of IDE">
+      <SubHeading textAlign="left">Example for Nonexistence</SubHeading>
+      <Example>
+        <div style={{ float: 'right' }}>
+          <Example2Svg />
+        </div>
+        For the network to the right, we define
+        <UnorderedList>
+          <ListItem>{TeX`\tau_e=1`} for all {TeX`e\in E`}</ListItem>
+          <ListItem>{TeX`\nu_{st} = 1`}, {TeX`\nu_{sv} = \nu_{vt} = 2`}</ListItem>
+          <ListItem>network inflow rate {TeX`u \equiv 2`}</ListItem>
+          <ListItem>{TeX`
+            \hat q_e(\theta;\bar\theta; q) \coloneqq \begin{cases}
+                q_e(\bar\theta),& \text{if $q_e(\bar\theta) < 1$}, \\
+                2,              & \text{otherwise.}
+            \end{cases}
+        `}</ListItem>
+        </UnorderedList>
+      </Example>
     </CustomSlide>
 
   </Deck >
@@ -210,10 +263,16 @@ const Notation = ({ children }) => {
 
 const Definition = ({ children }) => {
   return <Box margin="32px" style={{ fontSize: theme.fontSizes.text, fontFamily: "Open Sans" }}>
-    <span><b>Definition. </b></span>
+    <span style={{ color: theme.colors.secondary }}><b>Definition. </b></span>
     {children}
   </Box>
+}
 
+const Example = ({ children }) => {
+  return <Box margin="32px" style={{ fontSize: theme.fontSizes.text, fontFamily: "Open Sans" }}>
+    <span style={{ color: theme.colors.secondary }}><b>Example. </b></span>
+    {children}
+  </Box>
 }
 
 ReactDOM.render(<Presentation />, document.getElementById('root'));
