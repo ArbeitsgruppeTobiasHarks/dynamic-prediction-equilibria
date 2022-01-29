@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import ReactDOM from 'react-dom';
-import LaTex from '@matejmazur/react-katex'
 import {
   FlexBox,
   Heading,
@@ -17,6 +16,9 @@ import {
 import { animated, useSpring, useChain } from 'react-spring';
 import { Example1Svg } from './example1';
 import { Example2Svg } from './example2';
+import { d, ForeignObjectLabel } from './DynFlowSvg';
+import { BTex, Tex } from './tex';
+import { ConstantPredictorSvg, LinearPredictorSvg, RegularizedLinearPredictorSvg, ZeroPredictorSvg } from './predictorFigures';
 
 const ListItem = (props) => <OriginalListItem style={{ margin: "10px" }}  {...props} />
 
@@ -131,38 +133,38 @@ const Presentation = () => (
           </Box>
           <Text style={{ margin: "0 32px", padding: "0" }}>We are given</Text>
           <UnorderedList style={{ margin: "0 32px" }}>
-            <ListItem>a directed graph {TeX`G=(V,E)`},</ListItem>
-            <ListItem>edge travel times {TeX`\tau_e > 0`} and edge capacities {TeX`\nu_e> 0`} for {TeX`e\in E`}, and</ListItem>
-            <ListItem>commodities {TeX`i\in I`} each with source and sink nodes {TeX`s_i, t_i\in V`} and <br />a network inflow rate {TeX`u_i: \mathbb R_{\geq 0} \to \mathbb R_{\geq 0}`}.</ListItem>
+            <ListItem>a finite, directed graph {Tex`G=(V,E)`},</ListItem>
+            <ListItem>edge travel times {Tex`\tau_e > 0`} and edge capacities {Tex`\nu_e> 0`} for {Tex`e\in E`}, and</ListItem>
+            <ListItem>commodities {Tex`i\in I`} each with source and sink nodes {Tex`s_i, t_i\in V`} and <br />a network inflow rate {Tex`u_i: \mathbb R_{\geq 0} \to \mathbb R_{\geq 0}`}.</ListItem>
           </UnorderedList>
           <Appear><Definition>
-            A <i>dynamic flow</i> {TeX`f=(f^+, f^-)`} consists of
+            A <i>dynamic flow</i> {Tex`f=(f^+, f^-)`} consists of
             <UnorderedList style={{ margin: "0" }}>
-              <ListItem>edge inflow rates {TeX`f^+_{i,e}:\mathbb R_{\geq 0}\to \mathbb R_{\geq 0}`} for {TeX`i\in I, e\in E`} and</ListItem>
-              <ListItem>edge outflow rates {TeX`f^-_{i,e}: \mathbb R_{\geq 0}\to \mathbb R_{\geq 0}`} for {TeX`i\in I, e\in E`}.</ListItem>
+              <ListItem>edge inflow rates {Tex`f^+_{i,e}:\mathbb R_{\geq 0}\to \mathbb R_{\geq 0}`} for {Tex`i\in I, e\in E`} and</ListItem>
+              <ListItem>edge outflow rates {Tex`f^-_{i,e}: \mathbb R_{\geq 0}\to \mathbb R_{\geq 0}`} for {Tex`i\in I, e\in E`}.</ListItem>
             </UnorderedList>
           </Definition></Appear>
           <Appear><Notation>
-            {TeX`f_e^+ \coloneqq \sum_{i\in I} f_{i,e}^+,`}
-            <Appear tagName='span'>{TeX`~~f_e^- \coloneqq \sum_{i\in I} f_{i,e}^-,`}</Appear>
-            <Appear tagName='span'>{TeX`~~q_e(\theta) \coloneqq \int_0^\theta f^+_e(z) - f^-_e(z+\tau_e) \,\mathrm dz`}</Appear>
+            {Tex`f_e^+ \coloneqq \sum_{i\in I} f_{i,e}^+,`}
+            <Appear tagName='span'>{Tex`~~f_e^- \coloneqq \sum_{i\in I} f_{i,e}^-,`}</Appear>
+            <Appear tagName='span'>{Tex`~~q_e(\theta) \coloneqq \int_0^\theta f^+_e(z) - f^-_e(z+\tau_e) \,\mathrm dz`}</Appear>
           </Notation></Appear>
           <Appear><Definition>
-            A dynamic flow {TeX`f`} is <i>feasible</i> if it fulfills the following conditions:
+            A dynamic flow {Tex`f`} is <i>feasible</i> if it fulfills the following conditions:
             <UnorderedList style={{ margin: "0" }}>
               <ShowcaseFormula text="Flow is conserved:" formula={
-                BTeX`\sum_{e\in\delta_v^+} f^+_{i,e}(\theta) - \sum_{e\in\delta_v^-} f^-_{i,e}(\theta) 
+                BTex`\sum_{e\in\delta_v^+} f^+_{i,e}(\theta) - \sum_{e\in\delta_v^-} f^-_{i,e}(\theta) 
               \begin{cases}
               = u_i(\theta), & \text{if $v = s_i$}, \\
               = 0, & \text{if $v \notin \{s_i, t_i \}$}, \\
               \leq 0, & \text{if $v = t_i$}.
               \end{cases}`
               } />
-              <ShowcaseFormula text="Queues operate at capacity:" formula={BTeX`f_e^-(\theta) = \begin{cases}
+              <ShowcaseFormula text="Queues operate at capacity:" formula={BTex`f_e^-(\theta) = \begin{cases}
             \nu_e,&\text{if $q_e(\theta - \tau_e) > 0$,} \\
             \min\{ f_e^+(\theta- \tau_e), \nu_e \}, &\text{otherwise.}
           \end{cases}`} />
-              <ShowcaseFormula text="Capacity is split fairly:" formula={BTeX`
+              <ShowcaseFormula text="Capacity is split fairly:" formula={BTex`
                 f_{i,e}^-(\theta) = f_e^-(\theta) \cdot \frac{f_{i,e}^+(\xi)}{f_e^+(\xi)}
                 \quad\text{for $\xi\coloneqq \min\{\xi\leq\theta \mid \xi + \tau_e + \frac{q_e(\xi)}{\nu_e} = \theta \}$ with $f_e^+(\xi) > 0$}`} />
             </UnorderedList>
@@ -176,37 +178,37 @@ const Presentation = () => (
       <SubHeading textAlign="left">The Behavioral Model</SubHeading>
       <Box>
         <UnorderedList margin="0 32px">
-          <ListItem>The <i>exit time</i> when entering edge {TeX`e`} at time {TeX`\theta`} is given by {TeX`T_e(\theta)\coloneqq \theta + \tau_e + \frac{q_e(\theta)}{\nu_e}`}</ListItem>
-          <ListItem>Each commodity {TeX`i\in I`} is equipped with a set of <i>predictors</i> {BTeX`
+          <ListItem>The <i>exit time</i> when entering edge {Tex`e`} at time {Tex`\theta`} is given by {Tex`T_e(\theta)\coloneqq \theta + \tau_e + \frac{q_e(\theta)}{\nu_e}`}</ListItem>
+          <ListItem>Each commodity {Tex`i\in I`} is equipped with a set of <i>predictors</i> {BTex`
           \hat q_{i,e} : \mathbb R_{\geq0} \times \mathbb R_{\geq 0} \times C(\mathbb R_{\geq0}, \mathbb R_{\geq0})^{E} \to \mathbb R_{\geq 0},
           \quad
           (\theta, \bar\theta, q)\mapsto\hat q_{i,e}(\theta; \bar\theta; q),`}
-            where {TeX`\hat q_{i,e}(\theta; \bar\theta; q)`} describes the <i>predicted queue length </i>
-            of edge {TeX`e`} at time {TeX`\theta`} as predicted at time {TeX`\bar\theta`} using the historical queue functions {TeX`q`}.</ListItem>
-          <ListItem>The <i>predicted exit time</i> when entering an edge {TeX`e`} at time {TeX`\theta`} is given by {TeX`\hat T_{i,e}(\theta; \bar\theta; q)\coloneqq \theta + \tau_e + \frac{\hat q_{i,e}(\theta; \bar\theta, q)}{\nu_e}`}.</ListItem>
-          <ListItem>The <i>predicted exit time</i> when entering a path {TeX`P=(e_1, \dots, e_k)`} at time {TeX`\theta`} is given by
-            {BTeX`\hat T_{i,P}(\theta; \bar\theta; q)
+            where {Tex`\hat q_{i,e}(\theta; \bar\theta; q)`} describes the <i>predicted queue length </i>
+            of edge {Tex`e`} at time {Tex`\theta`} as predicted at time {Tex`\bar\theta`} using the historical queue functions {Tex`q`}.</ListItem>
+          <ListItem>The <i>predicted exit time</i> when entering an edge {Tex`e`} at time {Tex`\theta`} is given by {Tex`\hat T_{i,e}(\theta; \bar\theta; q)\coloneqq \theta + \tau_e + \frac{\hat q_{i,e}(\theta; \bar\theta, q)}{\nu_e}`}.</ListItem>
+          <ListItem>The <i>predicted exit time</i> when entering a path {Tex`P=(e_1, \dots, e_k)`} at time {Tex`\theta`} is given by
+            {BTex`\hat T_{i,P}(\theta; \bar\theta; q)
             \coloneqq \left(\hat T_{e_k}(\,\boldsymbol{\cdot}\,;\bar\theta;q) \circ \cdots \circ \hat T_{e_1}(\,\boldsymbol{\cdot}\,;\bar\theta;q)\right)(\theta).
             `}
           </ListItem>
           <ListItem>
-            The <i>predicted earliest arrival</i> at {TeX`t_i`} when starting at time {TeX`\theta`} at {TeX`v`} is given by
-            {BTeX`\hat l_{i,v}(\theta; \bar\theta; q)
+            The <i>predicted earliest arrival</i> at {Tex`t_i`} when starting at time {Tex`\theta`} at {Tex`v`} is given by
+            {BTex`\hat l_{i,v}(\theta; \bar\theta; q)
             \coloneqq \min_{P\text{ simple } v\text{-}t_i\text{-path}} \hat T_{i,P}(\theta;\bar\theta;q).
             `}
           </ListItem>
         </UnorderedList>
         <Definition>
-          A pair {TeX`(\hat q, f)`} of predictors {TeX`\hat q = (\hat q_{i,e})_{i\in I, e\in E}`} and
-          a dynamic flow {TeX`f`} is a <i>dynamic prediction equilibrium (DPE)</i>, if for all edges {TeX`e=vw`} and all {TeX`\theta \geq 0`} it holds that
-          {BTeX`
-              f^+_{i,e}(\theta) > 0 \implies \hat l_{i,v}(\theta;\bar\theta; q) \leq \hat l_{i,w}(\hat T_{i,e}( \theta;\bar\theta; q ); \bar\theta; q).
+          A pair {Tex`(\hat q, f)`} of predictors {Tex`\hat q = (\hat q_{i,e})_{i\in I, e\in E}`} and
+          a dynamic flow {Tex`f`} is a <i>dynamic prediction equilibrium (DPE)</i>, if for all edges {Tex`e=vw`} and all {Tex`\theta \geq 0`} it holds that
+          {BTex`
+              f^+_{i,e}(\theta) > 0 \implies \hat l_{i,v}(\theta;\theta; q) \leq \hat l_{i,w}(\hat T_{i,e}( \theta;\theta; q ); \theta; q).
           `}
         </Definition>
       </Box>
     </CustomSlide>
 
-    <CustomSlide intro section="II. Existence of IDE">
+    <CustomSlide intro section="II. Existence of DPE">
       <SubHeading textAlign="left">Example for Nonexistence</SubHeading>
       <Example>
         <div style={{ float: 'right' }}>
@@ -214,21 +216,96 @@ const Presentation = () => (
         </div>
         For the network to the right, we define
         <UnorderedList>
-          <ListItem>{TeX`\tau_e=1`} for all {TeX`e\in E`}</ListItem>
-          <ListItem>{TeX`\nu_{st} = 1`}, {TeX`\nu_{sv} = \nu_{vt} = 2`}</ListItem>
-          <ListItem>network inflow rate {TeX`u \equiv 2`}</ListItem>
-          <ListItem>{TeX`
+          <ListItem>{Tex`\tau_e=1`} for all {Tex`e\in E`},</ListItem>
+          <ListItem>{Tex`\nu_{st} = 1`}, {Tex`\nu_{sv} = \nu_{vt} = 2,`}</ListItem>
+          <ListItem>a single commodity with network inflow rate {Tex`u \equiv 2`},</ListItem>
+          <ListItem>{Tex`
             \hat q_e(\theta;\bar\theta; q) \coloneqq \begin{cases}
                 q_e(\bar\theta),& \text{if $q_e(\bar\theta) < 1$}, \\
                 2,              & \text{otherwise.}
             \end{cases}
         `}</ListItem>
         </UnorderedList>
+        Starting from time {Tex`\theta = 1`}, there is no possible equilibrium flow split.
       </Example>
+      <Question>When do dynamic prediction equilibria exist?</Question>
     </CustomSlide>
 
+    <CustomSlide section="II. Existence of DPE">
+      <SubHeading textAlign="left">Sufficient Conditions for the Existence of DPEs</SubHeading>
+      <Definition>A predictor {Tex`\hat q_{i,e}`} is <i>continuous</i>, if {BTex`
+      \hat q_{i,e} : \mathbb R_{\geq0} \times \mathbb R_{\geq 0} \times C(\mathbb R_{\geq0}, \mathbb R_{\geq0})^{E} \to \mathbb R_{\geq 0},
+      `} is continuous from the product topology,
+        where all {Tex` C(\mathbb R_{\geq0}, \mathbb R_{\geq0})`} are equipped with the topology induced by the uniform norm,
+        to {Tex`\R_{\geq 0}`}.
+      </Definition>
+      <Definition>
+        A predictor {Tex`\hat q_{i,e}`} is <i>oblivious</i>, if for all {Tex`\bar\theta \in\mathbb R_{\geq0}`} it holds {Tex`
+        \quad\forall q,q'\colon\quad
+    q_{\hspace{.07em}\vert\hspace{.07em}[0, \bar\theta]^E} = q'_{\hspace{.07em}\vert\hspace{.07em}[0, \bar\theta]^E}
+    \implies
+    \hat q_{i,e}(\,\boldsymbol{\cdot}\,;\bar\theta;q)=\hat q_{i,e}(\,\boldsymbol{\cdot}\,;\bar\theta;q').
+        `}
+      </Definition>
+
+      <Definition>
+        A predictor {Tex`\hat q_{i,e}`} <i>respects FIFO</i>, if {Tex`\hat T_{i,e}(\,\boldsymbol{\cdot}\,;\bar\theta, q)`} is non-decreasing
+        for all {Tex`\bar\theta\in \R_{\geq0}`} and {Tex` q\in C(\mathbb R_{\geq0},\mathbb R_{\geq0})^{E}`}.
+      </Definition>
+
+      <Theorem>
+        If all network inflow rates {Tex`u_i`} are bounded and all predictors {Tex`\hat q_{i, e}`} are
+        continuous, oblivious, and respect FIFO, then
+        there exists a dynamic prediction equilibrium {Tex`(\hat q, f)`}.
+      </Theorem>
+
+    </CustomSlide>
+
+    <CustomSlide intro section="III. Applied Predictors">
+      <SubHeading textAlign="left">Applied Predictors</SubHeading>
+      <UnorderedList>
+        <PredictorListItem text={<>
+          <i>The Zero-Predictor </i>{Tex`\hat q^{\text{Z}}_{i,e}(\theta;\bar\theta;q) \coloneqq 0`}.<br />
+          <Appear><p>Predicted shortest paths always remain the same.</p></Appear>
+        </>} figure={(minimize) => <ZeroPredictorSvg minimize={minimize} />} />
+        <PredictorListItem text={<>
+          <i>The constant predictor </i>{Tex`\hat q^{\text{C}}_{i,e}(\theta;\bar\theta;q) \coloneqq q_e(\bar\theta)`}.<br />
+          <Appear><p>Assumes the current conditions for the future.</p></Appear>
+        </>} figure={minimize => <ConstantPredictorSvg minimize={minimize} />} />
+        <PredictorListItem text={<>
+          <i>The linear predictor </i>{Tex`\hat q^{\text{L}}_{i,e}(\theta;\bar\theta;q) \coloneqq 
+          \left( q_e(\bar \theta)+\partial_-q_e(\bar \theta)\cdot \min\{ \theta-\bar\theta, H \} \right)^+
+          `}.
+          <Appear><p>Not continuous in {Tex`\bar\theta`} whenever {Tex`\partial_-q_e`} jumps.</p></Appear>
+        </>} figure={minimize => <LinearPredictorSvg minimize={minimize} />} />
+        <PredictorListItem text={<>
+          <i>The regularized linear predictor </i><br />
+          <div style={{textAlign: 'center'}}>{Tex`\hat q_{i,e}^{\text{RL}}(\theta;\bar\theta; q) \coloneqq
+\Big( q_e(\bar\theta) + \frac{q_e(\bar\theta) - q_e(\bar\theta - \delta)}{\delta} \cdot \min\{ \theta - \bar\theta, H \} \Big)^+
+      .`}</div>
+        </>} figure={(minimize) => <RegularizedLinearPredictorSvg minimize={minimize} />} />
+      </UnorderedList>
+    </CustomSlide>
   </Deck >
 );
+
+const PredictorListItem = ({ text, figure }) => {
+  return <Appear><ListItem>
+    <div style={{ display: 'flex', flexDirection: 'row' }}>
+      <div style={{ width: '700px', height: '100px' }}>{text}</div>
+      <div style={{ height: '90px' }}><Minimizer>{figure}</Minimizer></div>
+    </div>
+  </ListItem></Appear>
+}
+
+const Minimizer = ({ children }) => {
+  return <Stepper values={[true]} alwaysVisible>{
+    (value, step, isActive) => {
+      return children(value || false)
+    }
+  }
+  </Stepper>
+}
 
 const ShowcaseFormula = ({ formula, text }) => {
   return <Stepper values={[true, false]}>
@@ -246,17 +323,17 @@ const ShowcaseFormula = ({ formula, text }) => {
   </Stepper>
 }
 
-const TeX = (template) => {
-  return <LaTex>{String.raw(template)}</LaTex>
-}
-
-const BTeX = (template) => {
-  return <LaTex block>{String.raw(template)}</LaTex>
-}
 
 const Notation = ({ children }) => {
   return <Box margin="32px" style={{ fontSize: theme.fontSizes.text, fontFamily: "Open Sans" }}>
     <span><i>Notation. </i></span>
+    {children}
+  </Box>
+}
+
+const Question = ({ children }) => {
+  return <Box margin="32px" style={{ fontSize: theme.fontSizes.text, fontFamily: "Open Sans" }}>
+    <span style={{ color: theme.colors.secondary }}><b>Question. </b></span>
     {children}
   </Box>
 }
@@ -272,6 +349,13 @@ const Example = ({ children }) => {
   return <Box margin="32px" style={{ fontSize: theme.fontSizes.text, fontFamily: "Open Sans" }}>
     <span style={{ color: theme.colors.secondary }}><b>Example. </b></span>
     {children}
+  </Box>
+}
+
+const Theorem = ({ children }) => {
+  return <Box margin="32px" style={{ fontSize: theme.fontSizes.text, fontFamily: "Open Sans" }}>
+    <span style={{ color: theme.colors.secondary }}><b>Theorem. </b></span>
+    <i>{children}</i>
   </Box>
 }
 

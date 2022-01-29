@@ -168,18 +168,25 @@ export const Vertex = ({ label, pos, visible = true }) => {
     const [cx, cy] = pos
     return <g style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
         <circle cx={cx} cy={cy} r={radius} stroke="black" fill="white" />
-        {label ? (<foreignObject x={cx - radius} y={cy - radius} width={2 * radius} height={2 * radius}>
-            <div style={{ width: 2 * radius, height: 2 * radius, display: 'grid', justifyContent: 'center', alignItems: 'center' }}>
-                {label}
-            </div></foreignObject>) : null}
+        {label ? (<ForeignObjectLabel cx={cx} cy={cy}>{label}</ForeignObjectLabel>) : null}
     </g>
 }
+
+export const ForeignObjectLabel = ({ cx, cy, width = 40, height = 40, children }) => (
+    <foreignObject x={cx - width / 2} y={cy - height / 2} width={width} height={height}>
+        <div style={{ width, height, display: 'grid', justifyContent: 'center', alignItems: 'center' }}>
+            {children}
+        </div>
+    </foreignObject>
+)
 
 export const d = {
     M: (x, y) => `M${x} ${y}`,
     c: (dx1, dy1, dx2, dy2, x, y) => `c${dx1} ${dy1} ${dx2} ${dy2} ${x} ${y}`,
     l: (x, y) => `l${x} ${y}`,
+    L: (x, y) => `L${x} ${y}`,
     h: (x) => `h${x}`,
+    H: (x) => `H${x}`,
     v: (y) => `v${y}`,
     m: (x, y) => `m${x} ${y}`,
     z: 'z'
