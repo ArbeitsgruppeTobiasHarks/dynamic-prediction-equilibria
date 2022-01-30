@@ -93,9 +93,9 @@ const Diagram = ({ predictedPath, minimize, hideBartheta = false }) => {
                     {Tex`\bar\theta`}
                 </span>
             </ForeignObjectLabel> : null}
-            <path d={d.M(origin[0], origin[1]) + d.l(50, -50) + d.l(10, 0) + d.l(5, 2.5)} stroke='black' />
             <Axes origin={origin} width={width} padding={padding} />
             {predictedPath}
+            <path d={d.M(origin[0], origin[1]) + d.l(50, -50) + d.l(10, 0) + d.l(5, 2.5)} stroke='black' />
         </g>
     </svg>
 }
