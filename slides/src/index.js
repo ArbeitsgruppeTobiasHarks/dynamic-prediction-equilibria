@@ -223,7 +223,7 @@ const Presentation = () => (
         `}</ListItem></Appear>
           </UnorderedList>
         </div>
-        <div style={{height: '200px'}}><Example2Svg /></div>
+          <div style={{ height: '200px' }}><Example2Svg /></div>
         </div>
         <Appear>Starting from time {Tex`\theta = 1`}, there is no possible equilibrium flow split.</Appear>
       </Example>
@@ -232,31 +232,31 @@ const Presentation = () => (
 
     <CustomSlide section="II. Existence of DPE">
       <SubHeading textAlign="left">Sufficient Conditions for the Existence of DPEs</SubHeading>
-      <Definition>A predictor {Tex`\hat q_{i,e}`} is <i>continuous</i>, if {BTex`
+      <Appear><Definition>A predictor {Tex`\hat q_{i,e}`} is <i>continuous</i>, if {BTex`
       \hat q_{i,e} : \mathbb R_{\geq0} \times \mathbb R_{\geq 0} \times C(\mathbb R_{\geq0}, \mathbb R_{\geq0})^{E} \to \mathbb R_{\geq 0},
       `} is continuous from the product topology,
         where all {Tex` C(\mathbb R_{\geq0}, \mathbb R_{\geq0})`} are equipped with the topology induced by the uniform norm,
         to {Tex`\R_{\geq 0}`}.
-      </Definition>
-      <Definition>
+      </Definition></Appear>
+      <Appear><Definition>
         A predictor {Tex`\hat q_{i,e}`} is <i>oblivious</i>, if for all {Tex`\bar\theta \in\mathbb R_{\geq0}`} it holds {Tex`
         \quad\forall q,q'\colon\quad
     q_{\hspace{.07em}\vert\hspace{.07em}[0, \bar\theta]^E} = q'_{\hspace{.07em}\vert\hspace{.07em}[0, \bar\theta]^E}
     \implies
     \hat q_{i,e}(\,\boldsymbol{\cdot}\,;\bar\theta;q)=\hat q_{i,e}(\,\boldsymbol{\cdot}\,;\bar\theta;q').
         `}
-      </Definition>
+      </Definition></Appear>
 
-      <Definition>
+      <Appear><Definition>
         A predictor {Tex`\hat q_{i,e}`} <i>respects FIFO</i>, if {Tex`\hat T_{i,e}(\,\boldsymbol{\cdot}\,;\bar\theta, q)`} is non-decreasing
         for all {Tex`\bar\theta\in \R_{\geq0}`} and {Tex` q\in C(\mathbb R_{\geq0},\mathbb R_{\geq0})^{E}`}.
-      </Definition>
+      </Definition></Appear>
 
-      <Theorem>
+      <Appear><Theorem>
         If all network inflow rates {Tex`u_i`} are bounded and all predictors {Tex`\hat q_{i, e}`} are
         continuous, oblivious, and respect FIFO, then
         there exists a dynamic prediction equilibrium {Tex`(\hat q, f)`}.
-      </Theorem>
+      </Theorem></Appear>
 
     </CustomSlide>
 
