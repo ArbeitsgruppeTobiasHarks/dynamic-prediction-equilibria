@@ -310,15 +310,15 @@ const Presentation = () => (
       <UnorderedList>
         <Appear><ListItem>Approximate a DPE by rerouting agents in discrete time intervals {Tex`\bar\theta_k = k\cdot \varepsilon`}.</ListItem></Appear>
         <Appear><ListItem>We assume that the network inflow rates are piecewise constant with finite jumps</ListItem></Appear>
-        <Appear><ListItem>The extension procedure for one routing interval {Tex`(\bar\theta_k,\bar\theta_{k+1})`}:
+        <Appear><ListItem>The extension procedure for one routing interval {Tex`(\bar\theta_k,\bar\theta_{k+1})`} given an equilibrium flow up to time {Tex`H = \bar\theta_k`}:
           <div style={{ width: '1200px' }}>
             <ThemeProvider theme={{ size: { width: '1200px' } }}>
               <OrderedList style={{ backgroundColor: 'white', border: '1px solid lightgray', fontFamily: '' }}>
-                <Appear><ListItem>Gather predictions for {Tex`\bar\theta_k`}</ListItem></Appear>
-                <Appear><ListItem>Compute active edges at time {Tex`\bar\theta_k`}</ListItem></Appear>
+                <Appear><ListItem>Gather predictions {Tex`(\hat q_{i,e}(\,\boldsymbol\cdot\,;\bar\theta_k; q))_{i,e}`} for {Tex`\bar\theta_k`}</ListItem></Appear>
+                <Appear><ListItem>Compute all shortest {Tex`v`}-{Tex`t_i`}-paths at time {Tex`\bar\theta_k`} predicted at time {Tex`\bar\theta_k`}</ListItem></Appear>
                 <Appear><ListItem><Code>while </Code>{Tex`H < \bar\theta_{k+1}`}<Code> do:</Code></ListItem></Appear>
                 <Appear><ListItem><Code>    </Code>Compute maximal {Tex`H'\leq\bar\theta_{k+1}`} such that {Tex`b_{i,v}^-(\theta)\coloneqq \sum_{e\in\delta_{v}^-} f_{i,e}^-(\theta) + u_i(\theta)\cdot\mathbf{1}_{v=s_i}`} is constant on {Tex`(H, H')`} for all {Tex`v\in V, i\in I`}</ListItem></Appear>
-                <Appear><ListItem><Code>    </Code>Equally distribute {Tex`b_{i,v}^-(\theta)`} to the active outgoing edges</ListItem></Appear>
+                <Appear><ListItem><Code>    </Code>Equally distribute {Tex`b_{i,v}^-(\theta)`} to the outgoing edges lying on shortest paths during {Tex`(H, H')`}</ListItem></Appear>
                 <Appear><ListItem><Code>    </Code>{Tex`H \leftarrow H'`}</ListItem></Appear>
               </OrderedList>
             </ThemeProvider>
@@ -358,7 +358,7 @@ const Presentation = () => (
           <ListItem>
             Simulations in real-world road traffic networks (centre of Tokyo, Sioux Falls) show
             <UnorderedList>
-              <ListItem>the linear regression prediction is amongst the best predictors analyzed,</ListItem>
+              <ListItem>the linear regression predictor is amongst the best predictors analyzed,</ListItem>
               <Appear><ListItem>the Zero-Predictor performs worst most of the time,</ListItem></Appear>
               <Appear><ListItem>the simulation is capable of computing DPEs in large-scale networks.</ListItem></Appear>
             </UnorderedList>
@@ -380,7 +380,7 @@ const Presentation = () => (
         <tr>
           <td>
             <UnorderedList style={{ display: "inline-block" }}>
-              <Appear><ListItem>We formulated a mathematically concise model that generalizes existing unrealistic models.</ListItem></Appear>
+              <Appear><ListItem>We formulated a mathematically concise model that generalizes existing rather unrealistic models.</ListItem></Appear>
               <Appear><ListItem>In this model, we proved the existence of equilibria under mild assumptions on the predictors.</ListItem></Appear>
               <Appear><ListItem>The framework allows the integration of arbitrary ML methods as predictors.</ListItem></Appear>
             </UnorderedList>
