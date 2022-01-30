@@ -262,33 +262,38 @@ const Presentation = () => (
 
     <CustomSlide intro section="III. Applied Predictors">
       <SubHeading textAlign="left">Applied Predictors</SubHeading>
-      <UnorderedList>
+      <div style={{
+        position: 'relative', top: '-50px',
+        marginLeft: "1050px", width: "200px", textAlign: "center",
+        fontFamily: "'Open Sans'", fontSize: theme.fontSizes.text
+      }}>Compatible with Existence-Theorem</div>
+      <UnorderedList style={{position: 'relative', top:'-50px'}}>
         <PredictorListItem text={<>
           <i>The Zero-Predictor </i>{Tex`\hat q^{\text{Z}}_{i,e}(\theta;\bar\theta;q) \coloneqq 0`}.<br />
           <Appear><p>Predicted shortest paths always remain the same.</p></Appear>
-        </>} figure={(minimize) => <ZeroPredictorSvg minimize={minimize} />} />
+        </>} figure={(minimize) => <ZeroPredictorSvg minimize={minimize} />} compatible />
         <PredictorListItem text={<>
           <i>The constant predictor </i>{Tex`\hat q^{\text{C}}_{i,e}(\theta;\bar\theta;q) \coloneqq q_e(\bar\theta)`}.<br />
           <Appear><p>Assumes the current conditions for the future.</p></Appear>
-        </>} figure={minimize => <ConstantPredictorSvg minimize={minimize} />} />
+        </>} figure={minimize => <ConstantPredictorSvg minimize={minimize} />} compatible />
         <PredictorListItem text={<>
           <i>The linear predictor </i>{Tex`\hat q^{\text{L}}_{i,e}(\theta;\bar\theta;q) \coloneqq 
           \left( q_e(\bar \theta)+\partial_-q_e(\bar \theta)\cdot \min\{ \theta-\bar\theta, H \} \right)^+
           `}.
           <Appear><p>Not continuous in {Tex`\bar\theta`} whenever {Tex`\partial_-q_e`} jumps.</p></Appear>
-        </>} figure={minimize => <LinearPredictorSvg minimize={minimize} />} />
+        </>} figure={minimize => <LinearPredictorSvg minimize={minimize} />} compatible={false} />
         <PredictorListItem text={<>
           <i>The regularized linear predictor </i><br />
           <div style={{ textAlign: 'center' }}>{Tex`\hat q_{i,e}^{\text{RL}}(\theta;\bar\theta; q) \coloneqq
 \Big( q_e(\bar\theta) + \frac{q_e(\bar\theta) - q_e(\bar\theta - \delta)}{\delta} \cdot \min\{ \theta - \bar\theta, H \} \Big)^+
       .`}</div>
-        </>} figure={(minimize) => <RegularizedLinearPredictorSvg minimize={minimize} />} />
+        </>} figure={(minimize) => <RegularizedLinearPredictorSvg minimize={minimize} />} compatible />
         <PredictorListItem text={<>
           <i>The linear regression predictor </i> {Tex`\hat q_{i,e}^{\text{ML}}`} linearly interpolates the points <br />
           <div style={{ textAlign: 'center' }}>
             <MLPredictorStepper />
           </div>
-        </>} figure={(minimize) => <RegressionPredictorSvg minimize={minimize} />} />
+        </>} figure={(minimize) => <RegressionPredictorSvg minimize={minimize} />} compatible />
       </UnorderedList>
     </CustomSlide>
   </Deck >
@@ -333,11 +338,13 @@ const MLPredictorStepper = () => {
   </Stepper>
 }
 
-const PredictorListItem = ({ text, figure }) => {
+const PredictorListItem = ({ text, figure, compatible }) => {
   return <Appear><ListItem>
     <div style={{ display: 'flex', flexDirection: 'row' }}>
       <div style={{ width: '700px', height: '100px' }}>{text}</div>
       <div style={{ height: '90px' }}><Minimizer>{figure}</Minimizer></div>
+      <div style={{ height: '100px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginLeft: '160px' }}>
+      <Appear>{compatible ? '✔️' : '❌'}</Appear></div>
     </div>
   </ListItem></Appear>
 }
