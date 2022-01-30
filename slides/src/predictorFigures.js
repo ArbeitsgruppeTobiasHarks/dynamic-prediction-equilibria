@@ -57,8 +57,29 @@ export const RegularizedLinearPredictorSvg = ({ minimize }) => {
     return <Diagram minimize={minimize} predictedPath={predictedPath} />
 }
 
+export const RegressionPredictorSvg = ({ minimize }) => {
+    const delta2 = H / 4
+    const predictedPath = <>
+        <line stroke="lightgray" x1={bartheta - 3 * delta2} y1={padding} x2={bartheta - 3 * delta2} y2={height - padding} />
+        <line stroke="lightgray" x1={bartheta - 2 * delta2} y1={padding} x2={bartheta - 2 * delta2} y2={height - padding} />
+        <line stroke="lightgray" x1={bartheta - delta2} y1={padding} x2={bartheta - delta2} y2={height - padding} />
+        <line stroke="lightgray" x1={bartheta + delta2} y1={padding} x2={bartheta + delta2} y2={height - padding} />
+        <line stroke="lightgray" x1={bartheta + 2 * delta2} y1={padding} x2={bartheta + 2 * delta2} y2={height - padding} />
+        <line stroke="lightgray" x1={bartheta + 3 * delta2} y1={padding} x2={bartheta + 3 * delta2} y2={height - padding} />
+        <line stroke="lightgray" x1={bartheta + 4 * delta2} y1={padding} x2={bartheta + 4 * delta2} y2={height - padding} />
+        <path d={d.M(bartheta, qBartheta) + d.l(delta2, 5) + d.l(delta2, 15) + d.l(delta2, -10) + d.l(delta2, -20) + d.H(width - padding)} stroke='red' strokeDasharray={5} />
+        <ForeignObjectLabel cx={bartheta - 1.5 * delta2} cy={15} width={300} height={300}>
+            <div style={{ fontSize: "0.7em" }}>{Tex`\overbrace{\hspace{4em}}^{\bar\theta - i\delta}`}</div>
+        </ForeignObjectLabel>
+        <ForeignObjectLabel cx={bartheta + 2.5 * delta2} cy={15} width={300} height={300}>
+            <div style={{ fontSize: "0.7em" }}>{Tex`\overbrace{\hspace{4em}}^{\bar\theta + j\delta}`}</div>
+        </ForeignObjectLabel>
+    </>
+    return <Diagram minimize={minimize} predictedPath={predictedPath} hideBartheta />
+}
 
-const Diagram = ({ predictedPath, minimize }) => {
+
+const Diagram = ({ predictedPath, minimize, hideBartheta = false }) => {
     return <svg style={{
         width: `${width}px`, height: `${height}px`,
         transition: 'transform 0.2s',
@@ -67,11 +88,11 @@ const Diagram = ({ predictedPath, minimize }) => {
     }}>
         <g strokeWidth={1.5} fill="none">
             <line stroke="lightgray" x1={bartheta} y1={padding} x2={bartheta} y2={height - padding} />
-            <ForeignObjectLabel cx={bartheta} cy={10}>
+            {!hideBartheta ? <ForeignObjectLabel cx={bartheta} cy={10}>
                 <span style={{ fontSize: '0.7em', transition: 'opacity 0.2s', opacity: minimize ? 1 : 1 }}>
                     {Tex`\bar\theta`}
                 </span>
-            </ForeignObjectLabel>
+            </ForeignObjectLabel> : null}
             <path d={d.M(origin[0], origin[1]) + d.l(50, -50) + d.l(10, 0) + d.l(5, 2.5)} stroke='black' />
             <Axes origin={origin} width={width} padding={padding} />
             {predictedPath}

@@ -16,9 +16,8 @@ import {
 import { animated, useSpring, useChain } from 'react-spring';
 import { Example1Svg } from './example1';
 import { Example2Svg } from './example2';
-import { d, ForeignObjectLabel } from './DynFlowSvg';
 import { BTex, Tex } from './tex';
-import { ConstantPredictorSvg, LinearPredictorSvg, RegularizedLinearPredictorSvg, ZeroPredictorSvg } from './predictorFigures';
+import { ConstantPredictorSvg, LinearPredictorSvg, RegressionPredictorSvg, RegularizedLinearPredictorSvg, ZeroPredictorSvg } from './predictorFigures';
 
 const ListItem = (props) => <OriginalListItem style={{ margin: "10px" }}  {...props} />
 
@@ -280,14 +279,59 @@ const Presentation = () => (
         </>} figure={minimize => <LinearPredictorSvg minimize={minimize} />} />
         <PredictorListItem text={<>
           <i>The regularized linear predictor </i><br />
-          <div style={{textAlign: 'center'}}>{Tex`\hat q_{i,e}^{\text{RL}}(\theta;\bar\theta; q) \coloneqq
+          <div style={{ textAlign: 'center' }}>{Tex`\hat q_{i,e}^{\text{RL}}(\theta;\bar\theta; q) \coloneqq
 \Big( q_e(\bar\theta) + \frac{q_e(\bar\theta) - q_e(\bar\theta - \delta)}{\delta} \cdot \min\{ \theta - \bar\theta, H \} \Big)^+
       .`}</div>
         </>} figure={(minimize) => <RegularizedLinearPredictorSvg minimize={minimize} />} />
+        <PredictorListItem text={<>
+          <i>The linear regression predictor </i> {Tex`\hat q_{i,e}^{\text{ML}}`} linearly interpolates the points <br />
+          <div style={{ textAlign: 'center' }}>
+            <MLPredictorStepper />
+          </div>
+        </>} figure={(minimize) => <RegressionPredictorSvg minimize={minimize} />} />
       </UnorderedList>
     </CustomSlide>
   </Deck >
-);
+)
+
+const MLPredictorStepper = () => {
+  return <Stepper values={[1, 2]} alwaysVisible>
+    {(value, step, isActive) => {
+      if (!value) {
+        return Tex`
+          \left(
+            \bar\theta + j\delta,
+            {\color{transparent} \left(
+              \sum_{e' \in N(e)} 
+                {\color{black} \sum_{i=0}^k a_{i,j}^{\color{transparent}e'}\cdot q_{e{\color{transparent}'}}(\bar\theta-i\delta) }
+              \right)^+ } 
+          \right)
+      .`
+      } else if (value == 1) {
+        return Tex`
+          \left(
+            \bar\theta + j\delta,
+            {\color{transparent} \left(
+              {\color{black}
+              \sum_{e' \in N(e)} 
+                 \sum_{i=0}^k a_{i,j}^{e'}\cdot q_{e'}(\bar\theta-i\delta) }
+              \right)^+ } 
+          \right)
+      .`
+      } else {
+        return Tex`
+          \left(
+            \bar\theta + j\delta,
+             \left(  
+              \sum_{e' \in N(e)} 
+                 \sum_{i=0}^k a_{i,j}^{e'}\cdot q_{e'}(\bar\theta-i\delta)
+              \right)^+
+          \right)
+      .`
+      }
+    }}
+  </Stepper>
+}
 
 const PredictorListItem = ({ text, figure }) => {
   return <Appear><ListItem>
@@ -359,4 +403,4 @@ const Theorem = ({ children }) => {
   </Box>
 }
 
-ReactDOM.render(<Presentation />, document.getElementById('root'));
+ReactDOM.render(<Presentation />, document.getElementById('root'))
