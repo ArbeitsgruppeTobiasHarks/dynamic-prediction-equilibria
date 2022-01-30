@@ -5,14 +5,22 @@ import {
   Heading,
   UnorderedList,
   ListItem as OriginalListItem,
-  Progress,
   Stepper,
   Slide,
   Deck,
   Text,
   Box,
-  Appear
+  Appear,
+  OrderedList,
+  Table,
+  TableHeader
 } from 'spectacle';
+import styled from 'styled-components'
+import performance from './performance2.png'
+import sampleNetwork from './network2.png'
+import { ThemeProvider } from 'styled-components'
+import syntaxTheme from 'react-syntax-highlighter/dist/cjs/styles/prism/vs';
+
 import { animated, useSpring, useChain } from 'react-spring';
 import { Example1Svg } from './example1';
 import { Example2Svg } from './example2';
@@ -296,9 +304,124 @@ const Presentation = () => (
         </>} figure={(minimize) => <RegressionPredictorSvg minimize={minimize} />} compatible />
       </UnorderedList>
     </CustomSlide>
-  </Deck >
+
+    <CustomSlide intro section="IV. Computational Study">
+      <SubHeading textAlign="left">Extension-based Simulation</SubHeading>
+      <UnorderedList>
+        <Appear><ListItem>Approximate a DPE by rerouting agents in discrete time intervals {Tex`\bar\theta_k = k\cdot \varepsilon`}.</ListItem></Appear>
+        <Appear><ListItem>We assume that the network inflow rates are piecewise constant with finite jumps</ListItem></Appear>
+        <Appear><ListItem>The extension procedure for one routing interval {Tex`(\bar\theta_k,\bar\theta_{k+1})`}:
+          <div style={{ width: '1200px' }}>
+            <ThemeProvider theme={{ size: { width: '1200px' } }}>
+              <OrderedList style={{ backgroundColor: 'white', border: '1px solid lightgray', fontFamily: '' }}>
+                <Appear><ListItem>Gather predictions for {Tex`\bar\theta_k`}</ListItem></Appear>
+                <Appear><ListItem>Compute active edges at time {Tex`\bar\theta_k`}</ListItem></Appear>
+                <Appear><ListItem><Code>while </Code>{Tex`H < \bar\theta_{k+1}`}<Code> do:</Code></ListItem></Appear>
+                <Appear><ListItem><Code>    </Code>Compute maximal {Tex`H'\leq\bar\theta_{k+1}`} such that {Tex`b_{i,v}^-(\theta)\coloneqq \sum_{e\in\delta_{v}^-} f_{i,e}^-(\theta) + u_i(\theta)\cdot\mathbf{1}_{v=s_i}`} is constant on {Tex`(H, H')`} for all {Tex`v\in V, i\in I`}</ListItem></Appear>
+                <Appear><ListItem><Code>    </Code>Equally distribute {Tex`b_{i,v}^-(\theta)`} to the active outgoing edges</ListItem></Appear>
+                <Appear><ListItem><Code>    </Code>{Tex`H \leftarrow H'`}</ListItem></Appear>
+              </OrderedList>
+            </ThemeProvider>
+          </div>
+        </ListItem></Appear>
+      </UnorderedList>
+    </CustomSlide>
+
+    <CustomSlide section="IV. Computational Study">
+      <SubHeading textAlign="left">Comparing the Performance of Predictors</SubHeading>
+      <UnorderedList>
+        <Appear><ListItem>
+          We monitor the average travel time of particles over multiple DPE simulations with varying inflow rates.
+        </ListItem></Appear>
+        <Appear><ListItem>
+          For a sample network, the linear regression already performs best:
+          <Minimizer>{minimize =>
+            <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly', marginTop: '20px' }}>
+              <div style={{
+                transition: 'transform 0.2s', transform: minimize ? 'translateY(0)' : 'translateY(80px) scale(1.2)',
+                textAlign: "center"
+              }}>
+                <img src={sampleNetwork} width='200px' />
+                <Text style={{ margin: 0 }}>Edges are labeled with {Tex`(\tau_e, \nu_e)`}</Text>
+              </div>
+              <div>
+                <img style={{
+                  transition: 'transform 0.2s', transform: minimize ? 'scale(1)' : 'scale(1.8)',
+                  transformOrigin: 'top', width: "280px"
+                }} src={performance} />
+              </div>
+            </div>}
+          </Minimizer>
+        </ListItem></Appear>
+
+        <Appear>
+          <ListItem>
+            Simulations in real-world road traffic networks (centre of Tokyo, Sioux Falls) show
+            <UnorderedList>
+              <ListItem>the linear regression prediction is amongst the best predictors analyzed,</ListItem>
+              <Appear><ListItem>the Zero-Predictor performs worst most of the time,</ListItem></Appear>
+              <Appear><ListItem>the simulation is capable of computing DPEs in large-scale networks.</ListItem></Appear>
+            </UnorderedList>
+          </ListItem>
+        </Appear>
+      </UnorderedList>
+    </CustomSlide>
+
+    <CustomSlide intro section="V. Conclusion">
+      <CustomTable style={{ margin: "100px auto", textAlign: "center" }} width={0.8}>
+        <TableHeader textAlign="center">
+          <th>Contributions</th>
+          <th>Future Work</th>
+        </TableHeader>
+        <colgroup>
+          <col style={{ width: '50%' }} />
+          <col style={{ width: '50%' }} />
+        </colgroup>
+        <tr>
+          <td>
+            <UnorderedList style={{ display: "inline-block" }}>
+              <ListItem>We formulated a mathematically concise model that generalizes existing unrealistic models.</ListItem>
+              <ListItem>In this model, we proved the existence of equilibria under mild assumptions on the predictors.</ListItem>
+              <ListItem>The framework allows the integration of arbitrary ML methods as predictors.</ListItem>
+            </UnorderedList>
+          </td>
+          <td>
+            <UnorderedList style={{ display: "inline-block" }}>
+              <ListItem>Generalize the predictor's input to allow for other flow related data than past queues.</ListItem>
+              <ListItem>Embed more advanced ML methods for traffic forecast into the simulation.</ListItem>
+            </UnorderedList>
+          </td>
+        </tr>
+
+      </CustomTable>
+    </CustomSlide>
+  </Deck>
 )
 
+const CustomTable = styled(Table)`
+  border-collapse: collapse;
+& td {
+  border: 2px solid ${theme.colors.secondary}; 
+}
+& tr:first-child td {
+  border-top: 0;
+}
+& tr td:first-child, th:first-child {
+  border-left: 0;
+}
+& tr:last-child td {
+  border-bottom: 0;
+}
+& tr td:last-child, th:last-child {
+  border-right: 0;
+}
+
+& li {
+  padding: 20px;
+}
+`
+
+const Code = (props) => <span style={{ whiteSpace: 'pre' }} {...props} />
 const MLPredictorStepper = () => {
   return <Stepper values={[1, 2]} alwaysVisible>
     {(value, step, isActive) => {
