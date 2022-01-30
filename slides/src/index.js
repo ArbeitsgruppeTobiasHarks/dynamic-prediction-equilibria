@@ -380,15 +380,15 @@ const Presentation = () => (
         <tr>
           <td>
             <UnorderedList style={{ display: "inline-block" }}>
-              <ListItem>We formulated a mathematically concise model that generalizes existing unrealistic models.</ListItem>
-              <ListItem>In this model, we proved the existence of equilibria under mild assumptions on the predictors.</ListItem>
-              <ListItem>The framework allows the integration of arbitrary ML methods as predictors.</ListItem>
+              <Appear><ListItem>We formulated a mathematically concise model that generalizes existing unrealistic models.</ListItem></Appear>
+              <Appear><ListItem>In this model, we proved the existence of equilibria under mild assumptions on the predictors.</ListItem></Appear>
+              <Appear><ListItem>The framework allows the integration of arbitrary ML methods as predictors.</ListItem></Appear>
             </UnorderedList>
           </td>
           <td>
             <UnorderedList style={{ display: "inline-block" }}>
-              <ListItem>Generalize the predictor's input to allow for other flow related data than past queues.</ListItem>
-              <ListItem>Embed more advanced ML methods for traffic forecast into the simulation.</ListItem>
+              <Appear><ListItem>Generalize the predictor's input to allow for other flow related data than past queues.</ListItem></Appear>
+              <Appear><ListItem>Embed more advanced ML methods for traffic forecast into the simulation.</ListItem></Appear>
             </UnorderedList>
           </td>
         </tr>
@@ -406,13 +406,13 @@ const CustomTable = styled(Table)`
 & tr:first-child td {
   border-top: 0;
 }
-& tr td:first-child, th:first-child {
+& tr td, th {
   border-left: 0;
 }
 & tr:last-child td {
   border-bottom: 0;
 }
-& tr td:last-child, th:last-child {
+& tr td, th {
   border-right: 0;
 }
 
