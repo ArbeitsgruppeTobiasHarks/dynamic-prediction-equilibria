@@ -177,57 +177,57 @@ const Presentation = () => (
       <SubHeading textAlign="left">The Behavioral Model</SubHeading>
       <Box>
         <UnorderedList margin="0 32px">
-          <ListItem>The <i>exit time</i> when entering edge {Tex`e`} at time {Tex`\theta`} is given by {Tex`T_e(\theta)\coloneqq \theta + \tau_e + \frac{q_e(\theta)}{\nu_e}`}</ListItem>
-          <ListItem>Each commodity {Tex`i\in I`} is equipped with a set of <i>predictors</i> {BTex`
+          <Appear><ListItem>The <i>exit time</i> when entering edge {Tex`e`} at time {Tex`\theta`} is given by {Tex`T_e(\theta)\coloneqq \theta + \tau_e + \frac{q_e(\theta)}{\nu_e}`}</ListItem></Appear>
+          <Appear><ListItem>Each commodity {Tex`i\in I`} is equipped with a set of <i>predictors</i> {BTex`
           \hat q_{i,e} : \mathbb R_{\geq0} \times \mathbb R_{\geq 0} \times C(\mathbb R_{\geq0}, \mathbb R_{\geq0})^{E} \to \mathbb R_{\geq 0},
           \quad
           (\theta, \bar\theta, q)\mapsto\hat q_{i,e}(\theta; \bar\theta; q),`}
             where {Tex`\hat q_{i,e}(\theta; \bar\theta; q)`} describes the <i>predicted queue length </i>
-            of edge {Tex`e`} at time {Tex`\theta`} as predicted at time {Tex`\bar\theta`} using the historical queue functions {Tex`q`}.</ListItem>
-          <ListItem>The <i>predicted exit time</i> when entering an edge {Tex`e`} at time {Tex`\theta`} is given by {Tex`\hat T_{i,e}(\theta; \bar\theta; q)\coloneqq \theta + \tau_e + \frac{\hat q_{i,e}(\theta; \bar\theta, q)}{\nu_e}`}.</ListItem>
-          <ListItem>The <i>predicted exit time</i> when entering a path {Tex`P=(e_1, \dots, e_k)`} at time {Tex`\theta`} is given by
+            of edge {Tex`e`} at time {Tex`\theta`} as predicted at time {Tex`\bar\theta`} using the historical queue functions {Tex`q`}.</ListItem></Appear>
+          <Appear><ListItem>The <i>predicted exit time</i> when entering an edge {Tex`e`} at time {Tex`\theta`} is given by {Tex`\hat T_{i,e}(\theta; \bar\theta; q)\coloneqq \theta + \tau_e + \frac{\hat q_{i,e}(\theta; \bar\theta, q)}{\nu_e}`}.</ListItem></Appear>
+          <Appear><ListItem>The <i>predicted exit time</i> when entering a path {Tex`P=(e_1, \dots, e_k)`} at time {Tex`\theta`} is given by
             {BTex`\hat T_{i,P}(\theta; \bar\theta; q)
             \coloneqq \left(\hat T_{e_k}(\,\boldsymbol{\cdot}\,;\bar\theta;q) \circ \cdots \circ \hat T_{e_1}(\,\boldsymbol{\cdot}\,;\bar\theta;q)\right)(\theta).
             `}
-          </ListItem>
-          <ListItem>
+          </ListItem></Appear>
+          <Appear><ListItem>
             The <i>predicted earliest arrival</i> at {Tex`t_i`} when starting at time {Tex`\theta`} at {Tex`v`} is given by
             {BTex`\hat l_{i,v}(\theta; \bar\theta; q)
             \coloneqq \min_{P\text{ simple } v\text{-}t_i\text{-path}} \hat T_{i,P}(\theta;\bar\theta;q).
             `}
-          </ListItem>
+          </ListItem></Appear>
         </UnorderedList>
-        <Definition>
+        <Appear><Definition>
           A pair {Tex`(\hat q, f)`} of predictors {Tex`\hat q = (\hat q_{i,e})_{i\in I, e\in E}`} and
           a dynamic flow {Tex`f`} is a <i>dynamic prediction equilibrium (DPE)</i>, if for all edges {Tex`e=vw`} and all {Tex`\theta \geq 0`} it holds that
           {BTex`
               f^+_{i,e}(\theta) > 0 \implies \hat l_{i,v}(\theta;\theta; q) \leq \hat l_{i,w}(\hat T_{i,e}( \theta;\theta; q ); \theta; q).
           `}
-        </Definition>
+        </Definition></Appear>
       </Box>
     </CustomSlide>
 
     <CustomSlide intro section="II. Existence of DPE">
       <SubHeading textAlign="left">Example for Nonexistence</SubHeading>
-      <Example>
-        <div style={{ float: 'right' }}>
-          <Example2Svg />
-        </div>
-        For the network to the right, we define
-        <UnorderedList>
-          <ListItem>{Tex`\tau_e=1`} for all {Tex`e\in E`},</ListItem>
-          <ListItem>{Tex`\nu_{st} = 1`}, {Tex`\nu_{sv} = \nu_{vt} = 2,`}</ListItem>
-          <ListItem>a single commodity with network inflow rate {Tex`u \equiv 2`},</ListItem>
-          <ListItem>{Tex`
+      <Example>For the network to the right, we define
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}><div>
+          <UnorderedList>
+            <Appear><ListItem>{Tex`\tau_e=1`} for all {Tex`e\in E`},</ListItem></Appear>
+            <Appear><ListItem>{Tex`\nu_{st} = 1`}, {Tex`\nu_{sv} = \nu_{vt} = 2,`}</ListItem></Appear>
+            <Appear><ListItem>a single commodity with network inflow rate {Tex`u \equiv 2`},</ListItem></Appear>
+            <Appear><ListItem>{Tex`
             \hat q_e(\theta;\bar\theta; q) \coloneqq \begin{cases}
                 q_e(\bar\theta),& \text{if $q_e(\bar\theta) < 1$}, \\
                 2,              & \text{otherwise.}
             \end{cases}
-        `}</ListItem>
-        </UnorderedList>
-        Starting from time {Tex`\theta = 1`}, there is no possible equilibrium flow split.
+        `}</ListItem></Appear>
+          </UnorderedList>
+        </div>
+        <div style={{height: '200px'}}><Example2Svg /></div>
+        </div>
+        <Appear>Starting from time {Tex`\theta = 1`}, there is no possible equilibrium flow split.</Appear>
       </Example>
-      <Question>When do dynamic prediction equilibria exist?</Question>
+      <Appear><Question>When do dynamic prediction equilibria exist?</Question></Appear>
     </CustomSlide>
 
     <CustomSlide section="II. Existence of DPE">
@@ -267,7 +267,7 @@ const Presentation = () => (
         marginLeft: "1050px", width: "200px", textAlign: "center",
         fontFamily: "'Open Sans'", fontSize: theme.fontSizes.text
       }}>Compatible with Existence-Theorem</div>
-      <UnorderedList style={{position: 'relative', top:'-50px'}}>
+      <UnorderedList style={{ position: 'relative', top: '-50px' }}>
         <PredictorListItem text={<>
           <i>The Zero-Predictor </i>{Tex`\hat q^{\text{Z}}_{i,e}(\theta;\bar\theta;q) \coloneqq 0`}.<br />
           <Appear><p>Predicted shortest paths always remain the same.</p></Appear>
@@ -344,7 +344,7 @@ const PredictorListItem = ({ text, figure, compatible }) => {
       <div style={{ width: '700px', height: '100px' }}>{text}</div>
       <div style={{ height: '90px' }}><Minimizer>{figure}</Minimizer></div>
       <div style={{ height: '100px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginLeft: '160px' }}>
-      <Appear>{compatible ? '✔️' : '❌'}</Appear></div>
+        <Appear>{compatible ? '✔️' : '❌'}</Appear></div>
     </div>
   </ListItem></Appear>
 }
