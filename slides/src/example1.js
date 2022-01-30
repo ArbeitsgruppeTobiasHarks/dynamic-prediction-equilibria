@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useInterval } from 'usehooks-ts'
 import TeX from '@matejmazur/react-katex'
-import { calcOutflowSteps, d, FlowEdge, SvgDefs, Vertex } from "./DynFlowSvg";
+import { calcOutflowSteps, d, FlowEdge, SvgDefs, Vertex, StopWatch } from "./DynFlowSvg";
 import { Flow } from "./Flow";
 
 import example1FlowData from "./example1FlowData.js"
@@ -19,7 +19,7 @@ export const Example1Svg = () => {
     const vPos = [225, 150]
     const tPos = [425, 150]
     const s2Pos = [225 - 200 / Math.sqrt(2), 150 + 200 / Math.sqrt(2)]
-    return <Stepper values={[400, 800, 1200, 1200.00001, 1450, 1900]} alwaysVisible>
+    return <Stepper values={[0, 400, 800, 1200, 1200.00001, 1450, 1900]} alwaysVisible>
         {
             (value, step, isActive) => {
                 const [t, setT] = useState(typeof value === 'number' ? value : 0)
@@ -44,17 +44,15 @@ export const Example1Svg = () => {
                         <Vertex pos={tPos} label={<TeX>t_1</TeX>} />
                         <Vertex pos={vPos} label={<TeX>v</TeX>} />
                         <Vertex pos={s2Pos} label={<TeX>s_2</TeX>} visible={t > 1200} />
-
-                        <rect fill="white" x={vPos[0] - 25} y={0} width={50} height={50} rx={5} ry={5} stroke="lightgray" />
-                        <PlayPause play={t !== (value || 0)} x={vPos[0] - 10} y={5} size={20} />
-                        <text x={vPos[0]} y={45} fontFamily='Open Sans, Sans Serif' fontSize={15} textAnchor='middle'>Time</text>
+                        <g opacity={typeof value == 'number' ? 1 : 0} style={{transition: 'opacity 0.2s'}}>
+                            <StopWatch t={t} y={10} x={vPos[0] - 20} size={40} />
+                        </g>
                     </svg>
                 </div>
             }
         }
     </Stepper>
 }
-
 
 const PlayPause = ({ play, x, y, size }) => {
     const width = size / Math.sqrt(2)
