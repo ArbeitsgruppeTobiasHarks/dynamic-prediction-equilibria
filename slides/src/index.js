@@ -221,7 +221,7 @@ const Presentation = () => (
       <Example>
         <UnorderedList>
           <Appear><ListItem>We are given a single commodity with network inflow rate {Tex`u\equiv 2`} and
-            predictor {Tex`\hat q_{e}(\theta;\bar\theta; q) \coloneqq q(\bar\theta) + \partial_- q_e(\bar\theta)\cdot (\theta - \bar\theta)`},</ListItem></Appear>
+            predictor {Tex`\hat q_{e}(\theta;\bar\theta; q) \coloneqq q(\bar\theta) + \partial_- q_e(\bar\theta)\cdot (\theta - \bar\theta)`}.</ListItem></Appear>
           <Appear><ListItem>Only edge {Tex`ut`} can build a queue. For other edges {Tex`e\neq uv`} we have {Tex`\hat q_{i,e}(\theta;\bar\theta;q) = 0`}</ListItem></Appear>
           <Appear><ListItem>Particles starting at {Tex`s`} need to decide between paths {Tex`sut`} and {Tex`svwt`}.</ListItem></Appear>
           <Appear><ListItem>We have {Tex`\hat T_{svwt}(\theta;\bar\theta; q) = \theta + 4`} and {Tex`\hat T_{sut}(\theta;\bar\theta; q) = \theta + 2 + \hat q_{i,e}(\theta + 1;\bar\theta; q)`}.</ListItem></Appear>
