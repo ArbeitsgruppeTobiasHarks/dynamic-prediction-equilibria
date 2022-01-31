@@ -209,7 +209,7 @@ const Presentation = () => (
         </UnorderedList>
         <Appear><Definition>
           A pair {Tex`(\hat q, f)`} of predictors {Tex`\hat q = (\hat q_{i,e})_{i\in I, e\in E}`} and
-          a dynamic flow {Tex`f`} is a <i>dynamic prediction equilibrium (DPE)</i>, if for all edges {Tex`e=vw`} and all {Tex`\theta \geq 0`} it holds that
+          a feasible dynamic flow {Tex`f`} is a <i>dynamic prediction equilibrium (DPE)</i>, if for all edges {Tex`e=vw`} and all {Tex`\theta \geq 0`} it holds that
           {BTex`
               f^+_{i,e}(\theta) > 0 \implies \hat l_{i,v}(\theta;\theta; q) = \hat l_{i,w}(\hat T_{i,e}( \theta;\theta; q ); \theta; q).
           `}
