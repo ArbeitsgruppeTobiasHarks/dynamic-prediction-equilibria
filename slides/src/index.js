@@ -230,7 +230,7 @@ const Presentation = () => (
       <Example3Svg />
     </CustomSlide>
 
-    <CustomSlide intro section="II. Existence of DPE">
+    {/*<CustomSlide intro section="II. Existence of DPE">
       <SubHeading textAlign="left">Example for Nonexistence</SubHeading>
       <Example>We are given
         <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}><div>
@@ -249,9 +249,9 @@ const Presentation = () => (
         <Appear>Starting from time {Tex`\theta = 1`}, there is no possible equilibrium flow split.</Appear>
       </Example>
       <Appear><Question>When do dynamic prediction equilibria exist?</Question></Appear>
-    </CustomSlide>
+    </CustomSlide>*/}
 
-    <CustomSlide section="II. Existence of DPE">
+    <CustomSlide intro section="II. Existence of DPE">
       <SubHeading textAlign="left">Sufficient Conditions for the Existence of DPEs</SubHeading>
       <Appear><Definition>A predictor {Tex`\hat q_{i,e}`} is <i>continuous</i>, if {BTex`
       \hat q_{i,e} : \mathbb R_{\geq0} \times \mathbb R_{\geq 0} \times C(\mathbb R_{\geq0}, \mathbb R_{\geq0})^{E} \to \mathbb R_{\geq 0},
