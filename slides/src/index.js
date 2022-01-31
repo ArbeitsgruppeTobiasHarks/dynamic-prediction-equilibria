@@ -26,6 +26,7 @@ import { Example1Svg } from './example1';
 import { Example2Svg } from './example2';
 import { BTex, Tex } from './tex';
 import { ConstantPredictorSvg, LinearPredictorSvg, RegressionPredictorSvg, RegularizedLinearPredictorSvg, ZeroPredictorSvg } from './predictorFigures';
+import { Example3Svg } from './example3';
 
 const ListItem = (props) => <OriginalListItem style={{ margin: "10px" }}  {...props} />
 
@@ -124,6 +125,7 @@ const CustomSlide = ({ section, intro = false, children }) => {
 
 const Presentation = () => (
   <Deck theme={theme} template={template}>
+
     <Slide>
       <Heading>{TITLE}</Heading>
       <Text className="authors" textAlign="center" fontSize="h2">Lukas Graf<sup>1</sup>, Tobias Harks<sup>1</sup>, Kostas Kollias<sup>2</sup>, and Michael Markl<sup>1</sup>
@@ -213,6 +215,19 @@ const Presentation = () => (
           `}
         </Definition></Appear>
       </Box>
+    </CustomSlide>
+
+    <CustomSlide section="I. The Flow Model">
+      <Example>
+        <UnorderedList>
+          <Appear><ListItem>We are given a single commodity with network inflow rate {Tex`u\equiv 2`} and
+            predictor {Tex`\hat q_{e}(\theta;\bar\theta; q) \coloneqq q(\bar\theta) + \partial_- q_e(\bar\theta)\cdot (\theta - \bar\theta)`},</ListItem></Appear>
+          <Appear><ListItem>Only edge {Tex`ut`} can build a queue. For other edges {Tex`e\neq uv`} we have {Tex`\hat q_{i,e}(\theta;\bar\theta;q) = 0`}</ListItem></Appear>
+          <Appear><ListItem>Particles starting at {Tex`s`} need to decide between paths {Tex`sut`} and {Tex`svwt`}.</ListItem></Appear>
+          <Appear><ListItem>We have {Tex`\hat T_{svwt}(\theta;\bar\theta; q) = \theta + 4`} and {Tex`\hat T_{sut}(\theta;\bar\theta; q) = \theta + 2 + \hat q_{i,e}(\theta + 1;\bar\theta; q)`}.</ListItem></Appear>
+        </UnorderedList>
+      </Example>
+      <Example3Svg />
     </CustomSlide>
 
     <CustomSlide intro section="II. Existence of DPE">

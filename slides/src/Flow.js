@@ -115,7 +115,7 @@ export class PiecewiseLinear {
     }
 }
 
-function elemRank(arr, x) {
+export function elemRank(arr, x) {
     if (x <= arr[0]) {
         return -1
     }

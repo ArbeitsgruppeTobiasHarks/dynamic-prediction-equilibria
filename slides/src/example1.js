@@ -53,12 +53,3 @@ export const Example1Svg = () => {
         }
     </Stepper>
 }
-
-const PlayPause = ({ play, x, y, size }) => {
-    const width = size / Math.sqrt(2)
-    const pauseD = d.M(x + (size - width) / 2, y) + d.v(size) + d.l(width / 3, 0) + d.v(-size) + d.z
-        + d.m(width * 2 / 3, 0) + d.v(size) + d.l(width / 3, 0) + d.v(-size) + d.z
-    const playD = d.M(x + (size - width) / 2, y) + d.v(size) + d.l(width / 2, -size / 4) + d.v(-size / 2) + d.z
-        + d.m(width / 2, size / 4) + d.v(size / 2) + d.l(width / 2, - size / 4) + d.v(0) + d.z
-    return <path style={{ transition: "d 0.2s" }} d={play ? playD : pauseD} stroke="none" fill="gray" />
-}

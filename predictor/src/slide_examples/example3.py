@@ -12,20 +12,19 @@ def build_example3():
     #
     # 0 -> 1 -> 2
     # |         |
-    # 3 -> 4 -> 5
+    # 3 ------> 4
     #
     network.add_edge(0, 1, 200, 20)
     network.add_edge(1, 2, 200, 10)
     network.add_edge(0, 3, 200, 20)
-    network.add_edge(3, 4, 200, 20)
-    network.add_edge(4, 5, 200, 20)
-    network.add_edge(5, 2, 200, 20)
-    network.add_commodity(0, 2, RightConstant([-1, 0, 4000], [0, 20, 0]), PredictorType.LINEAR)
+    network.add_edge(3, 4, 400, 20)
+    network.add_edge(4, 2, 200, 20)
+    network.add_commodity(0, 2, RightConstant([-1, 0, 20000], [0, 20, 0]), PredictorType.LINEAR)
 
     horizon = 2000
-    predictors = { PredictorType.LINEAR: LinearPredictor(network, 10000) }
+    predictors = { PredictorType.LINEAR: LinearPredictor(network, 20000) }
 
-    builder = MultiComFlowBuilder(network=network, predictors=predictors, reroute_interval=1)
+    builder = MultiComFlowBuilder(network=network, predictors=predictors, reroute_interval=.05)
     generator = builder.build_flow()
     flow = next(generator)
     while flow.phi < horizon:

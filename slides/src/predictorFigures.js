@@ -101,7 +101,7 @@ const Diagram = ({ predictedPath, minimize, hideBartheta = false }) => {
 }
 
 
-const Axes = ({ origin, width, padding }) => {
+export const Axes = ({ origin, width, padding }) => {
     const arrow = 5
     return <>
         <line x1={origin[0]} y1={origin[1]} x2={origin[0]} y2={padding} stroke='gray' />
