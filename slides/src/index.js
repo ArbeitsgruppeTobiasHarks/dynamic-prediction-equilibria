@@ -218,7 +218,7 @@ const Presentation = () => (
     </CustomSlide>
 
     <CustomSlide section="I. The Flow Model">
-      <Example>
+      <Example>A dynamic prediction equilibrium.
         <UnorderedList>
           <Appear><ListItem>We are given a single commodity with network inflow rate {Tex`u\equiv 2`} and
             predictor {Tex`\hat q_{e}(\theta;\bar\theta; q) \coloneqq q(\bar\theta) + \partial_- q_e(\bar\theta)\cdot (\theta - \bar\theta)`}.</ListItem></Appear>
@@ -232,12 +232,10 @@ const Presentation = () => (
 
     <CustomSlide intro section="II. Existence of DPE">
       <SubHeading textAlign="left">Example for Nonexistence</SubHeading>
-      <Example>For the network to the right, we define
+      <Example>We are given
         <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}><div>
           <UnorderedList>
-            <Appear><ListItem>{Tex`\tau_e=1`} for all {Tex`e\in E`},</ListItem></Appear>
-            <Appear><ListItem>{Tex`\nu_{st} = 1`}, {Tex`\nu_{sv} = \nu_{vt} = 2,`}</ListItem></Appear>
-            <Appear><ListItem>a single commodity with network inflow rate {Tex`u \equiv 2`},</ListItem></Appear>
+            <Appear><ListItem>a single commodity with network inflow rate {Tex`u \equiv 2`} with predictor</ListItem></Appear>
             <Appear><ListItem>{Tex`
             \hat q_e(\theta;\bar\theta; q) \coloneqq \begin{cases}
                 q_e(\bar\theta),& \text{if $q_e(\bar\theta) < 1$}, \\
@@ -318,6 +316,18 @@ const Presentation = () => (
           </div>
         </>} figure={(minimize) => <RegressionPredictorSvg minimize={minimize} />} compatible />
       </UnorderedList>
+    </CustomSlide>
+
+    <CustomSlide section="III. Applied Predictors">
+      <SubHeading textAlign="left">A generalization of popular models</SubHeading>
+      <Text style={{ marginBottom: 0 }}>We are given a dynamic prediction equilibrium {Tex`(\hat q, f)`}.</Text>
+      <Appear><Text style={{ marginBottom: 0, marginTop: 0 }}>If all commodites use</Text></Appear>
+      <UnorderedList style={{ marginTop: 0 }}>
+        <Appear><ListItem style={{ marginTop: 16 }}>the <i>constant predictor</i> {Tex`\hat q_{i,e}(\theta;\bar\theta;q)\coloneqq q_e(\bar\theta)`}, then {Tex`f`} is an <i>instantaneous dynamic equilibrium (IDE)</i>.</ListItem></Appear>
+        <Appear><ListItem style={{ marginTop: 32 }}>the <i>perfect predictor</i> {Tex`\hat q_{i,e}(\theta;\bar\theta;q)\coloneqq q_e(\theta)`}, then {Tex`f`} is a <i>dynamic (Nash) equilibrium (DE)</i>.</ListItem></Appear>
+      </UnorderedList>
+      <Appear><Text>IDE and especially DE have been studied quite extensively in the past.</Text></Appear>
+      <Appear><Text style={{ marginTop: 0 }}>DPE generalize both concepts with a more realistic scenario.</Text></Appear>
     </CustomSlide>
 
     <CustomSlide intro section="IV. Computational Study">
