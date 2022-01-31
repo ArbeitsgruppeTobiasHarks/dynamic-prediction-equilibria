@@ -143,7 +143,7 @@ const Presentation = () => (
           <Text style={{ margin: "0 32px", padding: "0" }}>We are given</Text>
           <UnorderedList style={{ margin: "0 32px" }}>
             <ListItem>a finite, directed graph {Tex`G=(V,E)`},</ListItem>
-            <ListItem>edge travel times {Tex`\tau_e > 0`} and edge capacities {Tex`\nu_e> 0`} for {Tex`e\in E`}, and</ListItem>
+            <ListItem>edge transit times {Tex`\tau_e > 0`} and edge capacities {Tex`\nu_e> 0`} for {Tex`e\in E`}, and</ListItem>
             <ListItem>commodities {Tex`i\in I`} each with source and sink nodes {Tex`s_i, t_i\in V`} and <br />a network inflow rate {Tex`u_i: \mathbb R_{\geq 0} \to \mathbb R_{\geq 0}`}.</ListItem>
           </UnorderedList>
           <Appear><Definition>
