@@ -36,7 +36,7 @@ export const Example3Svg = ({ demo = false }) => {
                 }, 1 / 30)
                 const width = 1000
                 const height = 250 + 200 + 25
-                const svgIdPrefix = "example3-"
+                const svgIdPrefix = "example3-" + demo ? 'demo-' : ''
                 return <div style={{ position: 'relative', textAlign: "center", transform: demo ? 'scale(0.7)' : '', transformOrigin: 'top' }}>
                     <svg width={width} height={height}>
                         <g transform="scale(0.9) translate(50)">
