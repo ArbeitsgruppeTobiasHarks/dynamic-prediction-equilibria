@@ -126,6 +126,16 @@ const CustomSlide = ({ section, intro = false, children }) => {
 const Presentation = () => (
   <Deck theme={theme} template={template}>
 
+  <Slide>
+    <Heading>{TITLE}</Heading>      
+    <Text className="authors" textAlign="center" fontSize="h3" style={{ margin: 0, padding: 0}}>Lukas Graf<sup>1</sup>, Tobias Harks<sup>1</sup>, Kostas Kollias<sup>2</sup>, and Michael Markl<sup>1</sup>
+        <div style={{ fontSize: "0.8em", margin: "1em 0", display: "flex", justifyContent: "center" }}><span style={{ width: "300px" }}><b>1</b>: University of Augsburg</span><span style={{ width: "300px" }}><b>2</b>: Google</span></div>
+      </Text>
+
+      <Example3Svg demo={true} />
+      <Text textAlign="center" color="secondary" style={{margin: 0, transform: 'translateY(-150px)'}}>An example dynamic prediction equilibrium.</Text>
+  </Slide>
+
     <Slide>
       <Heading>{TITLE}</Heading>
       <Text className="authors" textAlign="center" fontSize="h2">Lukas Graf<sup>1</sup>, Tobias Harks<sup>1</sup>, Kostas Kollias<sup>2</sup>, and Michael Markl<sup>1</sup>

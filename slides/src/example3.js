@@ -16,13 +16,14 @@ const flow = Flow.fromJson(example3FlowData)
 
 const outflowSteps = flow.outflow.map(outflow => calcOutflowSteps(outflow, ['#a00', '#0a0']))
 
-export const Example3Svg = () => {
+export const Example3Svg = ({ demo = false }) => {
     const sPos = [25, 250]
     const v1Pos = [25 + 200, 250]
     const tPos = [25 + 400, 250]
     const v3Pos = [25, 250 + 200]
     const v4Pos = [25 + 400, 250 + 200]
-    return <Stepper values={[0, 200, 400, 599, 601, 800, 8 * 200]} alwaysVisible>
+    const steps = demo ? [8*200] : [0,200,400,599,601,800,8*200]
+    return <Stepper values={steps} alwaysVisible>
         {
             (value, step, isActive) => {
                 const [t, setT] = useState(typeof value === 'number' ? value : 0)
@@ -36,7 +37,7 @@ export const Example3Svg = () => {
                 const width = 1000
                 const height = 250 + 200 + 25
                 const svgIdPrefix = "example3-"
-                return <div style={{ position: 'relative', textAlign: "center" }}>
+                return <div style={{ position: 'relative', textAlign: "center", transform: demo ? 'scale(0.7)' : '', transformOrigin: 'top' }}>
                     <svg width={width} height={height}>
                         <g transform="scale(0.9) translate(50)">
                             <SvgDefs svgIdPrefix={svgIdPrefix} />
@@ -52,9 +53,9 @@ export const Example3Svg = () => {
                             <Vertex pos={v3Pos} label={<TeX>v</TeX>} />
                             <Vertex pos={v4Pos} label={<TeX>w</TeX>} />
 
-                            <StopWatch t={t} x={v1Pos[0] - 20} size={40} y={5} />
+                            <StopWatch t={t} x={v1Pos[0] - 20} size={40} y={demo ? 100 : 5} />
                         </g>
-                        <QueueDiagram x={600} y={100} width={350} t={t} queue={flow.queues[1]} visible={typeof value == 'number'} />
+                        <QueueDiagram x={600} y={demo ? 120 : 100} width={350} t={t} queue={flow.queues[1]} visible={demo || typeof value == 'number'} />
                     </svg>
                 </div>
             }
