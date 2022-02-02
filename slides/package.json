@@ -5,6 +5,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "webpack --mode=production",
+    "build:poster": "webpack --mode=production --env poster=true",
     "start": "webpack-dev-server --hot"
   },
   "dependencies": {
