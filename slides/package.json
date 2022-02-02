@@ -6,7 +6,8 @@
     "clean": "rimraf dist",
     "build": "webpack --mode=production",
     "build:poster": "webpack --mode=production --env poster=true",
-    "start": "webpack-dev-server --hot"
+    "start": "webpack-dev-server --hot",
+    "start:poster": "webpack-dev-server --env poster=true --hot"
   },
   "dependencies": {
     "@matejmazur/react-katex": "^3.1.3",
