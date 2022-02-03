@@ -66,5 +66,9 @@
     & > div {
         overflow: auto !important;
     }
-`;r.render(t.createElement(km,null,t.createElement(gm,null)),document.getElementById("root"))})()})();
+
+    & > div > div {
+        background: black;
+    }
+`;document.documentElement.style.background="black",r.render(t.createElement(km,null,t.createElement(gm,null)),document.getElementById("root"))})()})();
 //# sourceMappingURL=poster.js.map
