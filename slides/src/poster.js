@@ -25,7 +25,7 @@ import { animated, useSpring, useChain } from 'react-spring';
 import { Example1Svg } from './example1';
 import { Example2Svg } from './example2';
 import { BTex, Tex } from './tex';
-import { ConstantPredictorSvg, LinearPredictorSvg, RegressionPredictorSvg, RegularizedLinearPredictorSvg, ZeroPredictorSvg } from './predictorFigures';
+import { ConstantPredictorSvg, LinearPredictorSvg, PerfectPredictorSvg, RegressionPredictorSvg, RegularizedLinearPredictorSvg, ZeroPredictorSvg } from './predictorFigures';
 import { Example3Svg } from './example3';
 
 const ListItem = (props) => <OriginalListItem style={{ margin: "10px" }}  {...props} />
@@ -43,7 +43,7 @@ const theme = {
     colors: { // https://material.io/resources/color/#!/?view.left=0&view.right=1&primary.color=B0BEC5&secondary.color=F57F17
         primary: '#000',
         black: '#000',
-        secondary: '#455a64',
+        secondary: '#41738b', // '#455a64',
         tertiary: '#f5f5f5',
         background: 'white'
     },
@@ -60,7 +60,7 @@ const theme = {
     }
 }
 
-const SubHeading = (props) => <Text color="secondary" textAlign="center" fontSize="h3" {...props} />
+const SubHeading = (props) => <Text color="secondary" textAlign="center" fontWeight='700' fontSize='32px' {...props} />
 
 const TITLE = "Machine-Learned Prediction Equilibrium for Dynamic Traffic Assignment"
 
@@ -70,8 +70,8 @@ const CustomBox = (props) => <Box margin={20} borderStyle='1px solid lightgray' 
 
 const Poster = () => (
     <Deck theme={theme}>
-        <Slide backgroundColor='white' textColor={theme.colors.primary}>
-            <Heading color={theme.colors.secondary} style={{ margin: '0px', padding: '0px' }}>{TITLE}</Heading>
+        <Slide padding={0} backgroundColor='white' textColor={theme.colors.primary}>
+            <Heading fontSize='64px' color={'white'} backgroundColor={theme.colors.secondary} style={{ margin: '-16px -16px 10px -16px', padding: '32px' }}>{TITLE}</Heading>
             <Text className="authors" textAlign="center" fontSize="h2" style={{ margin: '0.5em', padding: '0px' }}>Lukas Graf<sup>1</sup>, Tobias Harks<sup>1</sup>, Kostas Kollias<sup>2</sup>, and Michael Markl<sup>1</sup>
                 <div style={{ fontSize: "0.8em", margin: "0.625em", display: "flex", justifyContent: "center" }}><span style={{ width: "300px" }}><b>1</b>: University of Augsburg</span><span style={{ width: "300px" }}><b>2</b>: Google</span></div>
             </Text>
@@ -115,7 +115,7 @@ const Poster = () => (
           \end{cases}`} />
                                     <ShowcaseFormula text="Capacity is split fairly:" formula={BTex`
                 f_{i,e}^-(\theta) = f_e^-(\theta) \cdot \frac{f_{i,e}^+(\xi)}{f_e^+(\xi)}
-                \quad\text{for $\xi\coloneqq \min\{\xi\leq\theta \mid \xi + \tau_e + \frac{q_e(\xi)}{\nu_e} = \theta \}$ with $f_e^+(\xi) > 0$}`} />
+                \quad\text{for $\xi\coloneqq \min\{\xi\leq\theta \mid \xi + \tau_e + \frac{q_e(\xi)}{\nu_e} = \theta \}$ with $f_e^+(\xi) > 0$}.`} />
                                 </UnorderedList>
                             </Definition>
 
@@ -185,25 +185,25 @@ const Poster = () => (
 
                 </CustomBox>
                 <CustomBox width={1075}>
-                    <SubHeading>Applied Predictors</SubHeading>
+                    <SubHeading>The Analyzed Predictors</SubHeading>
                     <div style={{
-                        marginLeft: "900px", width: "200px", textAlign: "center",
+                        marginLeft: "875px", width: "200px", textAlign: "center",
                         fontFamily: "'Open Sans'", fontSize: theme.fontSizes.text
                     }}>Compatible with Existence-Theorem</div>
                     <UnorderedList>
                         <PredictorListItem text={<>
                             <i>The Zero-Predictor </i>{Tex`\hat q^{\text{Z}}_{i,e}(\theta;\bar\theta;q) \coloneqq 0`}.<br />
-                            <p>Predicted shortest paths always remain the same.</p>
+                            <p style={{ marginTop: '5px' }}>Predicted shortest paths always remain the same.</p>
                         </>} figure={(minimize) => <ZeroPredictorSvg minimize={minimize} />} compatible />
                         <PredictorListItem text={<>
-                            <i>The constant predictor </i>{Tex`\hat q^{\text{C}}_{i,e}(\theta;\bar\theta;q) \coloneqq q_e(\bar\theta)`}.<br />
-                            <p>Assumes the current conditions for the future.</p>
+                            <i>The constant predictor </i>{Tex`\hat q^{\text{C}}_{i,e}(\theta;\bar\theta;q) \coloneqq q_e(\bar\theta)`}.
+                            <p style={{ marginTop: '5px' }}>Assumes the current conditions for the future. If all commodities use this predictor, a DPE corresponds to an Instantaneous Dynamic Equilibrium.</p>
                         </>} figure={minimize => <ConstantPredictorSvg minimize={minimize} />} compatible />
                         <PredictorListItem text={<>
                             <i>The linear predictor </i>{Tex`\hat q^{\text{L}}_{i,e}(\theta;\bar\theta;q) \coloneqq 
           \left( q_e(\bar \theta)+\partial_-q_e(\bar \theta)\cdot \min\{ \theta-\bar\theta, H \} \right)^+
           `}.
-                            <p>Not continuous in {Tex`\bar\theta`} whenever {Tex`\partial_-q_e`} jumps.</p>
+                            <p style={{ marginTop: '5px' }}>Not continuous in {Tex`\bar\theta`} whenever {Tex`\partial_-q_e`} jumps.</p>
                         </>} figure={minimize => <LinearPredictorSvg minimize={minimize} />} compatible={false} />
                         <PredictorListItem text={<>
                             <i>The regularized linear predictor </i><br />
@@ -217,87 +217,75 @@ const Poster = () => (
                                 <MLPredictorStepper />
                             </div>
                         </>} figure={(minimize) => <RegressionPredictorSvg minimize={minimize} />} compatible />
+                        <PredictorListItem text={<>
+                            <i>The perfect predictor </i> {Tex`\hat q^{\text{P}}_{i,e}(\theta;\bar\theta;q) \coloneqq q_e(\theta)`}.
+                            <p style={{ marginTop: '5px' }}>Will always predict the future correctly and is thus not oblivious. If all commodities use this predictor, a DPE corresponds to a dynamic equilibrium in the full-information model.</p>
+                        </>} figure={(minimize) => <PerfectPredictorSvg minimize={minimize} />} compatible={false} />
                     </UnorderedList>
                 </CustomBox>
 
+                <CustomBox width={1075}>
+                    <SubHeading>Extension-based Simulation</SubHeading>
+                    <UnorderedList>
+                        <ListItem>Approximate a DPE by rerouting agents in discrete time intervals {Tex`\bar\theta_k = k\cdot \varepsilon`}.</ListItem>
+                        <ListItem>We assume that the network inflow rates are piecewise constant with finite jumps</ListItem>
+                        <ListItem>The extension procedure for one routing interval {Tex`(\bar\theta_k,\bar\theta_{k+1})`} given an equilibrium flow up to time {Tex`H = \bar\theta_k`}:
+                            <div style={{ width: '1000px' }}>
+                                <ThemeProvider theme={{ size: { width: '1000px' } }}>
+                                    <OrderedList style={{ backgroundColor: 'white', border: '1px solid lightgray', fontFamily: '' }}>
+                                        <ListItem>Gather predictions {Tex`(\hat q_{i,e}(\,\boldsymbol\cdot\,;\bar\theta_k; q))_{i,e}`} for {Tex`\bar\theta_k`}</ListItem>
+                                        <ListItem>Compute all shortest {Tex`v`}-{Tex`t_i`}-paths at time {Tex`\bar\theta_k`} predicted at time {Tex`\bar\theta_k`}</ListItem>
+                                        <ListItem><Code>while </Code>{Tex`H < \bar\theta_{k+1}`}<Code> do:</Code></ListItem>
+                                        <ListItem><Code>    </Code><div style={{ display: 'inline-block', verticalAlign: 'text-top' }}>Compute maximal {Tex`H'\leq\bar\theta_{k+1}`} such that {Tex`b_{i,v}^-(\theta)\coloneqq \sum_{e\in\delta_{v}^-} f_{i,e}^-(\theta) + u_i(\theta)\cdot\mathbf{1}_{v=s_i}`}<br /> is constant on {Tex`(H, H')`} for all {Tex`v\in V, i\in I`}</div></ListItem>
+                                        <ListItem><Code>    </Code>Equally distribute {Tex`b_{i,v}^-(\theta)`} to the outgoing edges lying on shortest paths during {Tex`(H, H')`}</ListItem>
+                                        <ListItem><Code>    </Code>{Tex`H \leftarrow H'`}</ListItem>
+                                    </OrderedList>
+                                </ThemeProvider>
+                            </div>
+                        </ListItem>
+                    </UnorderedList>
+                </CustomBox>
+                <CustomBox width={1075}>
+                    <SubHeading>Comparing the Performance of Predictors</SubHeading>
+                    <UnorderedList>
+                        <ListItem>
+                            We monitor the average travel time of particles over multiple DPE simulations with varying inflow rates.
+                        </ListItem>
+                        <ListItem>
+                            For a sample network, the linear regression already performs best:
+                            <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly', marginTop: '20px' }}>
+                                <div style={{
+                                    transition: 'transform 0.2s', transform: 'translateY(0)',
+                                    textAlign: "center"
+                                }}>
+                                    <img src={sampleNetwork} width='200px' />
+                                    <Text style={{ margin: 0 }}>Edges are labeled with {Tex`(\tau_e, \nu_e)`}</Text>
+                                </div>
+                                <div>
+                                    <img style={{
+                                        transition: 'transform 0.2s', transform: 'scale(1)',
+                                        transformOrigin: 'top', width: "280px"
+                                    }} src={performance} />
+                                </div>
+                            </div>
+                        </ListItem>
+
+
+                        <ListItem>
+                            Simulations in real-world road traffic networks (centre of Tokyo, Sioux Falls) show
+                            <UnorderedList>
+                                <ListItem>the linear regression predictor is amongst the best predictors analyzed,</ListItem>
+                                <ListItem>the Zero-Predictor performs worst most of the time,</ListItem>
+                                <ListItem>the simulation is capable of computing DPEs in large-scale networks.</ListItem>
+                            </UnorderedList>
+                        </ListItem>
+
+                    </UnorderedList>
+                </CustomBox>
             </div>
         </Slide>
 
 
-
-        <CustomSlide section="III. Applied Predictors">
-            <SubHeading textAlign="left">A generalization of popular models</SubHeading>
-            <Text style={{ marginBottom: 0 }}>We are given a dynamic prediction equilibrium {Tex`(\hat q, f)`}.</Text>
-            <Text style={{ marginBottom: 0, marginTop: 0 }}>If all commodites use</Text>
-            <UnorderedList style={{ marginTop: 0 }}>
-                <ListItem style={{ marginTop: 16 }}>the <i>constant predictor</i> {Tex`\hat q_{i,e}(\theta;\bar\theta;q)\coloneqq q_e(\bar\theta)`}, then {Tex`f`} is an <i>instantaneous dynamic equilibrium (IDE)</i>.</ListItem>
-                <ListItem style={{ marginTop: 32 }}>the <i>perfect predictor</i> {Tex`\hat q_{i,e}(\theta;\bar\theta;q)\coloneqq q_e(\theta)`}, then {Tex`f`} is a <i>dynamic (Nash) equilibrium (DE)</i>.</ListItem>
-            </UnorderedList>
-            <Text>IDE and especially DE have been studied quite extensively in the past.</Text>
-            <Text style={{ marginTop: 0 }}>DPE generalize both concepts with a more realistic scenario.</Text>
-        </CustomSlide>
-
-        <CustomSlide intro section="IV. Computational Study">
-            <SubHeading textAlign="left">Extension-based Simulation</SubHeading>
-            <UnorderedList>
-                <ListItem>Approximate a DPE by rerouting agents in discrete time intervals {Tex`\bar\theta_k = k\cdot \varepsilon`}.</ListItem>
-                <ListItem>We assume that the network inflow rates are piecewise constant with finite jumps</ListItem>
-                <ListItem>The extension procedure for one routing interval {Tex`(\bar\theta_k,\bar\theta_{k+1})`} given an equilibrium flow up to time {Tex`H = \bar\theta_k`}:
-                    <div style={{ width: '1200px' }}>
-                        <ThemeProvider theme={{ size: { width: '1200px' } }}>
-                            <OrderedList style={{ backgroundColor: 'white', border: '1px solid lightgray', fontFamily: '' }}>
-                                <ListItem>Gather predictions {Tex`(\hat q_{i,e}(\,\boldsymbol\cdot\,;\bar\theta_k; q))_{i,e}`} for {Tex`\bar\theta_k`}</ListItem>
-                                <ListItem>Compute all shortest {Tex`v`}-{Tex`t_i`}-paths at time {Tex`\bar\theta_k`} predicted at time {Tex`\bar\theta_k`}</ListItem>
-                                <ListItem><Code>while </Code>{Tex`H < \bar\theta_{k+1}`}<Code> do:</Code></ListItem>
-                                <ListItem><Code>    </Code>Compute maximal {Tex`H'\leq\bar\theta_{k+1}`} such that {Tex`b_{i,v}^-(\theta)\coloneqq \sum_{e\in\delta_{v}^-} f_{i,e}^-(\theta) + u_i(\theta)\cdot\mathbf{1}_{v=s_i}`} is constant on {Tex`(H, H')`} for all {Tex`v\in V, i\in I`}</ListItem>
-                                <ListItem><Code>    </Code>Equally distribute {Tex`b_{i,v}^-(\theta)`} to the outgoing edges lying on shortest paths during {Tex`(H, H')`}</ListItem>
-                                <ListItem><Code>    </Code>{Tex`H \leftarrow H'`}</ListItem>
-                            </OrderedList>
-                        </ThemeProvider>
-                    </div>
-                </ListItem>
-            </UnorderedList>
-        </CustomSlide>
-
-        <CustomSlide section="IV. Computational Study">
-            <SubHeading textAlign="left">Comparing the Performance of Predictors</SubHeading>
-            <UnorderedList>
-                <ListItem>
-                    We monitor the average travel time of particles over multiple DPE simulations with varying inflow rates.
-                </ListItem>
-                <ListItem>
-                    For a sample network, the linear regression already performs best:
-                    <Minimizer>{minimize =>
-                        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-evenly', marginTop: '20px' }}>
-                            <div style={{
-                                transition: 'transform 0.2s', transform: minimize ? 'translateY(0)' : 'translateY(80px) scale(1.2)',
-                                textAlign: "center"
-                            }}>
-                                <img src={sampleNetwork} width='200px' />
-                                <Text style={{ margin: 0 }}>Edges are labeled with {Tex`(\tau_e, \nu_e)`}</Text>
-                            </div>
-                            <div>
-                                <img style={{
-                                    transition: 'transform 0.2s', transform: minimize ? 'scale(1)' : 'scale(1.8)',
-                                    transformOrigin: 'top', width: "280px"
-                                }} src={performance} />
-                            </div>
-                        </div>}
-                    </Minimizer>
-                </ListItem>
-
-
-                <ListItem>
-                    Simulations in real-world road traffic networks (centre of Tokyo, Sioux Falls) show
-                    <UnorderedList>
-                        <ListItem>the linear regression predictor is amongst the best predictors analyzed,</ListItem>
-                        <ListItem>the Zero-Predictor performs worst most of the time,</ListItem>
-                        <ListItem>the simulation is capable of computing DPEs in large-scale networks.</ListItem>
-                    </UnorderedList>
-                </ListItem>
-
-            </UnorderedList>
-        </CustomSlide>
 
         <CustomSlide intro section="V. Conclusion">
             <CustomTable style={{ margin: "100px auto", textAlign: "center" }} width={0.8}>
@@ -369,7 +357,7 @@ const MLPredictorStepper = () => {
 const PredictorListItem = ({ text, figure, compatible }) => {
     return <ListItem>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
-            <div style={{ width: '650px', height: '100px' }}>{text}</div>
+            <div style={{ width: '625px', height: '100px' }}>{text}</div>
             <div style={{ height: '90px' }}>{figure(true)}</div>
             <div style={{ height: '100px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginLeft: '60px' }}>
                 {compatible ? '✔️' : '❌'}</div>

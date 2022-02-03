@@ -78,8 +78,18 @@ export const RegressionPredictorSvg = ({ minimize }) => {
     return <Diagram minimize={minimize} predictedPath={predictedPath} hideBartheta />
 }
 
+export const PerfectPredictorSvg = ({ minimize }) => {
+    const delta2 = H / 4
+    const predictedPath = <>
+        <path d={fullPath} stroke='red' strokeDasharray={5} />
+    </>
+    return <Diagram minimize={minimize} predictedPath={predictedPath} showFullPath />
+}
 
-const Diagram = ({ predictedPath, minimize, hideBartheta = false }) => {
+
+const fullPath = d.M(bartheta, qBartheta) + d.l(10, -3) + d.l(5, 9) + d.l(10, 10) + d.l(5, -10) + d.l(15, 0) + d.l(15, -15) + d.l(19, 15) + d.l(5, 15) + d.l(3,6) + d.l(6,5) + d.l(10, 9) + d.l(10, 0)
+
+const Diagram = ({ predictedPath, minimize, hideBartheta = false, showFullPath = false }) => {
     return <svg style={{
         width: `${width}px`, height: `${height}px`,
         transition: 'transform 0.2s',
@@ -94,6 +104,7 @@ const Diagram = ({ predictedPath, minimize, hideBartheta = false }) => {
                 </span>
             </ForeignObjectLabel> : null}
             <Axes origin={origin} width={width} padding={padding} />
+            {showFullPath && <path d={fullPath} stroke='black' />}
             {predictedPath}
             <path d={d.M(origin[0], origin[1]) + d.l(50, -50) + d.l(10, 0) + d.l(5, 2.5)} stroke='black' />
         </g>
