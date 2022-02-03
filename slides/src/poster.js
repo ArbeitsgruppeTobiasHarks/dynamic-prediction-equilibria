@@ -428,6 +428,12 @@ const AllowOverflow = styled.div`
     & > div {
         overflow: auto !important;
     }
+
+    & > div > div {
+        background: black;
+    }
 `
+
+document.documentElement.style.background = "black"
 
 ReactDOM.render(<AllowOverflow><Poster /></AllowOverflow>, document.getElementById('root'))
