@@ -36,7 +36,7 @@ export const Example3Svg = ({ demo = false }) => {
                 }, 1 / 30)
                 const width = 1000
                 const height = 250 + 200 + 25
-                const svgIdPrefix = "example3-" + demo ? 'demo-' : ''
+                const svgIdPrefix = "example3-" + (demo ? 'demo-' : '')
                 return <div style={{ position: 'relative', textAlign: "center", transform: demo ? 'scale(0.7)' : '', transformOrigin: 'top' }}>
                     <svg width={width} height={height}>
                         <g transform="scale(0.9) translate(50)">
@@ -55,7 +55,7 @@ export const Example3Svg = ({ demo = false }) => {
 
                             <StopWatch t={t} x={v1Pos[0] - 20} size={40} y={demo ? 100 : 5} />
                         </g>
-                        <QueueDiagram x={600} y={demo ? 120 : 100} width={350} t={t} queue={flow.queues[1]} visible={demo || typeof value == 'number'} />
+                        <QueueDiagram svgIdPrefix={svgIdPrefix} x={600} y={demo ? 120 : 100} width={350} t={t} queue={flow.queues[1]} visible={demo || typeof value == 'number'} />
                     </svg>
                 </div>
             }
@@ -64,7 +64,7 @@ export const Example3Svg = ({ demo = false }) => {
 }
 
 
-const QueueDiagram = ({ x, y, t, width, queue, visible }) => {
+const QueueDiagram = ({ x, y, t, width, queue, visible, svgIdPrefix }) => {
     const timeScale = 1 / 5
     const valueScale = 1 / 50
     const bartheta = t * timeScale
@@ -101,10 +101,10 @@ const QueueDiagram = ({ x, y, t, width, queue, visible }) => {
         <Axes origin={origin} width={width} padding={padding} />
         <line stroke="lightgray" strokeDasharray={4} x1={0} x2={width} y1={origin[1] - 4000 * valueScale} y2={origin[1] - 4000 * valueScale} />
         <ForeignObjectLabel cx={-10} cy={origin[1] - 4000 * valueScale}>{Tex`2`}</ForeignObjectLabel>
-        <mask id="hide-queue-mask">
+        <mask id={`${svgIdPrefix}hide-queue-mask`}>
             <rect x={0} y={0} width={bartheta} height={height} fill='white' stroke='none' />
         </mask>
-        <path d={queueD} stroke='black' mask="url(#hide-queue-mask)" />
+        <path d={queueD} stroke='black' mask={`url(#${svgIdPrefix}hide-queue-mask)`} />
         <path d={predD} stroke='red' strokeDasharray={4} />
 
 
