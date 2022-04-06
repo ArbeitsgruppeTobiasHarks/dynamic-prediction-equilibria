@@ -24,23 +24,3 @@ export const network = new Network([
 
 export const flow = Flow.fromJson(example3FlowData)
 
-const outflowSteps = flow.outflow.map((outflow: any) => calcOutflowSteps(outflow, ['#a00', '#0a0']))
-
-export const SvgContent = ({t = 0}) => {
-    const svgIdPrefix = ""
-    return <>
-        <SvgDefs svgIdPrefix={svgIdPrefix} />
-        {
-            _.map(network.edgesMap, (value, id) => {
-                const fromNode = network.nodesMap[value.from]
-                const toNode = network.nodesMap[value.to]
-                return <FlowEdge key={id} t={t} capacity={value.capacity} from={[fromNode.x, fromNode.y]} to={[toNode.x, toNode.y]} svgIdPrefix={svgIdPrefix} outflowSteps={outflowSteps[id]} transitTime={value.transitTime} queue={flow.queues[id]} />;
-            })
-        }
-        {
-            _.map(network.nodesMap, (value, id) => {
-                return <Vertex key={id} pos={[value.x, value.y]} label={<TeX>{value.label ?? value.id}</TeX>} />
-            })
-        }
-    </>
-}
