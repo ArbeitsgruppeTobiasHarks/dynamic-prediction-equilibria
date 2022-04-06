@@ -11,11 +11,11 @@ def eval_sample():
     step_size = 0.25
     inflow_horizon = 25.
     reroute_interval = 0.25
-    horizon = 100.
+    horizon = 500.
     demand = 0. + step_size
     avg_times = [[], [], [], [], [], []]
     comp_times = []
-    while demand < max_demand:
+    while demand <= max_demand:
         network = build_sample_network()
         net_inflow = RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf')))
         network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
@@ -47,6 +47,7 @@ def eval_sample():
     print("Successfully saved these travel times in ./avg_times_sample.json")
     print()
     sample_from_file_to_tikz()
+    sample_regrets_from_file_to_tikz()
     print("A tikz diagram was saved to ./avg_times_sample.tikz.")
 
 
@@ -70,7 +71,7 @@ def sample_from_file_to_tikz():
     for c in configs:
         tikz += c["label"] + ",\n"
     tikz += """},
-        legend pos=south east,
+        legend pos=north west,
     ]
     """
 
@@ -81,7 +82,7 @@ def sample_from_file_to_tikz():
         tikz += "]\n  coordinates { \n"
 
         for i, y in enumerate(values):
-            x = i * 0.25
+            x = (i + 1) * 0.25
             tikz += f"({x}, {y})"
 
         tikz += "\n};\n"
@@ -89,6 +90,49 @@ def sample_from_file_to_tikz():
     tikz += "\\end{axis}\n\\end{tikzpicture}"
 
     with open("./avg_times_sample.tikz", "w") as file:
+        file.write(tikz)
+
+
+def sample_regrets_from_file_to_tikz():
+    configs = [
+        {"label": "$\\hat q^{\\text{Z}}$", "color": "blue"},
+        {"label": "$\\hat q^{\\text{C}}$", "color": "red"},
+        {"label": "$\\hat q^{\\text{L}}$", "color": "{rgb,255:red,0; green,128; blue,0}"},
+        {"label": "$\\hat q^{\\text{RL}}$", "color": "orange"},
+        {"label": "$\\hat q^{\\text{ML}}$", "color": "black"}
+    ]
+    with open("./avg_times_sample.json", "r") as file:
+        avg_times = json.load(file)
+    tikz = """\\begin{tikzpicture}
+    \\begin{axis}[
+        xlabel={Total Inflow $\\sum_i \\bar u_i$},
+        ylabel={Regret $T^{\\text{avg}}_i / T^{\\text{avg}}_{i,\\text{OPT}}$},
+        legend entries={
+    """
+    for c in configs:
+        tikz += c["label"] + ",\n"
+    tikz += """},
+        legend pos=south east,
+    ]
+    """
+
+    for c, values in enumerate(avg_times):
+        if c == len(avg_times) -1:
+            break
+        tikz += "\n\\addplot[color=" + configs[c]["color"]
+        if "dashed" in configs[c]:
+            tikz += ", dashed"
+        tikz += "]\n  coordinates { \n"
+
+        for i, y in enumerate(values):
+            x = (i + 1) * 0.25
+            tikz += f"({x}, {y / avg_times[-1][i]})"
+
+        tikz += "\n};\n"
+
+    tikz += "\\end{axis}\n\\end{tikzpicture}"
+
+    with open("./regrets_sample.tikz", "w") as file:
         file.write(tikz)
 
 
