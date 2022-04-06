@@ -19,46 +19,57 @@ const babelLoader = {
  * Base configuration for the CLI, core, and examples.
  */
 
-module.exports = {
-  mode: "development",
-  entry: './src/index.js', // Default for boilerplate generation.
-  output: {
-    path: path.resolve('dist'),
-    filename: 'deck.js'
-  },
-  devtool: 'source-map',
-  module: {
-    // Not we use `require.resolve` to make sure to use the loader installed
-    // within _this_ project's `node_modules` traversal tree.
-    rules: [
-      {
-        test: /\.jsx?$/,
-        use: [babelLoader]
-      },
-      // `.md` files are processed as pure text.
-      {
-        test: /\.md$/,
-        use: [require.resolve('raw-loader')]
-      },
-      // `.mdx` files go through babel and our mdx transforming loader.
-      {
-        test: /\.mdx$/,
-        use: [babelLoader, require.resolve('spectacle-mdx-loader')]
-      },
-      {
-        test: /\.(png|svg|jpg|gif)$/,
-        use: [require.resolve('file-loader')]
-      },
-    ]
-  },
-  // Default for boilerplate generation.
-  plugins: [
-    new HtmlWebpackPlugin({
-      title: 'Machine-Learned Prediction Equilibrium for Dynamic Traffic Assignment',
-      template: './src/index.html'
-    })
-  ],
-  resolve: {
-    fallback:  { "util": false, "assert": false }
+module.exports = (env) => {
+  let entry = './src/index.js'
+  let bundleOutputFilename = 'deck.js'
+  let htmlOutputFilename = 'index.html'
+  if (env.poster) {
+    entry = './src/poster.js'
+    bundleOutputFilename = 'poster.js'
+    htmlOutputFilename = 'poster.html'
+  }
+  return {
+    mode: "development",
+    entry, // Default for boilerplate generation.
+    output: {
+      path: path.resolve('dist'),
+      filename: bundleOutputFilename
+    },
+    devtool: 'source-map',
+    module: {
+      // Not we use `require.resolve` to make sure to use the loader installed
+      // within _this_ project's `node_modules` traversal tree.
+      rules: [
+        {
+          test: /\.jsx?$/,
+          use: [babelLoader]
+        },
+        // `.md` files are processed as pure text.
+        {
+          test: /\.md$/,
+          use: [require.resolve('raw-loader')]
+        },
+        // `.mdx` files go through babel and our mdx transforming loader.
+        {
+          test: /\.mdx$/,
+          use: [babelLoader, require.resolve('spectacle-mdx-loader')]
+        },
+        {
+          test: /\.(png|svg|jpg|gif)$/,
+          use: [require.resolve('file-loader')]
+        },
+      ]
+    },
+    // Default for boilerplate generation.
+    plugins: [
+      new HtmlWebpackPlugin({
+        title: 'Machine-Learned Prediction Equilibrium for Dynamic Traffic Assignment',
+        template: './src/index.html',
+        filename: htmlOutputFilename
+      })
+    ],
+    resolve: {
+      fallback: { "util": false, "assert": false }
+    }
   }
 };
