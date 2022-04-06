@@ -12,7 +12,7 @@ jobs:
           npm ci
           npm run build
           npm run build:poster
-        working-directory: slides
+        working-directory: visualization
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.2.2
         with:
