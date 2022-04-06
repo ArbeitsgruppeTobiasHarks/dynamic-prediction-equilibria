@@ -21,13 +21,9 @@ const babelLoader = {
 
 module.exports = (env) => {
   let entry = './src/index.js'
-  let bundleOutputFilename = 'deck.js'
+  let bundleOutputFilename = 'main.js'
   let htmlOutputFilename = 'index.html'
-  if (env.poster) {
-    entry = './src/poster.js'
-    bundleOutputFilename = 'poster.js'
-    htmlOutputFilename = 'poster.html'
-  }
+
   return {
     mode: "development",
     entry, // Default for boilerplate generation.
@@ -67,7 +63,7 @@ module.exports = (env) => {
     // Default for boilerplate generation.
     plugins: [
       new HtmlWebpackPlugin({
-        title: 'Machine-Learned Prediction Equilibrium for Dynamic Traffic Assignment',
+        title: 'Dynamic Flow Visualization',
         template: './src/index.html',
         filename: htmlOutputFilename
       })
