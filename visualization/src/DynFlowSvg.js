@@ -115,14 +115,14 @@ export const BaseEdge = ({ svgIdPrefix, transitTime, visible, from, to, offset, 
     const edgeStart = [from[0] + pad[0], from[1] + pad[1]]
     const deg = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI
     //return <path d={`M${start[0]},${start[1]}L${end[0]},${end[1]}`} />
-    const scaledNorm = norm - 2 * padding - arrowHeadWidth
-    const scale = scaledNorm / norm
+    const normOffsetted = norm - 2 * padding - arrowHeadWidth
+    const scale = normOffsetted / norm
 
     return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
-        <path strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + scaledNorm, edgeStart[1] - width) + d.l(arrowHeadWidth, width) + d.l(-arrowHeadWidth, width) + d.z} />
+        <path strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + normOffsetted, edgeStart[1] - width) + d.l(arrowHeadWidth, width) + d.l(-arrowHeadWidth, width) + d.z} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
-            width={scaledNorm} height={width} fill="white" stroke="none"
+            width={normOffsetted} height={width} fill="white" stroke="none"
         />
         {
             inEdgeSteps.map(({ start, end, values }, index1) => {
@@ -134,7 +134,7 @@ export const BaseEdge = ({ svgIdPrefix, transitTime, visible, from, to, offset, 
                     return (
                         <rect
                             key={`${index1}-${index2}`}
-                            fill={color} x={edgeStart[0] + scaledNorm - scale * end /transitTime} y={myY} width={(end - start) * scale/transitTime} height={value * flowScale} />
+                            fill={color} x={edgeStart[0] + normOffsetted - end / transitTime * normOffsetted} y={myY} width={(end - start) / transitTime * normOffsetted} height={value * flowScale} />
                     )
                 })
             }).flat()
@@ -155,7 +155,7 @@ export const BaseEdge = ({ svgIdPrefix, transitTime, visible, from, to, offset, 
             fill="none" d={d.M(...edgeStart) + d.c(-width / 2, 0, -width / 2, 0, -width / 2, -width)} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
-            width={scaledNorm} height={width} stroke="black" strokeWidth={strokeWidth} fill="none"
+            width={normOffsetted} height={width} stroke="black" strokeWidth={strokeWidth} fill="none"
         />
     </g>
 }
