@@ -1,7 +1,7 @@
 import json
 
 from core.predictors.predictor_type import PredictorType
-from eval.evaluate import evaluate_single_run
+from eval.evaluate import COLORS, evaluate_single_run
 from test.sample_network import build_sample_network
 from utilities.right_constant import RightConstant
 
@@ -174,6 +174,10 @@ def compute_sample_flow_for_visualization():
                         "transitTime": network.travel_time[id]
                     }
                     for (id, e) in enumerate(network.graph.edges)
+                ],
+                "commodities": [
+                    { "id": id, "color": COLORS[comm.predictor_type] }
+                    for (id, comm) in enumerate(network.commodities)
                 ]
             },
             "flow": {

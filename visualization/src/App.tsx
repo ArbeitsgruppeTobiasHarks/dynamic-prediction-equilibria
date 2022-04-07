@@ -113,7 +113,7 @@ export const SvgContent = (
 ) => {
     const svgIdPrefix = ""
     const outflowSteps = React.useMemo(
-        () => flow.outflow.map((outflow: any) => calcOutflowSteps(outflow, ['#a00', '#0a0'])),
+        () => flow.outflow.map((outflow: any) => calcOutflowSteps(outflow, network.commoditiesMap)),
         [flow]
     )
     return <>

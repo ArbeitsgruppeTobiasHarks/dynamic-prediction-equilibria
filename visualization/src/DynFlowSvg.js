@@ -25,7 +25,7 @@ export const FlowModelSvg = () => {
     </svg>
 }
 
-export const calcOutflowSteps = (outflow, colors) => {
+export const calcOutflowSteps = (outflow, commodities) => {
     const outflowTimes = merge(outflow.map(pwConstant => pwConstant.times))
     // Every two subsequent values in outflowTimes corresponds to a flow step.
     const flowSteps = []
@@ -35,7 +35,7 @@ export const calcOutflowSteps = (outflow, colors) => {
         const end = outflowTimes[i + 1]
         const values = []
         for (let c = 0; c < outflow.length; c++) {
-            values.push({ color: colors[c], value: outflow[c].eval(start) })
+            values.push({ color: commodities[c].color, value: outflow[c].eval(start) })
         }
         flowSteps.push({ start, end, values })
     }

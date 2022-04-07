@@ -17,7 +17,7 @@ export const network = new Network([
     { id: 2, from: "s", to: "v3", capacity: 20, transitTime: 200 },
     { id: 3, from: "v3", to: "v4", capacity: 20, transitTime: 400 },
     { id: 4, from: "v4", to: "t", capacity: 20, transitTime: 200 }
-])
+], [{ id: 0, color: "red" }])
 
 export const flow = Flow.fromJson(example3FlowData)
 

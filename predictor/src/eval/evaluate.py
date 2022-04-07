@@ -19,6 +19,14 @@ from utilities.build_with_times import build_with_times
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
 
+COLORS = {
+    PredictorType.ZERO: "blue",
+    PredictorType.CONSTANT: "red",
+    PredictorType.LINEAR: "green",
+    PredictorType.REGULARIZED_LINEAR: "orange",
+    PredictorType.MACHINE_LEARNING: "black",
+}
+
 
 def _build_default_predictors(network: Network) -> Dict[PredictorType, Predictor]:
     prediction_horizon = 10.
