@@ -138,8 +138,8 @@ def sample_regrets_from_file_to_tikz():
 
 def compute_sample_flow_for_visualization():
     demand = 2.5
-    inflow_horizon = 25.
-    reroute_interval = 0.25
+    inflow_horizon = 10.
+    reroute_interval = 1 / 64
     horizon = 500.
     network = build_sample_network()
     net_inflow = RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf')))
