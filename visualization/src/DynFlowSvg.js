@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import TeX from '@matejmazur/react-katex'
 
 const RED = '#a00'
@@ -104,9 +104,10 @@ export const SvgDefs = ({ svgIdPrefix }) => (<>
 </>
 )
 
-export const BaseEdge = ({ svgIdPrefix, visible, from, to, width = 10, inEdgeSteps = [], queueSteps = [] }) => {
-    const padding = 40
-    const arrowHeadWidth = 10
+export const BaseEdge = ({ svgIdPrefix, transitTime, visible, from, to, offset, strokeWidth, flowScale, capacity, inEdgeSteps = [], queueSteps = [] }) => {
+    const width = flowScale * capacity
+    const padding = offset
+    const arrowHeadWidth = offset / 2
     const delta = [to[0] - from[0], to[1] - from[1]]
     const norm = Math.sqrt(delta[0] ** 2 + delta[1] ** 2)
     // start = from + (to - from)/|to - from| * 30
@@ -118,19 +119,23 @@ export const BaseEdge = ({ svgIdPrefix, visible, from, to, width = 10, inEdgeSte
     const scale = scaledNorm / norm
 
     return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
-        <path stroke="black" fill="lightgray" d={d.M(edgeStart[0] + scaledNorm, edgeStart[1] - width) + d.l(arrowHeadWidth, width) + d.l(-arrowHeadWidth, width) + d.z} />
+        <path strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + scaledNorm, edgeStart[1] - width) + d.l(arrowHeadWidth, width) + d.l(-arrowHeadWidth, width) + d.z} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
             width={scaledNorm} height={width} fill="white" stroke="none"
         />
         {
             inEdgeSteps.map(({ start, end, values }, index1) => {
-                const s = values.reduce((acc, { value }) => acc + value, 0)
+                const s = values.reduce((acc, { value }) => acc + value, 0) * flowScale
                 let y = edgeStart[1] - s / 2
                 return values.map(({ color, value }, index2) => {
                     const myY = y
-                    y += value
-                    return <rect key={`${index1}-${index2}`} fill={color} x={edgeStart[0] + scaledNorm - scale * end} y={myY} width={(end - start) * scale} height={value} />
+                    y += value * flowScale
+                    return (
+                        <rect
+                            key={`${index1}-${index2}`}
+                            fill={color} x={edgeStart[0] + scaledNorm - scale * end /transitTime} y={myY} width={(end - start) * scale/transitTime} height={value * flowScale} />
+                    )
                 })
             }).flat()
         }
@@ -140,34 +145,46 @@ export const BaseEdge = ({ svgIdPrefix, visible, from, to, width = 10, inEdgeSte
                     let x = edgeStart[0] - width
                     return values.slice(0).reverse().map(({ color, value }, index2) => {
                         const myX = x
-                        x += value
-                        return <rect key={`${index1}-${index2}`} fill={color} x={myX} y={edgeStart[1] - width + start * scale} width={value} height={(end - start) * scale} />
+                        x += value * flowScale
+                        return <rect key={`${index1}-${index2}`} fill={color} x={myX} y={edgeStart[1] - width + start * scale} width={value * flowScale} height={(end - start) * scale} />
                     })
                 }).flat()
             }
         </g>
-        <path stroke="gray" style={{ transition: "opacity 0.2s" }} opacity={queueSteps.length > 0 ? 1 : 0}
+        <path stroke="gray" strokeWidth={strokeWidth} style={{ transition: "opacity 0.2s" }} opacity={queueSteps.length > 0 ? 1 : 0}
             fill="none" d={d.M(...edgeStart) + d.c(-width / 2, 0, -width / 2, 0, -width / 2, -width)} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
-            width={scaledNorm} height={width} stroke="black" fill="none"
+            width={scaledNorm} height={width} stroke="black" strokeWidth={strokeWidth} fill="none"
         />
     </g>
 }
 
 
-export const FlowEdge = ({ svgIdPrefix, from, to, outflowSteps, queue, t, capacity, transitTime, visible = true }) => {
+export const FlowEdge = ({ flowScale, strokeWidth, svgIdPrefix, from, to, outflowSteps, queue, t, capacity, transitTime, visible = true, offset }) => {
     const { inEdgeSteps, queueSteps } = splitOutflowSteps(outflowSteps, queue, transitTime, capacity, t)
 
-    return <BaseEdge svgIdPrefix={svgIdPrefix} visible={visible} from={from} to={to} width={capacity} inEdgeSteps={inEdgeSteps} queueSteps={queueSteps} />
+    return (
+        <BaseEdge
+            strokeWidth={strokeWidth}
+            offset={offset}
+            svgIdPrefix={svgIdPrefix}
+            visible={visible}
+            from={from}
+            to={to}
+            transitTime={transitTime}
+            flowScale={flowScale}
+            capacity={capacity}
+            inEdgeSteps={inEdgeSteps}
+            queueSteps={queueSteps} />
+    )
 }
 
 
-export const Vertex = ({ label, pos, visible = true }) => {
-    const radius = 20
+export const Vertex = ({ label, pos, visible = true, radius = 1, strokeWidth = 0.05 }) => {
     const [cx, cy] = pos
     return <g style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
-        <circle cx={cx} cy={cy} r={radius} stroke="black" fill="white" />
+        <circle cx={cx} cy={cy} r={radius} stroke="black" strokeWidth={strokeWidth} fill="white" />
         {label ? (<ForeignObjectLabel cx={cx} cy={cy}>{label}</ForeignObjectLabel>) : null}
     </g>
 }

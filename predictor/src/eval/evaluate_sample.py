@@ -136,5 +136,52 @@ def sample_regrets_from_file_to_tikz():
         file.write(tikz)
 
 
+def compute_sample_flow_for_visualization():
+    demand = 2.5
+    inflow_horizon = 25.
+    reroute_interval = 0.25
+    horizon = 500.
+    network = build_sample_network()
+    net_inflow = RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf')))
+    network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
+    times, comp_time, flow = evaluate_single_run(
+        network,
+        flow_id=None,
+        focused_commodity=0,
+        split=True,
+        horizon=horizon,
+        reroute_interval=reroute_interval,
+        suppress_log=True,
+        inflow_horizon=inflow_horizon,
+        output_folder=None
+    )
+    print(f"Calculated for demand={demand}. times={times}")
+    
+    with open("./visualization/src/sampleFlowData.js", "w") as file:
+        file.write("export default ")
+        json.dump({
+            "network": {
+                "nodes": [
+                    { "id": id, "x": network.graph.positions[id][0], "y": network.graph.positions[id][1]  }
+                    for (id, v) in network.graph.nodes.items()
+                ],
+                "edges": [
+                    { 
+                        "id": id,
+                        "from": e.node_from.id,
+                        "to": e.node_to.id,
+                        "capacity": network.capacity[id],
+                        "transitTime": network.travel_time[id]
+                    }
+                    for (id, e) in enumerate(network.graph.edges)
+                ]
+            },
+            "flow": {
+                "inflow": flow.inflow,
+                "outflow": flow.outflow,
+                "queues": flow.queues
+            }}, file, default=vars)
+
 if __name__ == '__main__':
-    eval_sample()
+    compute_sample_flow_for_visualization()
+

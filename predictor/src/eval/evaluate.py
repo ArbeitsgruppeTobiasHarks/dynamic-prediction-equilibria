@@ -70,7 +70,6 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             flow = pickle.load(file)
         flow._network = network
     else:
-        distributor = UniformDistributor(network)
         flow_builder = MultiComFlowBuilder(network, predictors, reroute_interval)
         flow, elapsed = build_with_times(flow_builder, flow_id, reroute_interval, horizon, new_commodities, suppress_log)
 
@@ -132,4 +131,4 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
     if json_path is not None:
         with open(json_path, "w") as file:
             json.dump(save_dict, file)
-    return travel_times, elapsed
+    return travel_times, elapsed, flow

@@ -1,7 +1,4 @@
-import TeX from '@matejmazur/react-katex'
-import { calcOutflowSteps, FlowEdge, SvgDefs, Vertex } from "./DynFlowSvg";
 import { Flow } from "./Flow";
-import * as React from 'react'
 import * as _ from 'lodash'
 
 import example3FlowData from "./example3FlowData.js"

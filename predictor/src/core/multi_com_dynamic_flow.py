@@ -61,11 +61,10 @@ class MultiComPartialDynamicFlow:
         This is a representation of a flow with right-constant edge inflow rates on intervals.
     """
 
-    # We use List for fast extensions
     phi: float
     inflow: List[List[RightConstant]]  # inflow[e][i] is the function fᵢₑ⁺
     outflow: List[List[RightConstant]]  # outflow[e][i] is the function fᵢₑ⁻
-    queues: List[PiecewiseLinear]  # queue[e] is the queue length at e
+    queues: List[PiecewiseLinear]  # queues[e] is the queue length at e
     outflow_changes: PriorityQueue[Tuple[int, float]]  # A priority queue with times where some edge outflow changes
     depletions: DepletionQueue  # A priority queue with events where queues deplete
     _network: Network

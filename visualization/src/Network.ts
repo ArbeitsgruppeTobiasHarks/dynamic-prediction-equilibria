@@ -16,6 +16,10 @@ export class Network {
             return acc
         }, {})
     }
+
+    static fromJson(json: any) {
+        return new Network(json.nodes, json.edges)
+    }
 }
 
 export interface NetNode {

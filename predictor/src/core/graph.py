@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 
 class Edge:
@@ -71,11 +71,13 @@ class DirectedGraph:
     edges: List[Edge]
     nodes: Dict[int, Node]
     reversed: bool
+    positions: Dict[int, Tuple[float, float]]
 
     def __init__(self):
         self.edges = []
         self.nodes = {}
         self.reversed = False
+        self.positions = {}
 
     def __setstate__(self, state):
         self.reversed = state["reversed"]
