@@ -1,4 +1,4 @@
-import { Alignment, Button, ButtonGroup, Icon, Navbar, NavbarGroup, NavbarHeading, Slider } from "@blueprintjs/core"
+import { Alignment, Button, ButtonGroup, Card, Icon, Navbar, NavbarGroup, NavbarHeading, Slider } from "@blueprintjs/core"
 import * as React from "react"
 import { ReactNode, useRef } from "react"
 import TeX from '@matejmazur/react-katex'
@@ -65,8 +65,22 @@ const useAverageCapacity = (network: Network) => React.useMemo(
     }, [network]
 )
 
+const FPS = 30
+
 const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     const [t, setT] = React.useState(0)
+    const [autoplay, setAutoplay] = React.useState(false)
+    const [minT, maxT] = useMinMaxTime(flow)
+    const [autoplaySpeed, setAutoplaySpeed] = React.useState((maxT - minT) / 60)
+    React.useEffect(() => {
+        if (!autoplay ||autoplaySpeed === 0) {
+            return
+        }
+        const interval = setInterval(() => {
+            setT(t => Math.min(maxT, t + autoplaySpeed / FPS))
+        }, 1000 / FPS)
+        return () => clearInterval(interval)
+    }, [autoplay, autoplaySpeed, maxT])
     const [nodeScale, setNodeScale] = React.useState(0.1)
     const avgEdgeDistance = useAverageEdgeDistance(network)
     const avgCapacity = useAverageCapacity(network)
@@ -81,23 +95,35 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     const strokeWidth = 0.05 * nodeRadius
     const edgeOffset = (nodeScale + 0.1) * avgEdgeDistance
     // nodeScale * avgEdgeLength is the radius of a node
-    const [minT, maxT] = useMinMaxTime(flow)
     const svgContainerRef = useRef(null);
     const [width, height] = useSize(svgContainerRef);
     const bb = useInitialBoundingBox(network, flow)
     return <>
-        <div style={{ display: 'flex', padding: '16px', alignItems: 'center', overflow: 'hidden' }}>
-            <Icon icon={'time'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Time:</div> 
-            <Slider onChange={(value) => setT(value)} value={t} min={minT} max={maxT} labelStepSize={(maxT - minT) / 10} stepSize={(maxT-minT)/400} labelPrecision={2} />
-        </div>
-        <div style={{ display: 'flex', padding: '16px', alignItems: 'center', overflow: 'hidden' }}>
-            <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Node-Scale:</div> 
-            <Slider onChange={(value) => setNodeScale(value)} value={nodeScale} min={0} max={0.5} stepSize={0.01} labelStepSize={1 / 10} />
-        </div>
-        <div style={{ display: 'flex', padding: '16px', alignItems: 'center', overflow: 'hidden' }}>
-            <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Flow-Scale:</div> 
-            <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10*initialFlowScale} stepSize={initialFlowScale/100} labelPrecision={2}/>
-        </div>
+        <Card>
+            <h5>View Options</h5>
+            <div style={{ display: 'flex', padding: '8px', alignItems: 'center', overflow: 'hidden' }}>
+                <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Node-Scale:</div> 
+                <Slider onChange={(value) => setNodeScale(value)} value={nodeScale} min={0} max={0.5} stepSize={0.01} labelStepSize={1 / 10} />
+            </div>
+            <div style={{ display: 'flex', padding: '8px', alignItems: 'center', overflow: 'hidden' }}>
+                <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Edge-Scale:</div> 
+                <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10*initialFlowScale} stepSize={initialFlowScale/100} labelPrecision={2}/>
+            </div>
+        </Card>
+        <Card>
+            <h5>Time Options</h5>
+            <div style={{ display: 'flex', padding: '8px', alignItems: 'center', overflow: 'hidden' }}>
+                <Icon icon={'time'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Time:</div> 
+                <Slider onChange={(value) => setT(value)} value={t} min={minT} max={maxT} labelStepSize={(maxT - minT) / 10} stepSize={(maxT-minT)/400} labelPrecision={2} />
+            </div>
+            <div style={{ display: 'flex', padding: '8px', alignItems: 'center', overflow: 'hidden' }}>
+            <Icon icon={'play'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Autoplay:</div>
+                <Button icon={autoplay ? 'pause' : 'play'} onClick={() => setAutoplay(v => !v)} />
+                <div style={{padding: '16px', flex: 1, display: 'flex', alignItems: 'center', textAlign: 'center'}}>Speed:<br />(time units per second): <div style={{padding: '16px', flex: 1}}>
+                    <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} />
+                </div> </div>
+            </div>
+        </Card>
         <div style={{flex: 1, position: "relative", overflow: "hidden"}} ref={svgContainerRef}>
             <svg width={width} height={height} viewBox={`${bb.x0 - bb.width} ${bb.y0 - bb.height} ${3*bb.width} ${3*bb.height}`} style={{position: "absolute", top:"0", left: "0", background: "#eee"}}>
                 <SvgContent flowScale={flowScale} nodeRadius={nodeRadius} strokeWidth={strokeWidth} edgeOffset={edgeOffset}  t={t} network={network} flow={flow} />
