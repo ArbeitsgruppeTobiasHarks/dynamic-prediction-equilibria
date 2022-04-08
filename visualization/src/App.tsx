@@ -1,6 +1,6 @@
 import { Alignment, Button, ButtonGroup, Card, FileInput, Icon, Navbar, NavbarGroup, NavbarHeading, Slider } from "@blueprintjs/core"
 import * as React from "react"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import TeX from '@matejmazur/react-katex'
 
 import styled from 'styled-components'
@@ -85,10 +85,10 @@ const useAverageCapacity = (network: Network) => React.useMemo(
 const FPS = 30
 
 const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
-    const [t, setT] = React.useState(0)
-    const [autoplay, setAutoplay] = React.useState(false)
+    const [t, setT] = useState(0)
+    const [autoplay, setAutoplay] = useState(false)
     const [minT, maxT] = useMinMaxTime(props.flow)
-    const [autoplaySpeed, setAutoplaySpeed] = React.useState((maxT - minT) / 60)
+    const [autoplaySpeed, setAutoplaySpeed] = useState((maxT - minT) / 60)
     React.useEffect(() => {
         if (!autoplay || autoplaySpeed === 0) {
             return
@@ -106,9 +106,22 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     // avgEdgeWidth = ratesScale * avgCapacity
     // => ratesScale = avgEdgeWidth/avgCapacity = avgEdgeDistance / (10 * avgCapacity)
     const initialFlowScale = avgEdgeDistance / (10 * avgCapacity)
-    const [flowScale, setFlowScale] = React.useState(initialFlowScale)
+    const [flowScale, setFlowScale] = useState(initialFlowScale)
     const avgDistanceTransitTimeRatio = useAvgDistanceTransitTimeRatio(props.network)
-    const [waitingTimeScale, setWaitingTimeScale] = React.useState(avgDistanceTransitTimeRatio)
+    const [waitingTimeScale, setWaitingTimeScale] = useState(avgDistanceTransitTimeRatio)
+
+    // Reset parameters when props change
+    useEffect(
+        () => {
+            setAutoplay(false)
+            setAutoplaySpeed((maxT - minT) / 60)
+            setT(0)
+            setNodeScale(0.1)
+            setFlowScale(initialFlowScale)
+            setWaitingTimeScale(avgDistanceTransitTimeRatio)
+        },
+        [props.network, props.flow]
+    )
 
     const nodeRadius = nodeScale * avgEdgeDistance
     const strokeWidth = 0.05 * nodeRadius
@@ -118,40 +131,43 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     const [width, height] = useSize(svgContainerRef);
     const bb = useInitialBoundingBox(props.network, props.flow)
     return <>
-        <Card>
-            <h5>View Options</h5>
-            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Node-Scale:</div>
-                <Slider onChange={(value) => setNodeScale(value)} value={nodeScale} min={0} max={0.5} stepSize={0.01} labelStepSize={1 / 10} />
-            </div>
-            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Scale:</div>
-                <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10 * initialFlowScale} stepSize={initialFlowScale / 100} labelPrecision={2} />
-            </div>
-            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
-                <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={1 / 100} labelPrecision={2} />
-            </div>
-        </Card>
-        <Card>
-            <h5>Time Options</h5>
-            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                <Icon icon={'time'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Time:</div>
-                <Slider onChange={(value) => setT(value)} value={t} min={minT} max={maxT} labelStepSize={(maxT - minT) / 10} stepSize={(maxT - minT) / 400} labelPrecision={2} />
-            </div>
-            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                <Icon icon={'play'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Autoplay:</div>
-                <Button icon={autoplay ? 'pause' : 'play'} onClick={() => setAutoplay(v => !v)} />
-                <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', padding: "0px 16px" }}>Speed:<br />(time units per second):</div>
-                <div style={{ padding: '0px', flex: 1 }}>
-                    <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} labelStepSize={(maxT - minT) / 100} />
+        <div style={{ display: 'flex'}}>
+            <Card style={{ flex: '1' }}>
+                <h5>View Options</h5>
+                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                    <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Node-Scale:</div>
+                    <Slider onChange={(value) => setNodeScale(value)} value={nodeScale} min={0} max={0.5} stepSize={0.01} labelStepSize={1 / 10} />
                 </div>
-            </div>
-        </Card>
+                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                    <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Scale:</div>
+                    <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10 * initialFlowScale} stepSize={initialFlowScale / 100} labelPrecision={2} />
+                </div>
+                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                    <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
+                    <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={1 / 100} labelPrecision={2} />
+                </div>
+            </Card>
+            <Card style={{ flex: '1' }}>
+                <h5>Time Options</h5>
+                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                    <Icon icon={'time'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Time:</div>
+                    <Slider onChange={(value) => setT(value)} value={t} min={minT} max={maxT} labelStepSize={(maxT - minT) / 10} stepSize={(maxT - minT) / 400} labelPrecision={2} />
+                </div>
+                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                    <Icon icon={'play'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Autoplay:</div>
+                    <Button icon={autoplay ? 'pause' : 'play'} onClick={() => setAutoplay(v => !v)} />
+                    <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', padding: "0px 16px" }}>Speed:<br />(time units per second):</div>
+                    <div style={{ padding: '0px', flex: 1 }}>
+                        <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} labelStepSize={(maxT - minT) / 100} />
+                    </div>
+                </div>
+            </Card>
+        </div>
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }} ref={svgContainerRef}>
             <svg width={width} height={height} viewBox={`${bb.x0 - 1.25 * bb.width} ${bb.y0 - 1.25 * bb.height} ${3.5 * bb.width} ${3.5 * bb.height}`}
-                 style={{ position: "absolute", top: "0", left: "0", background: "#eee" }}>
-                <SvgContent waitingTimeScale={waitingTimeScale} flowScale={flowScale} nodeRadius={nodeRadius} strokeWidth={strokeWidth} edgeOffset={edgeOffset} t={t} network={props.network} flow={props.flow} />
+                style={{ position: "absolute", top: "0", left: "0", background: "#eee" }}>
+                <SvgContent waitingTimeScale={waitingTimeScale} flowScale={flowScale} nodeRadius={nodeRadius} strokeWidth={strokeWidth}
+                    edgeOffset={edgeOffset} t={t} network={props.network} flow={props.flow} />
             </svg>
         </div>
     </>
@@ -189,11 +205,37 @@ export const SvgContent = (
 }
 
 
+const FlowFileInput = styled.input`
+    ::file-selector-button {
+        content: "Open Dynamic Flow";
+        border: 2px solid #6c5ce7;
+        padding: .2em .4em;
+        border-radius: .2em;
+        background-color: #a29bfe;
+        transition: 1s;
+      }
+`
+
 
 export default () => {
     const [{ network, flow }, setNetworkAndFlow] = useState({ network: initialNetwork, flow: initialFlow })
 
-    const openFlow = () => { }
+    const fileInputRef = useRef<HTMLInputElement>()
+
+    const openFlow: React.FormEventHandler<HTMLInputElement> = (event: any) => {
+        for (const file of event.target.files) {
+            const reader = new FileReader()
+            reader.addEventListener("load", event => {
+                // @ts-ignore
+                const jsonText: string = reader.result
+                const json = JSON.parse(jsonText)
+                const network = Network.fromJson(json.network)
+                const flow = Flow.fromJson(json.flow)
+                setNetworkAndFlow({ network, flow })
+            })
+            reader.readAsText(file)
+        }
+    }
 
     return <MyContainer>
         <Navbar>
@@ -202,8 +244,8 @@ export default () => {
             </NavbarGroup>
             <NavbarGroup align={Alignment.RIGHT}>
                 <ButtonGroup>
-                    <Icon icon="folder-shared" />
-                    <FileInput  onInputChange={openFlow}>Open Dynamic Flow</FileInput>
+                    <Button icon="folder-shared" intent="primary" onClick={() => fileInputRef.current.click()}>Open Dynamic Flow</Button>
+                    <input style={{display: 'none'}} ref={fileInputRef} type="file" accept=".json" onChange={openFlow} />
                 </ButtonGroup>
             </NavbarGroup>
         </Navbar>
