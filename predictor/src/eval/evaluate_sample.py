@@ -5,6 +5,7 @@ from core.predictors.predictor_type import PredictorType
 from eval.evaluate import COLORS, evaluate_single_run
 from test.sample_network import build_sample_network
 from utilities.right_constant import RightConstant
+from visualization.to_json import to_visualization_json
 
 
 def eval_sample():
@@ -157,34 +158,7 @@ def compute_sample_flow_for_visualization():
         output_folder=None
     )
     print(f"Calculated for demand={demand}. times={times}")
-    
-    with open("./visualization/src/sampleFlowData.json", "w") as file:
-        json.dump({
-            "network": {
-                "nodes": [
-                    { "id": id, "x": network.graph.positions[id][0], "y": network.graph.positions[id][1]  }
-                    for (id, v) in network.graph.nodes.items()
-                ],
-                "edges": [
-                    { 
-                        "id": id,
-                        "from": e.node_from.id,
-                        "to": e.node_to.id,
-                        "capacity": network.capacity[id],
-                        "transitTime": network.travel_time[id]
-                    }
-                    for (id, e) in enumerate(network.graph.edges)
-                ],
-                "commodities": [
-                    { "id": id, "color": COLORS[comm.predictor_type] }
-                    for (id, comm) in enumerate(network.commodities)
-                ]
-            },
-            "flow": {
-                "inflow": flow.inflow,
-                "outflow": flow.outflow,
-                "queues": flow.queues
-            }}, file)
+    to_visualization_json("./visualization/src/sampleFlowData.json", flow, network, COLORS)
 
 if __name__ == '__main__':
     compute_sample_flow_for_visualization()

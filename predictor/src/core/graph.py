@@ -83,6 +83,7 @@ class DirectedGraph:
         self.reversed = state["reversed"]
         self.edges = []
         self.nodes = {}
+        self.positions = state["positions"]
         for [node_from, node_to] in state["edges"]:
             self.add_edge(node_from, node_to)
 
@@ -91,6 +92,7 @@ class DirectedGraph:
             "edges": [
                 [e.node_from.id, e.node_to.id] for e in self.edges
             ],
+            "positions": self.positions,
             "reversed": self.reversed
         }
 

@@ -9,7 +9,7 @@ import { flow as initialFlow, network as initialNetwork } from "./sample"
 import { Network } from "./Network"
 import { Flow } from "./Flow"
 import * as _ from "lodash"
-import { max, min } from "lodash"
+import { initial, max, min } from "lodash"
 import { calcOutflowSteps, FlowEdge, SvgDefs, Vertex } from "./DynFlowSvg"
 
 const MyContainer = styled.div`
@@ -39,8 +39,8 @@ const useAvgDistanceTransitTimeRatio = (network: Network) => React.useMemo(
                 const from = network.nodesMap[edge.from]
                 const to = network.nodesMap[edge.to]
                 const edgeDistance = Math.sqrt((from.x - to.x) ** 2 + (from.y - to.y) ** 2)
-                if (edgeDistance == 0) return null
-                return edge.transitTime / edgeDistance
+                if (edge.transitTime == 0) return null
+                return edgeDistance / edge.transitTime
             }
         ).filter(ratio => typeof ratio === 'number')
         return _.sum(allRatios) / allRatios.length
@@ -110,6 +110,47 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     const avgDistanceTransitTimeRatio = useAvgDistanceTransitTimeRatio(props.network)
     const [waitingTimeScale, setWaitingTimeScale] = useState(avgDistanceTransitTimeRatio)
 
+
+    const nodeRadius = nodeScale * avgEdgeDistance
+    const strokeWidth = 0.05 * nodeRadius
+    const edgeOffset = (nodeScale + 0.1) * avgEdgeDistance
+    // nodeScale * avgEdgeLength is the radius of a node
+    const svgContainerRef = useRef(null);
+    const [width, height] = useSize(svgContainerRef);
+    const bb = useInitialBoundingBox(props.network, props.flow)
+
+    const [manualZoom, setManualZoom] = useState<number | null>(null)
+
+    const initialCenter = [bb.x0 + bb.width / 2, bb.y0 + bb.height / 2]
+
+    const [center, setCenter] = useState(initialCenter)
+    const stdZoom = Math.min(width / bb.width, height / bb.height) / 1.5
+    const zoom = manualZoom == null ? stdZoom : manualZoom
+
+    const [dragMode, setDragMode] = useState(false)
+    const handleMouseDown = (event: any) => {
+        setDragMode(true)
+    }
+    useEffect(
+        () => {
+            if (!dragMode) return
+            const handleMouseMove = (event: MouseEvent) => {
+                const delta = [event.movementX, event.movementY]
+                setCenter(center => [center[0] - delta[0] / zoom / 2, center[1] - delta[1] / zoom / 2])
+            }
+            const handleMouseUp = (event: MouseEvent) => {
+                setDragMode(false)
+            }
+            window.addEventListener("mousemove", handleMouseMove)
+            window.addEventListener("mouseup", handleMouseUp)
+            return () => {
+                window.removeEventListener("mousemove", handleMouseMove)
+                window.removeEventListener("mouseup", handleMouseUp)
+            }
+        },
+        [dragMode]
+    )
+
     // Reset parameters when props change
     useEffect(
         () => {
@@ -119,19 +160,28 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
             setNodeScale(0.1)
             setFlowScale(initialFlowScale)
             setWaitingTimeScale(avgDistanceTransitTimeRatio)
+            setManualZoom(null)
+            setCenter(initialCenter)
         },
         [props.network, props.flow]
     )
 
-    const nodeRadius = nodeScale * avgEdgeDistance
-    const strokeWidth = 0.05 * nodeRadius
-    const edgeOffset = (nodeScale + 0.1) * avgEdgeDistance
-    // nodeScale * avgEdgeLength is the radius of a node
-    const svgContainerRef = useRef(null);
-    const [width, height] = useSize(svgContainerRef);
-    const bb = useInitialBoundingBox(props.network, props.flow)
+    const onResetCamera = () => {
+        setCenter(initialCenter)
+        setManualZoom(null)
+    }
+
+    const viewBox = {
+        x: center[0] - width / zoom / 2,
+        y: center[1] - height / zoom / 2,
+        width: width / zoom,
+        height: height / zoom
+    }
+
+    const viewBoxString = `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`
+
     return <>
-        <div style={{ display: 'flex'}}>
+        <div style={{ display: 'flex' }}>
             <Card style={{ flex: '1' }}>
                 <h5>View Options</h5>
                 <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
@@ -144,7 +194,8 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                 </div>
                 <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
                     <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
-                    <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={1 / 100} labelPrecision={2} />
+                    <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={avgDistanceTransitTimeRatio / 100}
+                        labelPrecision={2} labelStepSize={avgDistanceTransitTimeRatio / 10} />
                 </div>
             </Card>
             <Card style={{ flex: '1' }}>
@@ -164,11 +215,15 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
             </Card>
         </div>
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }} ref={svgContainerRef}>
-            <svg width={width} height={height} viewBox={`${bb.x0 - 1.25 * bb.width} ${bb.y0 - 1.25 * bb.height} ${3.5 * bb.width} ${3.5 * bb.height}`}
+            <svg width={width} height={height} viewBox={viewBoxString}onMouseDown={handleMouseDown}
                 style={{ position: "absolute", top: "0", left: "0", background: "#eee" }}>
                 <SvgContent waitingTimeScale={waitingTimeScale} flowScale={flowScale} nodeRadius={nodeRadius} strokeWidth={strokeWidth}
                     edgeOffset={edgeOffset} t={t} network={props.network} flow={props.flow} />
             </svg>
+            <div style={{ position: "absolute", bottom: 0, right: 0 }}>
+                <div style={{ padding: '8px' }}><Slider value={zoom} min={stdZoom / 2} max={stdZoom * 5} onChange={value => setManualZoom(value)} vertical labelRenderer={false} showTrackFill={false} /></div>
+                <Button icon="reset" onClick={onResetCamera} />
+            </div>
         </div>
     </>
 }
@@ -245,7 +300,7 @@ export default () => {
             <NavbarGroup align={Alignment.RIGHT}>
                 <ButtonGroup>
                     <Button icon="folder-shared" intent="primary" onClick={() => fileInputRef.current.click()}>Open Dynamic Flow</Button>
-                    <input style={{display: 'none'}} ref={fileInputRef} type="file" accept=".json" onChange={openFlow} />
+                    <input style={{ display: 'none' }} ref={fileInputRef} type="file" accept=".json" onChange={openFlow} />
                 </ButtonGroup>
             </NavbarGroup>
         </Navbar>

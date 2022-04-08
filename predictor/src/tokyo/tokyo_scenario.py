@@ -70,8 +70,8 @@ def run_scenario(arcs_path: str, demands_path: str, scenario_dir: str):
 
 if __name__ == "__main__":
     def main():
-        arcs_path = "/mnt/c/Users/Tür an Tür/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.arcs"
-        demands_path = "/mnt/c/Users/Tür an Tür/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.demands"
+        arcs_path = "C:/Users/Michael/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.arcs"
+        demands_path = "C:/Users/Michael/Nextcloud/Universität/2021/softwareproject/data/from-kostas/tokyo_tiny.demands"
         run_scenario(arcs_path, demands_path, "../../out/aaai-tokyo-scenario")
 
 

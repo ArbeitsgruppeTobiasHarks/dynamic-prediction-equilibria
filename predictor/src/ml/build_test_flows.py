@@ -8,8 +8,10 @@ from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.predictor_type import PredictorType
 from core.uniform_distributor import UniformDistributor
+from eval.evaluate import COLORS
 from utilities.build_with_times import build_with_times
 from utilities.right_constant import RightConstant
+from visualization.to_json import to_visualization_json
 
 
 def generate_network_demands(network: Network, random_seed: int, inflow_horizon: float,
@@ -57,6 +59,7 @@ def build_flows(network_path: str, out_directory: str, number_flows: int, horizo
         print(f"Successfully built flow up to time {flow.phi}!")
         with open(flow_path, "wb") as file:
             pickle.dump(flow, file)
+        to_visualization_json(flow_path + ".json", flow, network, COLORS)
         os.remove(lock_path)
         print(f"Successfully written flow to disk!")
         print("\n")

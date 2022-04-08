@@ -14,7 +14,7 @@ from ml.build_test_flows import build_flows
 from ml.generate_queues import expanded_queues_from_flows_per_edge
 
 
-def run_scenario(tntp_path: str, scenario_dir: str):
+def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     network_path = os.path.join(scenario_dir, "network.pickle")
     flows_dir = os.path.join(scenario_dir, "flows")
     expanded_per_edge_dir = os.path.join(scenario_dir, "expanded-queues-per-edge")
@@ -24,12 +24,12 @@ def run_scenario(tntp_path: str, scenario_dir: str):
     demands_range_builder: DemandsRangeBuilder = lambda net: (min(net.capacity), max(net.capacity))
     reroute_interval = 1
     inflow_horizon = 25.
-    horizon = 100
+    horizon = 400
     past_timesteps = 20
     future_timesteps = 20
     pred_horizon = 20.
 
-    network = import_sioux_falls(tntp_path, network_path, inflow_horizon, demands_range_builder)
+    network = import_sioux_falls(edges_tntp_path, nodes_tntp_path, network_path, inflow_horizon, demands_range_builder)
     demands_range = demands_range_builder(network)
     build_flows(network_path, flows_dir, number_flows=50, horizon=horizon, reroute_interval=reroute_interval,
                 demands_range=demands_range)
@@ -73,7 +73,8 @@ def run_scenario(tntp_path: str, scenario_dir: str):
 
 if __name__ == "__main__":
     def main():
-        tntp_path = "/mnt/c/Users/Tür an Tür/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_net.tntp"
-        run_scenario(tntp_path, "../../out/aaai-sioux-falls")
+        edges_tntp_path = "C:/Users/Michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_net.tntp"
+        nodes_tntp_path = "C:/Users/Michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_node.tntp"
+        run_scenario(edges_tntp_path, nodes_tntp_path, "../../out/aaai-sioux-falls")
 
     main()

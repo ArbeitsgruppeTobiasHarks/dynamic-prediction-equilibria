@@ -33,9 +33,9 @@ def _generate_commodities(network: Network, number: int, inflow_horizon: float, 
 DemandsRangeBuilder = Callable[[Network], Tuple[float, float]]
 
 
-def import_sioux_falls(file_path: str, out_file_path: str, inflow_horizon: float,
+def import_sioux_falls(edges_file_path: str, nodes_file_path: str, out_file_path: str, inflow_horizon: float,
                        demands_range_builder: DemandsRangeBuilder) -> Network:
-    net = pd.read_csv(file_path, skiprows=8, sep='\t')
+    net = pd.read_csv(edges_file_path, skiprows=8, sep='\t')
     trimmed = [s.strip().lower() for s in net.columns]
     net.columns = trimmed
     net.drop(['~', ';'], axis=1, inplace=True)
@@ -43,8 +43,20 @@ def import_sioux_falls(file_path: str, out_file_path: str, inflow_horizon: float
     #  columns: init_node, term_node, capacity, length, free_flow_time, b, power, speed, toll, link_type
     for _, e in net.iterrows():
         network.add_edge(e["init_node"], e["term_node"], e["free_flow_time"], e["capacity"])
+    
+    
+    nodes = pd.read_csv(nodes_file_path, sep='\t')
+    trimmed = [s.strip().lower() for s in nodes.columns]
+    nodes.columns = trimmed
+    nodes.drop([';'], axis=1, inplace=True)
+    network.graph.positions = {
+        v["node"]: (v["x"], v["y"])
+        for _, v in nodes.iterrows()
+    }
+
+    
     random.seed(-3)
-    _generate_commodities(network, len(network.graph.nodes) // 2, inflow_horizon, demands_range_builder(network))
+    _generate_commodities(network, 1, inflow_horizon, demands_range_builder(network))
     network.remove_unnecessary_nodes()
     network.print_info()
     os.makedirs(pathlib.Path(out_file_path).parent, exist_ok=True)
