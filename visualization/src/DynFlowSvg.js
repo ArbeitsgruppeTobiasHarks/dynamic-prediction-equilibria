@@ -104,7 +104,7 @@ export const SvgDefs = ({ svgIdPrefix }) => (<>
 </>
 )
 
-export const BaseEdge = ({ svgIdPrefix, transitTime, visible, from, to, offset, strokeWidth, flowScale, capacity, inEdgeSteps = [], queueSteps = [] }) => {
+export const BaseEdge = ({ svgIdPrefix, waitingTimeScale, transitTime, visible, from, to, offset, strokeWidth, flowScale, capacity, inEdgeSteps = [], queueSteps = [] }) => {
     const width = flowScale * capacity
     const padding = offset
     const arrowHeadWidth = offset / 2
@@ -146,7 +146,10 @@ export const BaseEdge = ({ svgIdPrefix, transitTime, visible, from, to, offset, 
                     return values.slice(0).reverse().map(({ color, value }, index2) => {
                         const myX = x
                         x += value * flowScale
-                        return <rect key={`${index1}-${index2}`} fill={color} x={myX} y={edgeStart[1] - width + start * scale} width={value * flowScale} height={(end - start) * scale} />
+                        return (
+                            <rect key={`${index1}-${index2}`} fill={color} x={myX} y={edgeStart[1] - width + start * waitingTimeScale}
+                                width={value * flowScale} height={(end - start) * waitingTimeScale} />
+                        )
                     })
                 }).flat()
             }
@@ -161,13 +164,14 @@ export const BaseEdge = ({ svgIdPrefix, transitTime, visible, from, to, offset, 
 }
 
 
-export const FlowEdge = ({ flowScale, strokeWidth, svgIdPrefix, from, to, outflowSteps, queue, t, capacity, transitTime, visible = true, offset }) => {
+export const FlowEdge = ({ flowScale, waitingTimeScale, strokeWidth, svgIdPrefix, from, to, outflowSteps, queue, t, capacity, transitTime, visible = true, offset }) => {
     const { inEdgeSteps, queueSteps } = splitOutflowSteps(outflowSteps, queue, transitTime, capacity, t)
 
     return (
         <BaseEdge
             strokeWidth={strokeWidth}
             offset={offset}
+            waitingTimeScale={waitingTimeScale}
             svgIdPrefix={svgIdPrefix}
             visible={visible}
             from={from}
@@ -196,32 +200,6 @@ export const ForeignObjectLabel = ({ cx, cy, width = 40, height = 40, children }
         </div>
     </foreignObject>
 )
-
-
-
-export const StopWatch = ({ t, y, x, size }) => {
-    const cx = x + size / 2
-    const cy = y + size / 2
-    return <>
-        <path d={d.M(cx, y) + d.v(-5) + d.h(-3) + d.h(6)} fill="none" stroke="black" strokeWidth={size / 20} />
-        <path transform={`rotate(30 ${cx} ${cy})`} d={d.M(cx, y) + d.v(-3) + d.h(-2) + d.h(4)} fill="none" stroke="black" strokeWidth={size / 20} />
-        <circle cx={cx} cy={cy} r={size / 2} stroke="black" fill="white" />
-        <line transform={`rotate(${0} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${30} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${60} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${90} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${120} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${150} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${180} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${210} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${240} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${270} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${300} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <line transform={`rotate(${330} ${cx} ${cy})`} x1={cx} x2={cx} y1={y} y2={y + size / 10} stroke="gray" />
-        <circle cx={cx} cy={cy} r={size / 15} fill="black" />
-        <line transform={`rotate(${t / 200 * 360} ${cx} ${cy})`} x1={cx} x2={cx} y1={cy} y2={y + size / 6} stroke="black" />
-    </>
-}
 
 export const d = {
     M: (x, y) => `M${x} ${y}`,

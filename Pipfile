@@ -11,6 +11,7 @@ matplotlib = "*"
 dgl = "*"
 torch = "*"
 numpy = "*"
+json-fix = "*"
 
 [dev-packages]
 

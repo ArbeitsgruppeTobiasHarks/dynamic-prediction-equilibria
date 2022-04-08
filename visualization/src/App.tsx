@@ -1,11 +1,11 @@
-import { Alignment, Button, ButtonGroup, Card, Icon, Navbar, NavbarGroup, NavbarHeading, Slider } from "@blueprintjs/core"
+import { Alignment, Button, ButtonGroup, Card, FileInput, Icon, Navbar, NavbarGroup, NavbarHeading, Slider } from "@blueprintjs/core"
 import * as React from "react"
-import { ReactNode, useRef } from "react"
+import { useRef, useState } from "react"
 import TeX from '@matejmazur/react-katex'
 
 import styled from 'styled-components'
 import useSize from '@react-hook/size'
-import { flow, network } from "./sample"
+import { flow as initialFlow, network as initialNetwork } from "./example3"
 import { Network } from "./Network"
 import { Flow } from "./Flow"
 import * as _ from "lodash"
@@ -25,11 +25,28 @@ const useMinMaxTime = (flow: Flow) => React.useMemo(
             _.map(flow.inflow.flat(), pwc => pwc.times).flat(),
             _.map(flow.outflow.flat(), pwc => pwc.times).flat(),
             _.map(flow.queues, pwc => pwc.times).flat()
-        ) 
+        )
 
         return [min(allTimes), max(allTimes)]
     }
-, [flow])
+    , [flow])
+
+const useAvgDistanceTransitTimeRatio = (network: Network) => React.useMemo(
+    () => {
+        const allRatios = _.map(
+            network.edgesMap,
+            edge => {
+                const from = network.nodesMap[edge.from]
+                const to = network.nodesMap[edge.to]
+                const edgeDistance = Math.sqrt((from.x - to.x) ** 2 + (from.y - to.y) ** 2)
+                if (edgeDistance == 0) return null
+                return edge.transitTime / edgeDistance
+            }
+        ).filter(ratio => typeof ratio === 'number')
+        return _.sum(allRatios) / allRatios.length
+    },
+    [network]
+)
 
 const useInitialBoundingBox = (network: Network, flow: Flow) => React.useMemo(
     () => {
@@ -52,7 +69,7 @@ const useAverageEdgeDistance = (network: Network) => React.useMemo(
             const from = network.nodesMap[edge.from]
             const to = network.nodesMap[edge.to]
 
-            return Math.sqrt((from.x - to.x)**2 + (from.y - to.y)**2)
+            return Math.sqrt((from.x - to.x) ** 2 + (from.y - to.y) ** 2)
         })
         return _.sum(distances) / distances.length
     }, [network]
@@ -70,10 +87,10 @@ const FPS = 30
 const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     const [t, setT] = React.useState(0)
     const [autoplay, setAutoplay] = React.useState(false)
-    const [minT, maxT] = useMinMaxTime(flow)
+    const [minT, maxT] = useMinMaxTime(props.flow)
     const [autoplaySpeed, setAutoplaySpeed] = React.useState((maxT - minT) / 60)
     React.useEffect(() => {
-        if (!autoplay ||autoplaySpeed === 0) {
+        if (!autoplay || autoplaySpeed === 0) {
             return
         }
         const interval = setInterval(() => {
@@ -82,14 +99,16 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
         return () => clearInterval(interval)
     }, [autoplay, autoplaySpeed, maxT])
     const [nodeScale, setNodeScale] = React.useState(0.1)
-    const avgEdgeDistance = useAverageEdgeDistance(network)
-    const avgCapacity = useAverageCapacity(network)
+    const avgEdgeDistance = useAverageEdgeDistance(props.network)
+    const avgCapacity = useAverageCapacity(props.network)
 
     // avgEdgeWidth / avgEdgeDistance !=! 1/2
     // avgEdgeWidth = ratesScale * avgCapacity
     // => ratesScale = avgEdgeWidth/avgCapacity = avgEdgeDistance / (10 * avgCapacity)
-    const initialFlowScale = avgEdgeDistance / (10* avgCapacity)
+    const initialFlowScale = avgEdgeDistance / (10 * avgCapacity)
     const [flowScale, setFlowScale] = React.useState(initialFlowScale)
+    const avgDistanceTransitTimeRatio = useAvgDistanceTransitTimeRatio(props.network)
+    const [waitingTimeScale, setWaitingTimeScale] = React.useState(avgDistanceTransitTimeRatio)
 
     const nodeRadius = nodeScale * avgEdgeDistance
     const strokeWidth = 0.05 * nodeRadius
@@ -97,36 +116,42 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     // nodeScale * avgEdgeLength is the radius of a node
     const svgContainerRef = useRef(null);
     const [width, height] = useSize(svgContainerRef);
-    const bb = useInitialBoundingBox(network, flow)
+    const bb = useInitialBoundingBox(props.network, props.flow)
     return <>
         <Card>
             <h5>View Options</h5>
-            <div style={{ display: 'flex', padding: '8px', alignItems: 'center', overflow: 'hidden' }}>
-                <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Node-Scale:</div> 
+            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Node-Scale:</div>
                 <Slider onChange={(value) => setNodeScale(value)} value={nodeScale} min={0} max={0.5} stepSize={0.01} labelStepSize={1 / 10} />
             </div>
-            <div style={{ display: 'flex', padding: '8px', alignItems: 'center', overflow: 'hidden' }}>
-                <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Edge-Scale:</div> 
-                <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10*initialFlowScale} stepSize={initialFlowScale/100} labelPrecision={2}/>
+            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Scale:</div>
+                <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10 * initialFlowScale} stepSize={initialFlowScale / 100} labelPrecision={2} />
+            </div>
+            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
+                <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={1 / 100} labelPrecision={2} />
             </div>
         </Card>
         <Card>
             <h5>Time Options</h5>
-            <div style={{ display: 'flex', padding: '8px', alignItems: 'center', overflow: 'hidden' }}>
-                <Icon icon={'time'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Time:</div> 
-                <Slider onChange={(value) => setT(value)} value={t} min={minT} max={maxT} labelStepSize={(maxT - minT) / 10} stepSize={(maxT-minT)/400} labelPrecision={2} />
+            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                <Icon icon={'time'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Time:</div>
+                <Slider onChange={(value) => setT(value)} value={t} min={minT} max={maxT} labelStepSize={(maxT - minT) / 10} stepSize={(maxT - minT) / 400} labelPrecision={2} />
             </div>
-            <div style={{ display: 'flex', padding: '8px', alignItems: 'center', overflow: 'hidden' }}>
-            <Icon icon={'play'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px'}}>Autoplay:</div>
+            <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                <Icon icon={'play'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Autoplay:</div>
                 <Button icon={autoplay ? 'pause' : 'play'} onClick={() => setAutoplay(v => !v)} />
-                <div style={{padding: '16px', flex: 1, display: 'flex', alignItems: 'center', textAlign: 'center'}}>Speed:<br />(time units per second): <div style={{padding: '16px', flex: 1}}>
-                    <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} />
-                </div> </div>
+                <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', padding: "0px 16px" }}>Speed:<br />(time units per second):</div>
+                <div style={{ padding: '0px', flex: 1 }}>
+                    <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} labelStepSize={(maxT - minT) / 100} />
+                </div>
             </div>
         </Card>
-        <div style={{flex: 1, position: "relative", overflow: "hidden"}} ref={svgContainerRef}>
-            <svg width={width} height={height} viewBox={`${bb.x0 - bb.width} ${bb.y0 - bb.height} ${3*bb.width} ${3*bb.height}`} style={{position: "absolute", top:"0", left: "0", background: "#eee"}}>
-                <SvgContent flowScale={flowScale} nodeRadius={nodeRadius} strokeWidth={strokeWidth} edgeOffset={edgeOffset}  t={t} network={network} flow={flow} />
+        <div style={{ flex: 1, position: "relative", overflow: "hidden" }} ref={svgContainerRef}>
+            <svg width={width} height={height} viewBox={`${bb.x0 - 1.25 * bb.width} ${bb.y0 - 1.25 * bb.height} ${3.5 * bb.width} ${3.5 * bb.height}`}
+                 style={{ position: "absolute", top: "0", left: "0", background: "#eee" }}>
+                <SvgContent waitingTimeScale={waitingTimeScale} flowScale={flowScale} nodeRadius={nodeRadius} strokeWidth={strokeWidth} edgeOffset={edgeOffset} t={t} network={props.network} flow={props.flow} />
             </svg>
         </div>
     </>
@@ -134,8 +159,8 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
 
 
 export const SvgContent = (
-    {t = 0, network, flow, nodeRadius, edgeOffset, strokeWidth, flowScale} :
-    {t: number, network: Network, flow: Flow, nodeRadius: number, edgeOffset: number, strokeWidth: number, flowScale: number}
+    { t = 0, network, flow, nodeRadius, edgeOffset, strokeWidth, flowScale, waitingTimeScale }:
+        { t: number, network: Network, flow: Flow, nodeRadius: number, edgeOffset: number, strokeWidth: number, flowScale: number, waitingTimeScale: number }
 ) => {
     const svgIdPrefix = ""
     const outflowSteps = React.useMemo(
@@ -149,7 +174,7 @@ export const SvgContent = (
                 const fromNode = network.nodesMap[value.from]
                 const toNode = network.nodesMap[value.to]
                 return <FlowEdge
-                    strokeWidth={strokeWidth} flowScale={flowScale}
+                    waitingTimeScale={waitingTimeScale} strokeWidth={strokeWidth} flowScale={flowScale}
                     key={id} t={t} capacity={value.capacity} offset={edgeOffset} from={[fromNode.x, fromNode.y]} to={[toNode.x, toNode.y]} svgIdPrefix={svgIdPrefix}
                     outflowSteps={outflowSteps[id]} transitTime={value.transitTime} queue={flow.queues[id]}
                 />
@@ -166,13 +191,20 @@ export const SvgContent = (
 
 
 export default () => {
+    const [{ network, flow }, setNetworkAndFlow] = useState({ network: initialNetwork, flow: initialFlow })
+
+    const openFlow = () => { }
+
     return <MyContainer>
         <Navbar>
             <NavbarGroup>
                 <NavbarHeading>Dynamic Flow Visualization</NavbarHeading>
             </NavbarGroup>
             <NavbarGroup align={Alignment.RIGHT}>
-                <ButtonGroup><Button intent="primary" icon="folder-shared" onClick={() => alert("This button has no function yet.")}>Open Dynamic Flow</Button></ButtonGroup>
+                <ButtonGroup>
+                    <Icon icon="folder-shared" />
+                    <FileInput  onInputChange={openFlow}>Open Dynamic Flow</FileInput>
+                </ButtonGroup>
             </NavbarGroup>
         </Navbar>
         <DynamicFlowViewer network={network} flow={flow} />

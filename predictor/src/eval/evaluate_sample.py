@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from core.predictors.predictor_type import PredictorType
 from eval.evaluate import COLORS, evaluate_single_run
@@ -157,8 +158,7 @@ def compute_sample_flow_for_visualization():
     )
     print(f"Calculated for demand={demand}. times={times}")
     
-    with open("./visualization/src/sampleFlowData.js", "w") as file:
-        file.write("export default ")
+    with open("./visualization/src/sampleFlowData.json", "w") as file:
         json.dump({
             "network": {
                 "nodes": [
@@ -184,7 +184,7 @@ def compute_sample_flow_for_visualization():
                 "inflow": flow.inflow,
                 "outflow": flow.outflow,
                 "queues": flow.queues
-            }}, file, default=vars)
+            }}, file)
 
 if __name__ == '__main__':
     compute_sample_flow_for_visualization()

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from typing import List, Tuple
+import json_fix
 
 from core.machine_precision import eps
 from utilities.arrays import elem_lrank, merge_sorted
 from utilities.piecewise_linear import PiecewiseLinear
+
+json_fix.fix_it()
 
 
 class RightConstant:
@@ -18,6 +21,16 @@ class RightConstant:
     times: List[float]
     values: List[float]
     domain: Tuple[float, float] = (float('-inf'), float('inf'))
+
+    def __json__(self):
+        return {
+            "times": self.times,
+            "values": self.values,
+            "domain": [
+                '-Infinity' if self.domain[0] == float('-inf') else self.domain[0],
+                'Infinity' if self.domain[1] == float('inf') else self.domain[1]
+            ]
+        }
 
     def __init__(self, times: List[float], values: List[float],
                  domain: Tuple[float, float] = (float('-inf'), float('inf'))):
@@ -86,3 +99,5 @@ class RightConstant:
         for i in range(len(times) - 1):
             values[i + 1] = values[i] + self.values[i] * (times[i + 1] - times[i])
         return PiecewiseLinear(times, values, self.values[0], self.values[-1], self.domain)
+
+    

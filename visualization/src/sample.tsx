@@ -1,7 +1,6 @@
 import { Flow } from "./Flow";
-import * as _ from 'lodash'
 
-import sampleData from "./sampleFlowData.js"
+import sampleData from "./sampleFlowData.json"
 import { Network } from './Network';
 
 

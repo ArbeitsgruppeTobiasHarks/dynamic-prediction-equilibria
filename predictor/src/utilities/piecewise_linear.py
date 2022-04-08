@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import List, Tuple, Optional
+import json_fix
 
 from core.machine_precision import eps
 from utilities.arrays import elem_rank, elem_lrank, merge_sorted
 
+json_fix.fix_it()
 
 class PiecewiseLinear:
     times: List[float]
@@ -13,6 +15,18 @@ class PiecewiseLinear:
     domain: Tuple[float, float] = (float('-inf'), float('inf'))
     last_slope: float
     first_slope: float
+
+    def __json__(self):
+        return {
+            "times": self.times,
+            "values": self.values,
+            "domain": [
+                '-Infinity' if self.domain[0] == float('-inf') else self.domain[0],
+                'Infinity' if self.domain[1] == float('inf') else self.domain[1]
+            ],
+            "lastSlope": self.last_slope,
+            "firstSlope": self.first_slope
+        }
 
     def __init__(self, times: List[float], values: List[float], first_slope: float, last_slope: float,
                  domain: Tuple[float, float] = (float('-inf'), float('inf'))):
