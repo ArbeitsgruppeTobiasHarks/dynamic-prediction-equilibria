@@ -5,7 +5,7 @@ import TeX from '@matejmazur/react-katex'
 
 import styled from 'styled-components'
 import useSize from '@react-hook/size'
-import { flow as initialFlow, network as initialNetwork } from "./example3"
+import { flow as initialFlow, network as initialNetwork } from "./sample"
 import { Network } from "./Network"
 import { Flow } from "./Flow"
 import * as _ from "lodash"
