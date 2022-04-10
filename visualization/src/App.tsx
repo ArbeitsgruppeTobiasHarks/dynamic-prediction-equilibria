@@ -128,15 +128,24 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     const zoom = manualZoom == null ? stdZoom : manualZoom
 
     const [dragMode, setDragMode] = useState(false)
-    const handleMouseDown = (event: any) => {
+    const handleMouseDown = () => {
         setDragMode(true)
     }
+
+    const handleWheel: React.WheelEventHandler = (event) => {
+        setManualZoom(Math.max(stdZoom / 2, zoom + 1/32 * stdZoom * event.deltaY))
+    }
+
     useEffect(
         () => {
             if (!dragMode) return
             const handleMouseMove = (event: MouseEvent) => {
+                event.stopPropagation()
+                event.stopImmediatePropagation()
+                event.preventDefault()
                 const delta = [event.movementX, event.movementY]
                 setCenter(center => [center[0] - delta[0] / zoom / 2, center[1] - delta[1] / zoom / 2])
+                return false
             }
             const handleMouseUp = (event: MouseEvent) => {
                 setDragMode(false)
@@ -216,12 +225,12 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
             </Card>
         </div>
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }} ref={svgContainerRef}>
-            <svg width={width} height={height} viewBox={viewBoxString} onMouseDown={handleMouseDown}
-                style={{ position: "absolute", top: "0", left: "0", background: "#eee" }}>
+            <svg width={width} height={height} viewBox={viewBoxString} onMouseDown={handleMouseDown} onWheel={handleWheel}
+                style={{ position: "absolute", top: "0", left: "0", background: "#eee", cursor: "default" }}>
                 <SvgContent waitingTimeScale={waitingTimeScale} flowScale={flowScale} nodeRadius={nodeRadius} strokeWidth={strokeWidth}
                     edgeOffset={edgeOffset} t={t} network={props.network} flow={props.flow} />
             </svg>
-            <div style={{ position: "absolute", bottom: 0, right: 0 }}>
+            <div style={{ position: "absolute", bottom: "16px", right: 0 }}>
                 <div style={{ padding: '8px' }}><Slider value={zoom} min={stdZoom / 2} max={stdZoom * 5} onChange={value => setManualZoom(value)} vertical labelRenderer={false} showTrackFill={false} /></div>
                 <Button icon="reset" onClick={onResetCamera} />
             </div>
@@ -242,7 +251,7 @@ export const SvgContent = (
             svgIdPrefix={svgIdPrefix} edgeOffset={edgeOffset} flow={flow} t={t} />
         {
             _.map(network.nodesMap, (value, id) => {
-                return <Vertex key={id} strokeWidth={strokeWidth} radius={nodeRadius} pos={[value.x, value.y]} label={<TeX>{value.label ?? value.id}</TeX>} />
+                return <Vertex key={id} strokeWidth={strokeWidth} radius={nodeRadius} pos={[value.x, value.y]} label={value.label ?? value.id} />
             })
         }
     </>
@@ -285,18 +294,6 @@ const EdgesCoordinator = (
         })}
     </>
 }
-
-
-const FlowFileInput = styled.input`
-    ::file-selector-button {
-        content: "Open Dynamic Flow";
-        border: 2px solid #6c5ce7;
-        padding: .2em .4em;
-        border-radius: .2em;
-        background-color: #a29bfe;
-        transition: 1s;
-      }
-`
 
 
 export default () => {
