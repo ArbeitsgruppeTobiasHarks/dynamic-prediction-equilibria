@@ -104,10 +104,11 @@ export const SvgDefs = ({ svgIdPrefix }) => (<>
 </>
 )
 
-export const BaseEdge = ({ svgIdPrefix, waitingTimeScale, transitTime, visible, from, to, offset, strokeWidth, flowScale, capacity, inEdgeSteps = [], queueSteps = [] }) => {
+export const BaseEdge = ({ multiGroup, translate, svgIdPrefix, waitingTimeScale, transitTime, visible, from, to, offset, strokeWidth, flowScale, capacity, inEdgeSteps = [], queueSteps = [] }) => {
     const width = flowScale * capacity
     const padding = offset
     const arrowHeadWidth = offset / 2
+    const arrowHeadHeight = multiGroup ?  width : 2*width
     const delta = [to[0] - from[0], to[1] - from[1]]
     const norm = Math.sqrt(delta[0] ** 2 + delta[1] ** 2)
     // start = from + (to - from)/|to - from| * 30
@@ -117,9 +118,10 @@ export const BaseEdge = ({ svgIdPrefix, waitingTimeScale, transitTime, visible, 
     //return <path d={`M${start[0]},${start[1]}L${end[0]},${end[1]}`} />
     const normOffsetted = norm - 2 * padding - arrowHeadWidth
     const scale = normOffsetted / norm
+    const scaledTranslate = -translate * flowScale
 
-    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
-        <path strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + normOffsetted, edgeStart[1] - width) + d.l(arrowHeadWidth, width) + d.l(-arrowHeadWidth, width) + d.z} />
+    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]}) translate(0 ${scaledTranslate})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
+        <path strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + normOffsetted, edgeStart[1] - arrowHeadHeight / 2) + d.l(arrowHeadWidth, arrowHeadHeight / 2) + d.l(-arrowHeadWidth, arrowHeadHeight / 2) + d.z} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
             width={normOffsetted} height={width} fill="white" stroke="none"
@@ -164,13 +166,15 @@ export const BaseEdge = ({ svgIdPrefix, waitingTimeScale, transitTime, visible, 
 }
 
 
-export const FlowEdge = ({ flowScale, waitingTimeScale, strokeWidth, svgIdPrefix, from, to, outflowSteps, queue, t, capacity, transitTime, visible = true, offset }) => {
+export const FlowEdge = ({ flowScale, translate, multiGroup, waitingTimeScale, strokeWidth, svgIdPrefix, from, to, outflowSteps, queue, t, capacity, transitTime, visible = true, offset }) => {
     const { inEdgeSteps, queueSteps } = splitOutflowSteps(outflowSteps, queue, transitTime, capacity, t)
 
     return (
         <BaseEdge
             strokeWidth={strokeWidth}
             offset={offset}
+            translate={translate}
+            multiGroup={multiGroup}
             waitingTimeScale={waitingTimeScale}
             svgIdPrefix={svgIdPrefix}
             visible={visible}

@@ -31,7 +31,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
 
     network = import_sioux_falls(edges_tntp_path, nodes_tntp_path, network_path, inflow_horizon, demands_range_builder)
     demands_range = demands_range_builder(network)
-    build_flows(network_path, flows_dir, number_flows=50, horizon=horizon, reroute_interval=reroute_interval,
+    build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon, number_flows=50, horizon=horizon, reroute_interval=reroute_interval,
                 demands_range=demands_range)
 
     expanded_queues_from_flows_per_edge(network_path, past_timesteps, 1., future_timesteps, flows_dir,

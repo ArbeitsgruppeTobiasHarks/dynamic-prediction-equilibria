@@ -190,12 +190,13 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                 </div>
                 <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
                     <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Scale:</div>
-                    <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10 * initialFlowScale} stepSize={initialFlowScale / 100} labelPrecision={2} />
+                    <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10 * initialFlowScale} stepSize={initialFlowScale / 100}
+                        labelPrecision={2} labelStepSize={initialFlowScale} />
                 </div>
                 <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
                     <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
                     <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={avgDistanceTransitTimeRatio / 100}
-                        labelPrecision={2} labelStepSize={avgDistanceTransitTimeRatio / 10} />
+                        labelPrecision={2} labelStepSize={2*avgDistanceTransitTimeRatio / 10} />
                 </div>
             </Card>
             <Card style={{ flex: '1' }}>
@@ -209,13 +210,13 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                     <Button icon={autoplay ? 'pause' : 'play'} onClick={() => setAutoplay(v => !v)} />
                     <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', padding: "0px 16px" }}>Speed:<br />(time units per second):</div>
                     <div style={{ padding: '0px', flex: 1 }}>
-                        <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} labelStepSize={(maxT - minT) / 100} />
+                        <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} labelStepSize={(maxT - minT) / 50} />
                     </div>
                 </div>
             </Card>
         </div>
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }} ref={svgContainerRef}>
-            <svg width={width} height={height} viewBox={viewBoxString}onMouseDown={handleMouseDown}
+            <svg width={width} height={height} viewBox={viewBoxString} onMouseDown={handleMouseDown}
                 style={{ position: "absolute", top: "0", left: "0", background: "#eee" }}>
                 <SvgContent waitingTimeScale={waitingTimeScale} flowScale={flowScale} nodeRadius={nodeRadius} strokeWidth={strokeWidth}
                     edgeOffset={edgeOffset} t={t} network={props.network} flow={props.flow} />
@@ -229,33 +230,59 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
 }
 
 
+
 export const SvgContent = (
     { t = 0, network, flow, nodeRadius, edgeOffset, strokeWidth, flowScale, waitingTimeScale }:
         { t: number, network: Network, flow: Flow, nodeRadius: number, edgeOffset: number, strokeWidth: number, flowScale: number, waitingTimeScale: number }
 ) => {
     const svgIdPrefix = ""
-    const outflowSteps = React.useMemo(
-        () => flow.outflow.map((outflow: any) => calcOutflowSteps(outflow, network.commoditiesMap)),
-        [flow]
-    )
     return <>
         <SvgDefs svgIdPrefix={svgIdPrefix} />
-        {
-            _.map(network.edgesMap, (value, id) => {
-                const fromNode = network.nodesMap[value.from]
-                const toNode = network.nodesMap[value.to]
-                return <FlowEdge
-                    waitingTimeScale={waitingTimeScale} strokeWidth={strokeWidth} flowScale={flowScale}
-                    key={id} t={t} capacity={value.capacity} offset={edgeOffset} from={[fromNode.x, fromNode.y]} to={[toNode.x, toNode.y]} svgIdPrefix={svgIdPrefix}
-                    outflowSteps={outflowSteps[id]} transitTime={value.transitTime} queue={flow.queues[id]}
-                />
-            })
-        }
+        <EdgesCoordinator network={network} waitingTimeScale={waitingTimeScale} strokeWidth={strokeWidth} flowScale={flowScale}
+            svgIdPrefix={svgIdPrefix} edgeOffset={edgeOffset} flow={flow} t={t} />
         {
             _.map(network.nodesMap, (value, id) => {
                 return <Vertex key={id} strokeWidth={strokeWidth} radius={nodeRadius} pos={[value.x, value.y]} label={<TeX>{value.label ?? value.id}</TeX>} />
             })
         }
+    </>
+}
+
+const EdgesCoordinator = (
+    props: {
+        network: Network, waitingTimeScale: number, strokeWidth: number,
+        flowScale: number, svgIdPrefix: string, edgeOffset: number, flow: Flow, t: number
+    }
+) => {
+    const outflowSteps = React.useMemo(
+        () => props.flow.outflow.map((outflow: any) => calcOutflowSteps(outflow, props.network.commoditiesMap)),
+        [props.flow]
+    )
+
+    const grouped = _.groupBy(props.network.edgesMap, ({ from, to }) => JSON.stringify(from < to ? [from, to] : [to, from]))
+    const edgesWithViewOpts = _.map(grouped, group => {
+        const sorted = _.sortBy(group, edge => edge.from)
+        const totalCapacity = _.sum(group.map(edge => edge.capacity))
+        let translate = -totalCapacity / 2
+        return sorted.map(edge => {
+            const edgeTranslate = translate + edge.capacity / 2
+            translate += edge.capacity
+            return {
+                translate: edgeTranslate * (edge.from < edge.to ? 1 : -1), edge, multiGroup: group.length > 1
+            }
+        })
+    }).flat()
+
+    return <>
+        {_.map(edgesWithViewOpts, ({ edge, translate, multiGroup }) => {
+            const fromNode = props.network.nodesMap[edge.from]
+            const toNode = props.network.nodesMap[edge.to]
+            return <FlowEdge
+                waitingTimeScale={props.waitingTimeScale} strokeWidth={props.strokeWidth} flowScale={props.flowScale} translate={translate} multiGroup={multiGroup}
+                key={edge.id} t={props.t} capacity={edge.capacity} offset={props.edgeOffset} from={[fromNode.x, fromNode.y]} to={[toNode.x, toNode.y]} svgIdPrefix={props.svgIdPrefix}
+                outflowSteps={outflowSteps[edge.id]} transitTime={edge.transitTime} queue={props.flow.queues[edge.id]} 
+            />
+        })}
     </>
 }
 

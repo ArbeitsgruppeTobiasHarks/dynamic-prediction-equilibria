@@ -25,7 +25,7 @@ def generate_network_demands(network: Network, random_seed: int, inflow_horizon:
             commodity.net_inflow = RightConstant([0.], [demand], (0., float('inf')))
 
 
-def build_flows(network_path: str, out_directory: str, number_flows: int, horizon: float, reroute_interval: float,
+def build_flows(network_path: str, out_directory: str, inflow_horizon: float, number_flows: int, horizon: float, reroute_interval: float,
                 demands_range: Tuple[float, float], check_for_optimizations: bool = True):
     os.makedirs(out_directory, exist_ok=True)
     print()
@@ -46,7 +46,7 @@ def build_flows(network_path: str, out_directory: str, number_flows: int, horizo
             file.write("")
 
         network = Network.from_file(network_path)
-        generate_network_demands(network, flow_id, float('inf'), demands_range, sigma=min(network.capacity) / 1000.)
+        generate_network_demands(network, flow_id, inflow_horizon, demands_range, sigma=min(network.capacity) / 1000.)
         print(f"Generating flow with seed {flow_id}...")
         if check_for_optimizations:
             assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster generation."
