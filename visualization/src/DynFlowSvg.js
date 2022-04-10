@@ -193,7 +193,7 @@ export const Vertex = ({ label, pos, visible = true, radius = 1, strokeWidth = 0
     const [cx, cy] = pos
     return <g style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
         <circle cx={cx} cy={cy} r={radius} stroke="black" strokeWidth={strokeWidth} fill="white" />
-        {label ? (<ForeignObjectLabel cx={cx} cy={cy}>{label}</ForeignObjectLabel>) : null}
+        {label !== null ? <text x={cx} y={cy} style={{textAnchor: 'middle', dominantBaseline: 'central', fontSize: radius}}>{label}</text> : null}
     </g>
 }
 
