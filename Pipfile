@@ -12,6 +12,7 @@ dgl = "*"
 torch = "*"
 numpy = "*"
 json-fix = "*"
+tensorflow = "*"
 
 [dev-packages]
 autopep8 = "*"
