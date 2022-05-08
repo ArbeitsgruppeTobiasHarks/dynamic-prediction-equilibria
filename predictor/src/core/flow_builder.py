@@ -5,7 +5,7 @@ from typing import Generator, Optional, Dict, List, Set, Tuple
 from core.dijkstra import reverse_dijkstra, dynamic_dijkstra
 from core.graph import Node, Edge
 from core.machine_precision import eps
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
+from core.dynamic_flow import DynamicFlow
 from core.network import Network, Commodity
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
@@ -13,14 +13,14 @@ from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
 
 
-class MultiComFlowBuilder:
+class FlowBuilder:
     network: Network
     predictors: Dict[PredictorType, Predictor]
     reroute_interval: Optional[float]
     _active_edges: List[Dict[Node, List[Edge]]]
     _built: bool
     _handle_nodes: Set[Node]
-    _flow: MultiComPartialDynamicFlow
+    _flow: DynamicFlow
     _next_reroute_time: float
     _route_time: float
     _costs: Dict[PredictorType, List[PiecewiseLinear]]
@@ -37,7 +37,7 @@ class MultiComFlowBuilder:
         self._built = False
         self._active_edges = [{} for _ in network.commodities]
         self._handle_nodes = set()
-        self._flow = MultiComPartialDynamicFlow(network)
+        self._flow = DynamicFlow(network)
         self._next_reroute_time = self._route_time = self._flow.phi
         self._important_nodes = [
             network.graph.get_nodes_reaching(commodity.sink).intersection(
@@ -50,7 +50,7 @@ class MultiComFlowBuilder:
         ])
         self._costs = {}
 
-    def build_flow(self) -> Generator[MultiComPartialDynamicFlow, None, None]:
+    def build_flow(self) -> Generator[DynamicFlow, None, None]:
         if self._built:
             raise RuntimeError("Flow was already built. Initialize a new builder.")
         self._built = True

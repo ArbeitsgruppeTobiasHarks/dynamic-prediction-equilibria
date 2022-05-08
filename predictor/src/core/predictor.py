@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import List
 
 import numpy as np
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
+from core.dynamic_flow import DynamicFlow
 
 from core.network import Network
 from utilities.piecewise_linear import PiecewiseLinear
@@ -17,7 +17,7 @@ class Predictor(ABC):
         self.network = network
 
     @abstractmethod
-    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+    def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         pass
 
     @abstractmethod

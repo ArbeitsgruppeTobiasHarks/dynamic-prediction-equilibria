@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, Dict, Callable
 
 from core.bellman_ford import bellman_ford
-from core.multi_com_flow_builder import MultiComFlowBuilder
+from core.flow_builder import FlowBuilder
 from core.network import Network, Commodity
 from core.predictor import Predictor
 from core.predictors.constant_predictor import ConstantPredictor
@@ -80,7 +80,7 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             flow = pickle.load(file)
         flow._network = network
     else:
-        flow_builder = MultiComFlowBuilder(network, predictors, reroute_interval)
+        flow_builder = FlowBuilder(network, predictors, reroute_interval)
         flow, elapsed = build_with_times(flow_builder, flow_id, reroute_interval, horizon, new_commodities, suppress_log)
 
         if pickle_path is not None:

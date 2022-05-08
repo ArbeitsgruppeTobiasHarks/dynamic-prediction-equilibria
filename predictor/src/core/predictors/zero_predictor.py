@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List
 
 import numpy as np
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
+from core.dynamic_flow import DynamicFlow
 
 from core.predictor import Predictor, PredictionResult
 from utilities.piecewise_linear import PiecewiseLinear
@@ -24,6 +24,6 @@ class ZeroPredictor(Predictor):
             [queues, queues]
         )
 
-    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+    def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         zero_fct = PiecewiseLinear([prediction_time], [0.], 0., 0.)
         return [zero_fct for _ in flow.queues]

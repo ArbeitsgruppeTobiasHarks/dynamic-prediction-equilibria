@@ -3,14 +3,14 @@ from typing import Optional, Iterable, Tuple
 
 import time
 
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
-from core.multi_com_flow_builder import MultiComFlowBuilder
+from core.dynamic_flow import DynamicFlow
+from core.flow_builder import FlowBuilder
 
 
 def build_with_times(
-        flow_builder: MultiComFlowBuilder, flow_id: int, reroute_interval: float, horizon: float,
+        flow_builder: FlowBuilder, flow_id: int, reroute_interval: float, horizon: float,
         observe_commodities: Optional[Iterable[int]] = None, suppress_log: bool = False
-) -> Tuple[MultiComPartialDynamicFlow, float]:
+) -> Tuple[DynamicFlow, float]:
     generator = flow_builder.build_flow()
     start_time = last_milestone_time = time.time()
     flow = next(generator)

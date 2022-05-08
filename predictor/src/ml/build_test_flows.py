@@ -3,7 +3,7 @@ import pickle
 import random
 from typing import Tuple
 
-from core.multi_com_flow_builder import MultiComFlowBuilder
+from core.flow_builder import FlowBuilder
 from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.predictor_type import PredictorType
@@ -53,7 +53,7 @@ def build_flows(network_path: str, out_directory: str, inflow_horizon: float, nu
 
         predictors = {PredictorType.CONSTANT: ConstantPredictor(network)}
 
-        flow_builder = MultiComFlowBuilder(network, predictors, reroute_interval)
+        flow_builder = FlowBuilder(network, predictors, reroute_interval)
         flow, _ = build_with_times(flow_builder, flow_id, reroute_interval, horizon)
 
         print(f"Successfully built flow up to time {flow.phi}!")

@@ -9,13 +9,13 @@ from typing import List, Optional, Dict, Callable
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
+from core.dynamic_flow import DynamicFlow
 
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
 from utilities.piecewise_linear import PiecewiseLinear
 
-PredictFunction = Callable[[float, MultiComPartialDynamicFlow], List[PiecewiseLinear]]
+PredictFunction = Callable[[float, DynamicFlow], List[PiecewiseLinear]]
 
 class ExpandedLinearRegressionPredictor(Predictor):
 
@@ -31,7 +31,7 @@ class ExpandedLinearRegressionPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+    def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         return self._predict(prediction_time, flow)
 
     @staticmethod
@@ -55,7 +55,7 @@ class ExpandedLinearRegressionPredictor(Predictor):
             d["c"] = float(constant_match.groups()[0])
             coefficients[f"e[{i}]"] = d
 
-        def predict(prediction_time: float, flow: MultiComPartialDynamicFlow):
+        def predict(prediction_time: float, flow: DynamicFlow):
             times = [prediction_time + t for t in range(0, future_timesteps)]
             step_size = 1.0
             edges = network.graph.edges

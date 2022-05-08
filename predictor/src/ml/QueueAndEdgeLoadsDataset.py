@@ -5,13 +5,13 @@ import numpy as np
 import torch
 from torch.utils.data.dataset import T_co, Dataset
 
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 
 
 class QueueAndEdgeLoadDataset(Dataset):
     _data: np.ndarray # Dim0: Flow, Dim1: Queues/EdgeLoad, Dim2: Edge, Dim3: Time
-    _flow: Optional[MultiComPartialDynamicFlow]
+    _flow: Optional[DynamicFlow]
     test_mask: torch.Tensor
     samples_per_flow: int
 

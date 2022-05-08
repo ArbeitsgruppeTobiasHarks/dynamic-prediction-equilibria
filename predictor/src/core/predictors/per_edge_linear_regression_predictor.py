@@ -6,7 +6,7 @@ from typing import List, Optional
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
+from core.dynamic_flow import DynamicFlow
 
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
@@ -27,7 +27,7 @@ class PerEdgeLinearRegressionPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+    def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         times = [prediction_time + t for t in range(0, self._future_timesteps + 1, 1)]
         edges = self.network.graph.edges
         assert len(edges) == len(flow.queues)

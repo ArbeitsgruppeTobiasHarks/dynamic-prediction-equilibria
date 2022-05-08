@@ -1,5 +1,5 @@
 import json
-from core.multi_com_flow_builder import MultiComFlowBuilder
+from core.flow_builder import FlowBuilder
 from core.network import Network
 from core.predictors.predictor_type import PredictorType
 from core.predictors.zero_predictor import ZeroPredictor
@@ -18,7 +18,7 @@ def build_example1():
     horizon = 2000
     predictors = { PredictorType.ZERO: ZeroPredictor(network)}
 
-    builder = MultiComFlowBuilder(network=network, predictors=predictors, reroute_interval=100)
+    builder = FlowBuilder(network=network, predictors=predictors, reroute_interval=100)
     generator = builder.build_flow()
     flow = next(generator)
     while flow.phi < horizon:

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from math import floor
 
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 
 
@@ -40,7 +40,7 @@ def generate_queues_and_edge_loads(past_timesteps: int, flows_folder: str, out_f
             print(f"Queue for flow#{flow_id} already exists. Skipping...")
             continue
         with open(os.path.join(flows_folder, flow_path), "rb") as file:
-            flow: MultiComPartialDynamicFlow = pickle.load(file)
+            flow: DynamicFlow = pickle.load(file)
         times = range(-past_timesteps, horizon + 1, step_length)
         totalInflowRates = [
             sum(com_inflow for com_inflow in inflow)
@@ -131,7 +131,7 @@ def expanded_queues_from_flows_per_edge(network_path: str, past_timesteps: int, 
                           if file.endswith(".flow.pickle") and not file.startswith(".lock")]
             for flow_path in flow_files:
                 with open(os.path.join(flows_folder, flow_path), "rb") as file:
-                    flow: MultiComPartialDynamicFlow = pickle.load(file)
+                    flow: DynamicFlow = pickle.load(file)
                 flow.network = network
                 flows.append(flow)
 

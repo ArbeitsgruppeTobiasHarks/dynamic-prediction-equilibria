@@ -6,13 +6,13 @@ import torch
 from torch import Tensor
 from torch.utils.data.dataset import T_co, Dataset
 
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 
 
 class QueueDataset(Dataset):
     _queues: List[Tensor]
-    _flow: Optional[MultiComPartialDynamicFlow]
+    _flow: Optional[DynamicFlow]
     test_mask: torch.Tensor
     samples_per_flow: int
 

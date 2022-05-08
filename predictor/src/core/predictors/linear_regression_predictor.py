@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import numpy as np
-from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
+from core.dynamic_flow import DynamicFlow
 
 from core.predictor import Predictor, PredictionResult
 from utilities.piecewise_linear import PiecewiseLinear
@@ -17,7 +17,7 @@ class LinearRegressionPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+    def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         t = prediction_time
         times = [t, t + 1, t + 2, t + 3, t + 4, t + 5, t + 6, t + 7, t + 8, t + 9]
         zero_fct = PiecewiseLinear([t], [0.], 0., 0.)

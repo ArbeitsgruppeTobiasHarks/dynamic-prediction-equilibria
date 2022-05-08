@@ -56,7 +56,7 @@ class DepletionQueue:
         return e, depl_time, change_event
 
 
-class MultiComPartialDynamicFlow:
+class DynamicFlow:
     """
         This is a representation of a flow with right-constant edge inflow rates on intervals.
     """
