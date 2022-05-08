@@ -67,7 +67,9 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             commodity.net_inflow.domain
         )
     else:
-        demand_per_comm = RightConstant([0., inflow_horizon], [0.125, 0.], (0., float('inf')))
+        demand_per_comm = RightConstant(
+            [0., inflow_horizon], [commodity.net_inflow.values[0] / 16 / len(predictors), 0.], (0., float('inf'))
+        )
 
     new_commodities = range(len(network.commodities), len(network.commodities) + len(predictors))
     for i in predictors:
