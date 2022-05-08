@@ -23,7 +23,6 @@ class QueueDataset(Dataset):
         self._future_timesteps = future_timesteps
         self._queue_files = [os.path.join(folder_path, file) for file in os.listdir(folder_path)]
         self._queues = []
-        self.samples_per_flow = 20
         self._torch_mode = torch_mode
         assert len(self._queue_files) > 0
         if self._in_memory:
@@ -40,6 +39,7 @@ class QueueDataset(Dataset):
         else:
             np_mask = np.genfromtxt("../../out/mask.txt")
             self.test_mask = torch.tensor([max_queue > 0 for max_queue in np_mask]).to(torch_mode)
+            self.samples_per_flow = 20
 
     def __getitem__(self, index) -> T_co:
         flow_id, sample_id = divmod(index, self.samples_per_flow)

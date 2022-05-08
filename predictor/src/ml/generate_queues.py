@@ -16,7 +16,7 @@ def generate_queues(past_timesteps: int, flows_folder: str, out_folder: str, hor
 
     for flow_path in files:
         flow_id = flow_path[: len(flow_path) - len(".flow.pickle")]
-        queue_path = os.path.join(out_folder, f"{flow_id}.csv.gz")
+        queue_path = os.path.join(out_folder, f"{flow_id}-queues-complete.csv.gz")
         if os.path.exists(queue_path):
             print(f"Queue for flow#{flow_id} already exists. Skipping...")
             continue
@@ -27,6 +27,41 @@ def generate_queues(past_timesteps: int, flows_folder: str, out_folder: str, hor
             [queue(time) for time in times] for queue in flow.queues
         ])
         np.savetxt(queue_path, queues)
+
+def generate_queues_and_edge_loads(past_timesteps: int, flows_folder: str, out_folder: str, horizon: int, step_length: int):
+    os.makedirs(out_folder, exist_ok=True)
+    files = [file for file in os.listdir(flows_folder) if
+             file.endswith(".flow.pickle") and not file.startswith(".lock.")]
+
+    for flow_path in files:
+        flow_id = flow_path[: len(flow_path) - len(".flow.pickle")]
+        out_path = os.path.join(out_folder, f"{flow_id}-queues-and-edge-loads.npy")
+        if os.path.exists(out_path):
+            print(f"Queue for flow#{flow_id} already exists. Skipping...")
+            continue
+        with open(os.path.join(flows_folder, flow_path), "rb") as file:
+            flow: MultiComPartialDynamicFlow = pickle.load(file)
+        times = range(-past_timesteps, horizon + 1, step_length)
+        totalInflowRates = [
+            sum(com_inflow for com_inflow in inflow)
+            for inflow in flow.inflow
+        ]
+        totalOutflowRates = [
+            sum(com_outflow for com_outflow in outflow)
+            for outflow in flow.outflow
+        ]
+        edgeLoads = [
+            (totalInflowRates[e] - totalOutflowRates[e]).integral()
+            for e in range(len(flow.inflow))
+        ]
+        edgeLoadSamples = np.asarray([
+            [load(time) if time >= 0 else 0 for time in times] for load in edgeLoads
+        ])
+        queueSamples = np.asarray([
+            [queue(time) for time in times] for queue in flow.queues
+        ])
+        stacked = np.stack([queueSamples, edgeLoadSamples])
+        np.save(out_path, stacked)
 
 
 def expanded_queues_from_flows(network_path: str, past_timesteps: int, step_length: float, future_timesteps: int,

@@ -9,22 +9,25 @@ from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate_network import eval_network
 from importer.sioux_falls_importer import import_sioux_falls, DemandsRangeBuilder
+from ml.SKLearnLinRegFullNetworkModel import train_model
 from ml.SKLearnLinRegPerEdgeModel import train_per_edge_model
 from ml.build_test_flows import build_flows
-from ml.generate_queues import expanded_queues_from_flows_per_edge
+from ml.generate_queues import expanded_queues_from_flows_per_edge, generate_queues, generate_queues_and_edge_loads
 
 
 def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     network_path = os.path.join(scenario_dir, "network.pickle")
     flows_dir = os.path.join(scenario_dir, "flows")
     expanded_per_edge_dir = os.path.join(scenario_dir, "expanded-queues-per-edge")
+    full_net_model = os.path.join(scenario_dir, "full-network-model")
+    queues_dir = os.path.join(scenario_dir, "queues")
     models_per_edge_dir = os.path.join(scenario_dir, "models-per-edge")
     eval_dir = os.path.join(scenario_dir, "eval")
 
     demands_range_builder: DemandsRangeBuilder = lambda net: (min(net.capacity), max(net.capacity))
-    reroute_interval = 1
+    reroute_interval = .25
     inflow_horizon = 25.
-    horizon = 400
+    horizon = 75
     past_timesteps = 20
     future_timesteps = 20
     pred_horizon = 20.
@@ -34,9 +37,14 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon, number_flows=50, horizon=horizon, reroute_interval=reroute_interval,
                 demands_range=demands_range)
 
-    expanded_queues_from_flows_per_edge(network_path, past_timesteps, 1., future_timesteps, flows_dir,
-                                        expanded_per_edge_dir, horizon, average=False, sample_step=1)
-    train_per_edge_model(network_path, expanded_per_edge_dir, models_per_edge_dir, past_timesteps, future_timesteps)
+    generate_queues_and_edge_loads(past_timesteps, flows_dir, queues_dir, horizon, step_length=1)
+
+    train_model(queues_dir, 20, 1, network, full_net_model)
+
+    #expanded_queues_from_flows_per_edge(network_path, past_timesteps, 1., future_timesteps, flows_dir,
+    #                                    expanded_per_edge_dir, horizon, average=False, sample_step=1)
+    
+    #train_per_edge_model(network_path, expanded_per_edge_dir, models_per_edge_dir, past_timesteps, future_timesteps)
 
     eval_network(
         network_path,
@@ -44,8 +52,8 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
         inflow_horizon,
         reroute_interval,
         horizon,
-        random_commodities=True,
-        suppress_log=True,
+        random_commodities=False,
+        suppress_log=False,
         build_predictors=lambda network: {
             PredictorType.ZERO: ZeroPredictor(network),
             PredictorType.CONSTANT: ConstantPredictor(network),
@@ -75,6 +83,6 @@ if __name__ == "__main__":
     def main():
         edges_tntp_path = "C:/Users/Michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_net.tntp"
         nodes_tntp_path = "C:/Users/Michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_node.tntp"
-        run_scenario(edges_tntp_path, nodes_tntp_path, "../../out/aaai-sioux-falls")
+        run_scenario(edges_tntp_path, nodes_tntp_path, "../../out/aaai-sioux-falls2")
 
     main()
