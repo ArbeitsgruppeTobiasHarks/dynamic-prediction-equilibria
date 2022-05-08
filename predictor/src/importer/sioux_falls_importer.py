@@ -30,6 +30,19 @@ def _generate_commodities(network: Network, number: int, inflow_horizon: float, 
     return commodities
 
 
+def _add_commodity(network: Network, inflow_horizon: float, demands_range: Tuple[float, float]):
+    source = network.graph.nodes[1]
+    sink = network.graph.nodes[24]
+    demand = random.uniform(*demands_range)
+    if inflow_horizon < float('inf'):
+        commodity = Commodity(source, sink, RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf'))),
+                                PredictorType.CONSTANT)
+    else:
+        commodity = Commodity(source, sink, RightConstant([0.], [demand], (0, float('inf'))),
+                                PredictorType.CONSTANT)
+    network.commodities.append(commodity)
+
+
 DemandsRangeBuilder = Callable[[Network], Tuple[float, float]]
 
 
@@ -56,7 +69,7 @@ def import_sioux_falls(edges_file_path: str, nodes_file_path: str, out_file_path
 
     
     random.seed(-3)
-    _generate_commodities(network, 1, inflow_horizon, demands_range_builder(network))
+    _add_commodity(network, inflow_horizon, demands_range_builder(network))
     network.remove_unnecessary_nodes()
     network.print_info()
     os.makedirs(pathlib.Path(out_file_path).parent, exist_ok=True)
