@@ -6,6 +6,7 @@ from typing import List, Optional
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
@@ -26,21 +27,18 @@ class PerEdgeLinearRegressionPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
-        raise NotImplementedError()
-
-    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> List[PiecewiseLinear]:
-        times = [phi + t for t in range(0, self._future_timesteps + 1, 1)]
+    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+        times = [prediction_time + t for t in range(0, self._future_timesteps + 1, 1)]
         edges = self.network.graph.edges
-        assert len(edges) == len(old_queues)
-        past_times = [phi - t for t in range(-self._past_timesteps + 1, 1)]
-        queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
+        assert len(edges) == len(flow.queues)
+        past_times = [prediction_time - t for t in range(-self._past_timesteps + 1, 1)]
+        queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
         for e in edges:
-            inputs = [old_queues[ie.id](t) for t in past_times for ie in e.node_from.incoming_edges] + \
-                     [old_queues[oe.id](t) for t in past_times for oe in e.node_to.outgoing_edges] + \
-                     [old_queues[e.id](t) for t in past_times]
+            inputs = [flow.queues[ie.id](t) for t in past_times for ie in e.node_from.incoming_edges] + \
+                     [flow.queues[oe.id](t) for t in past_times for oe in e.node_to.outgoing_edges] + \
+                     [flow.queues[e.id](t) for t in past_times]
             prediction = self._models[e.id].predict([inputs])[0]
-            prediction: List[float] = [old_queues[e.id](phi), *prediction]
+            prediction: List[float] = [flow.queues[e.id](prediction_time), *prediction]
             cap = self.network.capacity[e.id]
             new_values = [0.] * len(prediction)
             new_values[0] = prediction[0]

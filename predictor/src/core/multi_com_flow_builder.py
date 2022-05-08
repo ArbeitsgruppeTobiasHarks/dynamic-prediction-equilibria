@@ -64,8 +64,9 @@ class MultiComFlowBuilder:
                 c, t = self._network_inflow_changes.pop()
                 self._handle_nodes.add(c.source)
             if self.reroute_interval is None or self._flow.phi >= self._next_reroute_time:
+                prediction_time = self._next_reroute_time
                 predictions = {
-                    key: predictor.predict_from_fcts(self._flow.queues, self._flow.phi)
+                    key: predictor.predict(prediction_time, self._flow)
                     for (key, predictor) in self.predictors.items()
                 }
                 self._costs = {

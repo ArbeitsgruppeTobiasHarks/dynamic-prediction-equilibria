@@ -2,19 +2,24 @@ from __future__ import annotations
 
 import os
 import pickle
+from pyclbr import Function
 import re
 import string
 from typing import List, Optional, Dict, Callable
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
 from utilities.piecewise_linear import PiecewiseLinear
 
+PredictFunction = Callable[[float, MultiComPartialDynamicFlow], List[PiecewiseLinear]]
 
 class ExpandedLinearRegressionPredictor(Predictor):
+
+    _predict: PredictFunction
 
     def __init__(self, predict: Callable[[List[PiecewiseLinear], float], List[PiecewiseLinear]], network: Network):
         super().__init__(network)
@@ -26,11 +31,8 @@ class ExpandedLinearRegressionPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
-        raise NotImplementedError()
-
-    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> List[PiecewiseLinear]:
-        return self._predict(old_queues, phi)
+    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+        return self._predict(prediction_time, flow)
 
     @staticmethod
     def from_weka_models(network: Network, models_folder: str):
@@ -53,19 +55,19 @@ class ExpandedLinearRegressionPredictor(Predictor):
             d["c"] = float(constant_match.groups()[0])
             coefficients[f"e[{i}]"] = d
 
-        def predict(old_queues: List[PiecewiseLinear], phi: float):
-            times = [phi + t for t in range(0, future_timesteps)]
+        def predict(prediction_time: float, flow: MultiComPartialDynamicFlow):
+            times = [prediction_time + t for t in range(0, future_timesteps)]
             step_size = 1.0
             edges = network.graph.edges
-            assert len(edges) == len(old_queues)
-            queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
-            for e_id, old_queue in enumerate(old_queues):
-                inputs: Dict[string, float] = dict()
+            assert len(edges) == len(flow.queues)
+            queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+            for e_id, old_queue in enumerate(flow.queues):
+                inputs: Dict[str, float] = dict()
                 for i in range(past_timesteps + 1):
-                    inputs[f"e[{-i}]"] = max(0., old_queue(phi - i * step_size))
+                    inputs[f"e[{-i}]"] = max(0., old_queue(prediction_time - i * step_size))
                 for k, e in enumerate(edges[e_id].node_from.outgoing_edges):
                     for i in range(11):
-                        inputs[f"i{k}[{-i}]"] = max(0., old_queues[e.id](phi - i * step_size))
+                        inputs[f"i{k}[{-i}]"] = max(0., flow.queues[e.id](prediction_time - i * step_size))
 
                 new_values = [inputs["e[0]"]] + [0.] * future_timesteps
                 for i in range(1, 11):

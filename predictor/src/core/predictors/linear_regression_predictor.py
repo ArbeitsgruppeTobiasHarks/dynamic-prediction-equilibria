@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import numpy as np
+from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 
 from core.predictor import Predictor, PredictionResult
 from utilities.piecewise_linear import PiecewiseLinear
@@ -11,24 +12,22 @@ from utilities.piecewise_linear import PiecewiseLinear
 class LinearRegressionPredictor(Predictor):
 
     def type(self) -> str:
-        return "Constant Predictor"
+        return "Kostas' Tokyo Weka Predictor"
 
     def is_constant(self) -> bool:
         return False
 
-    def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
-        raise NotImplementedError()
-
-    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> List[PiecewiseLinear]:
-        times = [phi, phi + 1, phi + 2, phi + 3, phi + 4, phi + 5, phi + 6, phi + 7, phi + 8, phi + 9]
-        zero_fct = PiecewiseLinear([phi], [0.], 0., 0.)
-        queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
-        for i, old_queue in enumerate(old_queues):
-            queue_minus_0 = max(0., old_queue(phi))
-            queue_minus_1 = max(0., old_queue(phi - 1))
-            queue_minus_2 = max(0., old_queue(phi - 2))
-            queue_minus_3 = max(0., old_queue(phi - 3))
-            queue_minus_4 = max(0., old_queue(phi - 4))
+    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+        t = prediction_time
+        times = [t, t + 1, t + 2, t + 3, t + 4, t + 5, t + 6, t + 7, t + 8, t + 9]
+        zero_fct = PiecewiseLinear([t], [0.], 0., 0.)
+        queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+        for i, old_queue in enumerate(flow.queues):
+            queue_minus_0 = max(0., old_queue(t))
+            queue_minus_1 = max(0., old_queue(t - 1))
+            queue_minus_2 = max(0., old_queue(t - 2))
+            queue_minus_3 = max(0., old_queue(t - 3))
+            queue_minus_4 = max(0., old_queue(t - 4))
 
             if max(queue_minus_0, queue_minus_1, queue_minus_2, queue_minus_3, queue_minus_4) == 0.:
                 queues[i] = zero_fct

@@ -5,6 +5,7 @@ from typing import List, Optional
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
@@ -25,22 +26,19 @@ class FullNetLinearRegressionPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
-        raise NotImplementedError()
-
-    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) -> List[PiecewiseLinear]:
-        times = [phi + t for t in range(0, 21, 1)]
+    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+        times = [prediction_time + t for t in range(0, 21, 1)]
         edges = self.network.graph.edges
-        zero_fct = PiecewiseLinear([phi], [0.], 0., 0.)
-        assert len(edges) == len(old_queues)
-        input_times = [phi - t for t in range(-20, 1)]
+        zero_fct = PiecewiseLinear([prediction_time], [0.], 0., 0.)
+        assert len(edges) == len(flow.queues)
+        input_times = [prediction_time - t for t in range(-20, 1)]
         inputs = np.array([
-            [queue(t) for t in input_times] for queue in old_queues
+            [queue(t) for t in input_times] for queue in flow.queues
         ])[self._test_mask].flatten()
         prediction = self._lin_reg.predict([inputs])[0]
         prediction = np.maximum(prediction, np.zeros_like(prediction))
-        queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
-        for e_id, old_queue in enumerate(old_queues):
+        queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+        for e_id, old_queue in enumerate(flow.queues):
             if not self._test_mask[e_id]:
                 queues[e_id] = zero_fct
                 continue

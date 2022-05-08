@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import numpy as np
+from core.multi_com_dynamic_flow import MultiComPartialDynamicFlow
 
 from core.network import Network
 from core.predictor import Predictor, PredictionResult
@@ -23,30 +24,12 @@ class LinearPredictor(Predictor):
     def is_constant(self) -> bool:
         return False
 
-    def predict(self, times: List[float], old_queues: List[np.ndarray]) -> PredictionResult:
-        if len(old_queues) < 2:
-            return PredictionResult(
-                [times[-1], times[-1] + 1],
-                [old_queues[-1], old_queues[-1]]
-            )
-        new_queues = np.maximum(
-            np.zeros(len(self.network.graph.edges)),
-            old_queues[-1] + self.horizon * (old_queues[-1] - old_queues[-2]) / (times[-1] - times[-2])
-        )
-        return PredictionResult(
-            [times[-1], times[-1] + self.horizon, times[-1] + self.horizon + 1],
-            [old_queues[-1],
-             new_queues,
-             new_queues]
-        )
-
-    def predict_from_fcts(self, old_queues: List[PiecewiseLinear], phi: float) \
-            -> List[PiecewiseLinear]:
-        times = [phi, phi + self.horizon]
-        queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
-        for i, old_queue in enumerate(old_queues):
-            curr_queue = max(0., old_queue(phi))
-            gradient = old_queue.gradient(elem_rank(old_queue.times, phi))
+    def predict(self, prediction_time: float, flow: MultiComPartialDynamicFlow) -> List[PiecewiseLinear]:
+        times = [prediction_time, prediction_time + self.horizon]
+        queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+        for i, old_queue in enumerate(flow.queues):
+            curr_queue = max(0., old_queue(prediction_time))
+            gradient = old_queue.gradient(elem_rank(old_queue.times, prediction_time))
             new_queue = max(0., curr_queue + self.horizon * gradient)
             queues[i] = PiecewiseLinear(times, [curr_queue, new_queue], 0., 0.)
 
