@@ -85,9 +85,18 @@ class RightConstant:
         new_times = merge_sorted(self.times, other.times)
         new_values = [self(t) + other(t) for t in new_times]
         return RightConstant(new_times, new_values, self.domain)
-
+    
     def __add__(self, other):
         return self.__radd__(other)
+    
+    def __neg__(self):
+        return RightConstant(self.times, [-v for v in self.values], self.domain)
+
+    def __sub__(self, other):
+        if not isinstance(other, RightConstant):
+            raise TypeError("Can only subtract a RightConstantFunction.")
+        return self + (-other)
+
 
     def integral(self) -> PiecewiseLinear:
         """
