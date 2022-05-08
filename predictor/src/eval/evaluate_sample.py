@@ -158,7 +158,7 @@ def compute_sample_flow_for_visualization():
         output_folder=None
     )
     print(f"Calculated for demand={demand}. times={times}")
-    to_visualization_json("./visualization/src/sampleFlowData.json", flow, network, COLORS)
+    to_visualization_json("./visualization/src/sampleFlowData.json", flow, network, { comm: COLORS[comm.predictor_type] for comm in network.commodities })
 
 if __name__ == '__main__':
     compute_sample_flow_for_visualization()

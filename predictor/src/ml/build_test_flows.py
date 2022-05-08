@@ -46,7 +46,7 @@ def build_flows(network_path: str, out_directory: str, inflow_horizon: float, nu
             file.write("")
 
         network = Network.from_file(network_path)
-        generate_network_demands(network, flow_id, inflow_horizon, demands_range, sigma=min(network.capacity) / 1000.)
+        generate_network_demands(network, flow_id, inflow_horizon, demands_range, sigma=min(network.capacity) / 2.)
         print(f"Generating flow with seed {flow_id}...")
         if check_for_optimizations:
             assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster generation."
@@ -59,7 +59,7 @@ def build_flows(network_path: str, out_directory: str, inflow_horizon: float, nu
         print(f"Successfully built flow up to time {flow.phi}!")
         with open(flow_path, "wb") as file:
             pickle.dump(flow, file)
-        to_visualization_json(flow_path + ".json", flow, network, COLORS)
+        to_visualization_json(flow_path + ".json", flow, network, { id: COLORS[comm.predictor_type]  for (id, comm) in enumerate(network.commodities) })
         os.remove(lock_path)
         print(f"Successfully written flow to disk!")
         print("\n")

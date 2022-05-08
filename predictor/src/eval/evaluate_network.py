@@ -5,8 +5,9 @@ from typing import Optional
 
 from core.network import Network, Commodity
 from core.predictors.predictor_type import PredictorType
-from eval.evaluate import evaluate_single_run, PredictorBuilder
+from eval.evaluate import COLORS, evaluate_single_run, PredictorBuilder
 from utilities.right_constant import RightConstant
+from visualization.to_json import to_visualization_json
 
 
 def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
@@ -57,10 +58,16 @@ def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
             selected_commodity = network.remove_unnecessary_commodities(len(network.commodities) - 1)
         else:
             selected_commodity = network.remove_unnecessary_commodities(k)
-        evaluate_single_run(network, flow_id=k, inflow_horizon=inflow_horizon,
-                            focused_commodity=selected_commodity, horizon=horizon, reroute_interval=reroute_interval,
-                            suppress_log=suppress_log,
-                            split=split, output_folder=output_folder, build_predictors=build_predictors)
+        _, _, flow = evaluate_single_run(network, flow_id=k, inflow_horizon=inflow_horizon,
+                                         focused_commodity=selected_commodity, horizon=horizon, reroute_interval=reroute_interval,
+                                         suppress_log=suppress_log,
+                                         split=split, output_folder=output_folder, build_predictors=build_predictors)
+        to_visualization_json(
+            output_folder + "/visualization/ " +
+            f"{k}.vis.json", flow, network,
+            {id: COLORS[comm.predictor_type]
+                for (id, comm) in enumerate(network.commodities)}
+        )
         os.remove(lock_path)
 
     network_results_from_file_to_tikz(output_folder)
@@ -68,7 +75,8 @@ def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
 
 def network_results_from_file_to_tikz(directory: str):
     files = os.listdir(directory)
-    times = [[], [], [], [], []]  # Zero, Constant, Linear, RegularizedLinear, ML
+    # Zero, Constant, Linear, RegularizedLinear, ML
+    times = [[], [], [], [], []]
     means = [0, 0, 0, 0, 0, 0]
     num = 0
     for file_path in files:
@@ -137,6 +145,5 @@ if __name__ == '__main__':
         Network.from_file(network_path).print_info()
         # eval_network(network_path, "../../out/sioux-falls-3", check_for_optimizations=False)
         # network_results_from_file_to_tikz("../../out/sioux-falls-3")
-
 
     main()

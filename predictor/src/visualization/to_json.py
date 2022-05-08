@@ -23,7 +23,7 @@ def to_visualization_json(path, flow, network, colors):
                         for (id, e) in enumerate(network.graph.edges)
                     ],
                     "commodities": [
-                        { "id": id, "color": colors[comm.predictor_type] }
+                        { "id": id, "color": colors[id] }
                         for (id, comm) in enumerate(network.commodities)
                     ]
                 },
