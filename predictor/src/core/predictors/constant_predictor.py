@@ -5,7 +5,7 @@ from typing import List, Optional
 import numpy as np
 from core.dynamic_flow import DynamicFlow
 
-from core.predictor import Predictor, PredictionResult
+from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear
 
 

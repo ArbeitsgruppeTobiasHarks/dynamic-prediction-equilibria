@@ -28,7 +28,7 @@ def generate_queues(past_timesteps: int, flows_folder: str, out_folder: str, hor
         ])
         np.savetxt(queue_path, queues)
 
-def generate_queues_and_edge_loads(past_timesteps: int, flows_folder: str, out_folder: str, horizon: int, step_length: int):
+def generate_queues_and_edge_loads(past_timesteps: int, flows_folder: str, out_folder: str, horizon: int, step_length: float):
     os.makedirs(out_folder, exist_ok=True)
     files = [file for file in os.listdir(flows_folder) if
              file.endswith(".flow.pickle") and not file.startswith(".lock.")]
@@ -41,7 +41,7 @@ def generate_queues_and_edge_loads(past_timesteps: int, flows_folder: str, out_f
             continue
         with open(os.path.join(flows_folder, flow_path), "rb") as file:
             flow: DynamicFlow = pickle.load(file)
-        times = range(-past_timesteps, horizon + 1, step_length)
+        times = [-past_timesteps + i*step_length for i in range(floor(horizon / step_length) + 1)]
         totalInflowRates = [
             sum(com_inflow for com_inflow in inflow)
             for inflow in flow.inflow

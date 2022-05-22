@@ -7,7 +7,6 @@ from core.flow_builder import FlowBuilder
 from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.predictor_type import PredictorType
-from core.uniform_distributor import UniformDistributor
 from eval.evaluate import COLORS
 from utilities.build_with_times import build_with_times
 from utilities.right_constant import RightConstant

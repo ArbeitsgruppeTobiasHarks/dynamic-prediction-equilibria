@@ -14,7 +14,6 @@ from core.predictors.linear_regression_predictor import LinearRegressionPredicto
 from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
-from core.uniform_distributor import UniformDistributor
 from utilities.build_with_times import build_with_times
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant

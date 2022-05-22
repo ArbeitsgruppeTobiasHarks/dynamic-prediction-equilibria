@@ -6,7 +6,7 @@ import numpy as np
 from core.dynamic_flow import DynamicFlow
 
 from core.network import Network
-from core.predictor import Predictor, PredictionResult
+from core.predictor import Predictor
 from utilities.arrays import elem_rank
 from utilities.piecewise_linear import PiecewiseLinear
 
