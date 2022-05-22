@@ -216,3 +216,18 @@ class DynamicFlow:
             (accum_net_inflow.integrate(0., horizon) - accum_net_outflow.integrate(0., horizon)) / accum_net_inflow(
                 horizon)
         return avg_travel_time
+
+    def get_edge_loads(self) -> List[PiecewiseLinear]:
+        total_inflow_rates = [
+            sum(com_inflow for com_inflow in inflow)
+            for inflow in self.inflow
+        ]
+        total_outflow_rates = [
+            sum(com_outflow for com_outflow in outflow)
+            for outflow in self.outflow
+        ]
+        edge_loads = [
+            (total_inflow_rates[e] - total_outflow_rates[e]).integral()
+            for e in range(len(self.inflow))
+        ]
+        return edge_loads

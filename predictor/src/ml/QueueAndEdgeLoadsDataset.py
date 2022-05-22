@@ -34,7 +34,7 @@ class QueueAndEdgeLoadDataset(Dataset):
         self._data = np.asarray(all_data)
         print("Done reading dataset.")
         self.test_mask = np.asarray([val > 0 for val in max_data])
-        np.savetxt("../../out/mask.txt", self.test_mask)
+        np.savetxt(os.path.join(folder_path, "../mask.txt"), self.test_mask)
 
     def __getitem__(self, index) -> T_co:
         flow_id, sample_id = divmod(index, self.samples_per_flow)
