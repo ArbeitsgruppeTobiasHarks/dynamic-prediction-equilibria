@@ -24,7 +24,6 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     models_per_edge_dir = os.path.join(scenario_dir, "models-per-edge")
     eval_dir = os.path.join(scenario_dir, "eval")
 
-    demands_range_builder: DemandsRangeBuilder = lambda net: (min(net.capacity), max(net.capacity))
     reroute_interval = .25
     inflow_horizon = 25.
     horizon = 75
@@ -32,10 +31,8 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     future_timesteps = 20
     pred_horizon = 20.
 
-    network = import_sioux_falls(edges_tntp_path, nodes_tntp_path, network_path, inflow_horizon, demands_range_builder)
-    demands_range = demands_range_builder(network)
-    build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon, number_flows=50, horizon=horizon, reroute_interval=reroute_interval,
-                demands_range=demands_range)
+    network = import_sioux_falls(edges_tntp_path, nodes_tntp_path, network_path, inflow_horizon)
+    build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon, number_flows=50, horizon=horizon, reroute_interval=reroute_interval)
 
     generate_queues_and_edge_loads(past_timesteps, flows_dir, queues_dir, horizon, step_length=1)
 

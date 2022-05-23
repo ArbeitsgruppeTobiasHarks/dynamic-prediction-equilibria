@@ -3,6 +3,7 @@ from gc import callbacks
 import os
 import pickle
 import numpy as np
+from sklearn import preprocessing
 from sklearn.linear_model import LinearRegression
 from sklearn.utils import shuffle
 from sklearn.metrics import mean_squared_error
@@ -22,16 +23,24 @@ def train_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_times
         print("Full network model already exists. Skipping...")
         return QueueAndEdgeLoadDataset.load_mask(queues_and_edge_loads_dir)
 
-    queue_dataset = QueueAndEdgeLoadDataset(queues_and_edge_loads_dir, past_timesteps, future_timesteps, network)
+    queue_dataset = QueueAndEdgeLoadDataset(
+        queues_and_edge_loads_dir, past_timesteps, future_timesteps, network)
     X, Y = zip(*queue_dataset)
     X, Y = np.array(X), np.array(Y)
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.1, random_state=42)
 
-    pipe = make_pipeline(LinearRegression())
+    X_train, X_test, Y_train, Y_test = train_test_split(
+        X, Y, test_size=0.1, random_state=42)
+
+    pipe = make_pipeline(
+        preprocessing.StandardScaler(),
+        MLPRegressor(hidden_layer_sizes=(
+            Y.shape[1]*8, Y.shape[1]*4, Y.shape[1]*2
+        )))
     pipe = pipe.fit(X_train, Y_train)
     score = pipe.score(X_test, Y_test)
     Y_pred = pipe.predict(X_test)
-    mse = mean_squared_error(Y_test, np.maximum(np.zeros_like(Y_pred), Y_pred), squared=False)
+    mse = mean_squared_error(Y_test, np.maximum(
+        np.zeros_like(Y_pred), Y_pred), squared=False)
     y_mean = np.mean(Y_test)
     print(f"Learned model with score {score}, RMSE={mse}, Y_mean={y_mean}")
     with open(model_path, "wb") as file:
