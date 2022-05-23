@@ -46,3 +46,8 @@ class QueueAndEdgeLoadDataset(Dataset):
 
     def __len__(self):
         return len(self._data) * self.samples_per_flow
+
+    @staticmethod
+    def load_mask(folder_path: str) -> np.ndarray:
+        return np.array([ v > 0 for v in np.loadtxt(os.path.join(folder_path, "../mask.txt"))])
+

@@ -18,6 +18,9 @@ from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 
 def train_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps, network: Network, model_path):
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    if os.path.exists(model_path):
+        print("Full network model already exists. Skipping...")
+        return QueueAndEdgeLoadDataset.load_mask(queues_and_edge_loads_dir)
 
     queue_dataset = QueueAndEdgeLoadDataset(queues_and_edge_loads_dir, past_timesteps, future_timesteps, network)
     X, Y = zip(*queue_dataset)
