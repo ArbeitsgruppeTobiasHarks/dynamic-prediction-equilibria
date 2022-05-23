@@ -23,10 +23,10 @@ def run_scenario(scenario_dir: str):
     queues_and_edge_loads_dir = os.path.join(scenario_dir, "queues")
     eval_dir = os.path.join(scenario_dir, "eval")
 
-    reroute_interval = .25
+    reroute_interval = .125
     inflow_horizon = 12.
     horizon = 50
-    prediction_interval = 1.
+    prediction_interval = .5
     past_timesteps = 20
     future_timesteps = 20
     pred_horizon = 20.
