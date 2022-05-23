@@ -108,7 +108,7 @@ export const BaseEdge = ({ multiGroup, translate, svgIdPrefix, waitingTimeScale,
     const width = flowScale * capacity
     const padding = offset
     const arrowHeadWidth = offset / 2
-    const arrowHeadHeight = multiGroup ?  width : 2*width
+    const arrowHeadHeight = multiGroup ? width : 2 * width
     const delta = [to[0] - from[0], to[1] - from[1]]
     const norm = Math.sqrt(delta[0] ** 2 + delta[1] ** 2)
     // start = from + (to - from)/|to - from| * 30
@@ -121,7 +121,7 @@ export const BaseEdge = ({ multiGroup, translate, svgIdPrefix, waitingTimeScale,
     const scaledTranslate = -translate * flowScale
 
     return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]}) translate(0 ${scaledTranslate})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
-        <path strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + normOffsetted + strokeWidth/2 , edgeStart[1] - arrowHeadHeight / 2) + d.l(arrowHeadWidth, arrowHeadHeight / 2) + d.l(-arrowHeadWidth, arrowHeadHeight / 2) + d.z} />
+        <path strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + normOffsetted + strokeWidth / 2, edgeStart[1] - arrowHeadHeight / 2) + d.l(arrowHeadWidth, arrowHeadHeight / 2) + d.l(-arrowHeadWidth, arrowHeadHeight / 2) + d.z} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
             width={normOffsetted} height={width} fill="white" stroke="none"
@@ -193,7 +193,10 @@ export const Vertex = ({ label, pos, visible = true, radius = 1, strokeWidth = 0
     const [cx, cy] = pos
     return <g style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
         <circle cx={cx} cy={cy} r={radius} stroke="black" strokeWidth={strokeWidth} fill="white" />
-        {label !== null ? <text x={cx} y={cy} style={{textAnchor: 'middle', dominantBaseline: 'central', fontSize: radius}}>{label}</text> : null}
+        {label !== null ? <text x={cx} y={cy} style={{
+            textAnchor: 'middle', dominantBaseline: 'central', fontSize: radius,
+            userSelect: 'none'
+        }}>{label}</text> : null}
     </g>
 }
 
