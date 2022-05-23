@@ -1,4 +1,4 @@
-import { Alignment, Button, ButtonGroup, Card, FileInput, Icon, Navbar, NavbarGroup, NavbarHeading, Slider } from "@blueprintjs/core"
+import { Alignment, Button, ButtonGroup, Card, FileInput, Icon, Navbar, NavbarGroup, NavbarHeading, Slider, Toaster } from "@blueprintjs/core"
 import * as React from "react"
 import { useEffect, useRef, useState } from "react"
 import TeX from '@matejmazur/react-katex'
@@ -17,6 +17,22 @@ const MyContainer = styled.div`
     height: 100%;
     display: flex;
     flex-direction: column;
+
+    #drop {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        bottom: 0;
+        justify-content: center;
+        align-items: center;
+        display: none;
+        z-index: 0;
+    }
+
+    &:drop #drop {
+        display: flex;
+    }
 `;
 
 const useMinMaxTime = (flow: Flow) => React.useMemo(
@@ -133,7 +149,7 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     }
 
     const handleWheel: React.WheelEventHandler = (event) => {
-        setManualZoom(Math.max(stdZoom / 2, zoom + 1/32 * stdZoom * event.deltaY))
+        setManualZoom(Math.max(stdZoom / 2, zoom + 1 / 32 * stdZoom * event.deltaY))
     }
 
     useEffect(
@@ -205,7 +221,7 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                 <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
                     <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
                     <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={avgDistanceTransitTimeRatio / 100}
-                        labelPrecision={2} labelStepSize={2*avgDistanceTransitTimeRatio / 10} />
+                        labelPrecision={2} labelStepSize={2 * avgDistanceTransitTimeRatio / 10} />
                 </div>
             </Card>
             <Card style={{ flex: '1' }}>
@@ -289,7 +305,7 @@ const EdgesCoordinator = (
             return <FlowEdge
                 waitingTimeScale={props.waitingTimeScale} strokeWidth={props.strokeWidth} flowScale={props.flowScale} translate={translate} multiGroup={multiGroup}
                 key={edge.id} t={props.t} capacity={edge.capacity} offset={props.edgeOffset} from={[fromNode.x, fromNode.y]} to={[toNode.x, toNode.y]} svgIdPrefix={props.svgIdPrefix}
-                outflowSteps={outflowSteps[edge.id]} transitTime={edge.transitTime} queue={props.flow.queues[edge.id]} 
+                outflowSteps={outflowSteps[edge.id]} transitTime={edge.transitTime} queue={props.flow.queues[edge.id]}
             />
         })}
     </>
@@ -298,25 +314,65 @@ const EdgesCoordinator = (
 
 export default () => {
     const [{ network, flow }, setNetworkAndFlow] = useState({ network: initialNetwork, flow: initialFlow })
-
+    const [dragOver, setDragOver] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>()
 
-    const openFlow: React.FormEventHandler<HTMLInputElement> = (event: any) => {
+
+    const openFlowFromJsonText = (jsonText: string) => {
+        const json = JSON.parse(jsonText)
+        const network = Network.fromJson(json.network)
+        const flow = Flow.fromJson(json.flow)
+        setNetworkAndFlow({ network, flow })
+        AppToaster.show({ message: "Dynamic Flow loaded.", intent: 'success' })
+    }
+
+    const onOpen: React.FormEventHandler<HTMLInputElement> = (event: any) => {
         for (const file of event.target.files) {
             const reader = new FileReader()
             reader.addEventListener("load", event => {
                 // @ts-ignore
-                const jsonText: string = reader.result
-                const json = JSON.parse(jsonText)
-                const network = Network.fromJson(json.network)
-                const flow = Flow.fromJson(json.flow)
-                setNetworkAndFlow({ network, flow })
+                openFlowFromJsonText(reader.result)
             })
             reader.readAsText(file)
         }
     }
 
-    return <MyContainer>
+    const onDrop = async (event: any) => {
+        event.preventDefault()
+        setDragOver(false)
+        if (event.dataTransfer.items) {
+            // Use DataTransferItemList interface to access the file(s)
+            if (event.dataTransfer.items.length != 1) {
+                alert("Error. Please drop exactly one file.")
+                return
+            }
+            const item = event.dataTransfer.items[0]
+            // If dropped items aren't files, reject them
+            if (item.kind !== 'file') {
+                AppToaster.show({ message: "Please drop a file.", intent: 'danger' })
+                return
+            }
+            const file: File = item.getAsFile()
+            openFlowFromJsonText(await file.text())
+        } else {
+            // Use DataTransfer interface to access the file(s)
+            if (event.dataTransfer.files.length != 1) {
+                AppToaster.show({ message: "Please drop exactly one file.", intent: 'danger' })
+                return
+            }
+            const file: File = event.dataTransfer.files[0]
+            openFlowFromJsonText(await file.text())
+        }
+    }
+
+    const onDragOver = (event: any) => {
+        // Prevent default behavior (Prevent file from being opened)
+        event.preventDefault();
+        setDragOver(true)
+    }
+
+    return <MyContainer onDrop={onDrop} onDragOver={onDragOver} onDragLeave={() => setDragOver(false)}>
+        <DragOverContainer dragOver={dragOver} />
         <Navbar>
             <NavbarGroup>
                 <NavbarHeading>Dynamic Flow Visualization</NavbarHeading>
@@ -324,10 +380,33 @@ export default () => {
             <NavbarGroup align={Alignment.RIGHT}>
                 <ButtonGroup>
                     <Button icon="folder-shared" intent="primary" onClick={() => fileInputRef.current.click()}>Open Dynamic Flow</Button>
-                    <input style={{ display: 'none' }} ref={fileInputRef} type="file" accept=".json" onChange={openFlow} />
+                    <input style={{ display: 'none' }} ref={fileInputRef} type="file" accept=".json" onChange={onOpen} />
                 </ButtonGroup>
             </NavbarGroup>
         </Navbar>
         <DynamicFlowViewer network={network} flow={flow} />
     </MyContainer>
-}; 
+};
+
+const DragOverContainer = ({ dragOver }: { dragOver: boolean }) => {
+    return <div style={{
+        position: 'absolute',
+        top: '0px',
+        bottom: '0px',
+        left: '0px',
+        right: '0px',
+        display: 'flex',
+        pointerEvents: 'none',
+        zIndex: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '40px',
+        opacity: dragOver ? '1' : '0',
+        background: 'rgba(255,255,255,0.9)',
+        transition: 'opacity 0.2s'
+    }}>
+        Drop your file.
+    </div>
+}
+
+const AppToaster = Toaster.create()
