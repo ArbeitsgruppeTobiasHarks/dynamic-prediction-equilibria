@@ -2,6 +2,7 @@ import os
 import pathlib
 import random
 from typing import Tuple, Callable
+from math import pi
 
 import pandas as pd
 
@@ -31,23 +32,32 @@ def _generate_commodities(network: Network, number: int, inflow_horizon: float, 
 
 
 def _add_commodity(network: Network, inflow_horizon: float, demands_range: Tuple[float, float]):
-    source = network.graph.nodes[1]
+    source = network.graph.nodes[4]
     sink = network.graph.nodes[24]
     demand = random.uniform(*demands_range)
     if inflow_horizon < float('inf'):
         commodity = Commodity(source, sink, RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf'))),
-                                PredictorType.CONSTANT)
+                              PredictorType.CONSTANT)
     else:
         commodity = Commodity(source, sink, RightConstant([0.], [demand], (0, float('inf'))),
-                                PredictorType.CONSTANT)
+                              PredictorType.CONSTANT)
     network.commodities.append(commodity)
 
 
 DemandsRangeBuilder = Callable[[Network], Tuple[float, float]]
 
 
-def import_sioux_falls(edges_file_path: str, nodes_file_path: str, out_file_path: str, inflow_horizon: float,
-                       demands_range_builder: DemandsRangeBuilder) -> Network:
+def _natural_earth_projection(latInRad: float, lngInRad: float) -> Tuple[float, float]:
+    l = 0.870700 - 0.131979*latInRad**2 - 0.013791 * \
+        latInRad**4 + 0.003971*latInRad**10-0.001529*latInRad**12
+    d = latInRad * (1.007226 + 0.015085*latInRad**2 -0.044475*latInRad**6 + 0.028874*latInRad**8 - 0.005916*latInRad**10)
+
+    x= l * lngInRad
+    y = d
+    return (x* 1000 + 1333, y *1000 - 768)
+
+
+def import_sioux_falls(edges_file_path: str, nodes_file_path: str, out_file_path: str, inflow_horizon: float) -> Network:
     net = pd.read_csv(edges_file_path, skiprows=8, sep='\t')
     trimmed = [s.strip().lower() for s in net.columns]
     net.columns = trimmed
@@ -55,21 +65,20 @@ def import_sioux_falls(edges_file_path: str, nodes_file_path: str, out_file_path
     network = Network()
     #  columns: init_node, term_node, capacity, length, free_flow_time, b, power, speed, toll, link_type
     for _, e in net.iterrows():
-        network.add_edge(e["init_node"], e["term_node"], e["free_flow_time"], e["capacity"])
-    
-    
+        network.add_edge(e["init_node"], e["term_node"],
+                         e["free_flow_time"], e["capacity"])
+
     nodes = pd.read_csv(nodes_file_path, sep='\t')
     trimmed = [s.strip().lower() for s in nodes.columns]
     nodes.columns = trimmed
     nodes.drop([';'], axis=1, inplace=True)
     network.graph.positions = {
-        v["node"]: (v["x"], v["y"])
+        v["node"]: _natural_earth_projection(v["y"] / 180 * pi, v["x"] / 180 * pi)
         for _, v in nodes.iterrows()
     }
 
-    
     random.seed(-3)
-    _add_commodity(network, inflow_horizon, demands_range_builder(network))
+    _add_commodity(network, inflow_horizon, (8000, 8000))
     network.remove_unnecessary_nodes()
     network.print_info()
     os.makedirs(pathlib.Path(out_file_path).parent, exist_ok=True)
@@ -82,5 +91,6 @@ if __name__ == '__main__':
         "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_net.tntp",
         "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/random-demands.pickle",
         float('inf'),
-        demands_range_builder=lambda net: (min(net.capacity), max(net.capacity))
+        demands_range_builder=lambda net: (
+            min(net.capacity), max(net.capacity))
     )

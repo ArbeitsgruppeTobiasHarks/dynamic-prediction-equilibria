@@ -2,7 +2,7 @@ import click
 
 import eval.evaluate_network
 import eval.evaluate_sample
-import sioux_falls.sioux_falls_scenario
+import scenarios.sioux_falls_scenario
 import tokyo.tokyo_scenario
 
 
@@ -30,7 +30,7 @@ def run_tokyo_scenario(arcs_path: str, demands_path: str, output_folder: str):
 @click.argument("tntp_path", type=click.Path(exists=True, dir_okay=False))
 @click.argument("output_folder", type=click.Path(exists=True, file_okay=False))
 def run_sioux_falls_scenario(tntp_path: str, output_folder: str):
-    sioux_falls.sioux_falls_scenario.run_scenario(tntp_path, output_folder)
+    scenarios.sioux_falls_scenario.run_scenario(tntp_path, output_folder)
 
 
 main.add_command(evaluate_sample)

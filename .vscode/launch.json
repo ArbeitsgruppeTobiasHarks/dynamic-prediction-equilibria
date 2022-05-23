@@ -14,6 +14,17 @@
             },
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: Sioux Falls Sample",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/predictor/src/scenarios/sioux_falls_scenario.py",
+            "env": {
+                "PYTHONOPTIMIZE": "TRUE"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
