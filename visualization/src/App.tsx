@@ -288,12 +288,12 @@ const EdgesCoordinator = (
     const edgesWithViewOpts = _.map(grouped, group => {
         const sorted = _.sortBy(group, edge => edge.from)
         const totalCapacity = _.sum(group.map(edge => edge.capacity))
-        let translate = -totalCapacity / 2
+        let translate = -totalCapacity * props.flowScale / 2 - props.strokeWidth * (group.length + 1)/2
         return sorted.map(edge => {
-            const edgeTranslate = translate + edge.capacity / 2
-            translate += edge.capacity
+            const edgeTranslate = translate  + edge.capacity * props.flowScale / 2 + props.strokeWidth / 2
+            translate += edge.capacity*props.flowScale + props.strokeWidth
             return {
-                translate: edgeTranslate * (edge.from < edge.to ? 1 : -1), edge, multiGroup: group.length > 1
+                translate: edgeTranslate * (edge.from < edge.to ? -1 : 1), edge, multiGroup: group.length > 1
             }
         })
     }).flat()

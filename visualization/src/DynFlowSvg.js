@@ -117,11 +117,9 @@ export const BaseEdge = ({ multiGroup, translate, svgIdPrefix, waitingTimeScale,
     const deg = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI
     //return <path d={`M${start[0]},${start[1]}L${end[0]},${end[1]}`} />
     const normOffsetted = norm - 2 * padding - arrowHeadWidth
-    const scale = normOffsetted / norm
-    const scaledTranslate = -translate * flowScale
 
-    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]}) translate(0 ${scaledTranslate})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
-        <path strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + normOffsetted + strokeWidth / 2, edgeStart[1] - arrowHeadHeight / 2) + d.l(arrowHeadWidth, arrowHeadHeight / 2) + d.l(-arrowHeadWidth, arrowHeadHeight / 2) + d.z} />
+    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]}) translate(0 ${translate})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
+        <path strokeLinejoin='round' strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + normOffsetted + strokeWidth / 2, edgeStart[1] - arrowHeadHeight / 2 - strokeWidth / 2) + d.l(arrowHeadWidth, arrowHeadHeight / 2 + strokeWidth / 2) + d.l(-arrowHeadWidth, arrowHeadHeight / 2 + strokeWidth / 2) + d.z} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
             width={normOffsetted} height={width} fill="white" stroke="none"
@@ -158,7 +156,7 @@ export const BaseEdge = ({ multiGroup, translate, svgIdPrefix, waitingTimeScale,
         </g>
         <path stroke="gray" strokeWidth={strokeWidth} style={{ transition: "opacity 0.2s" }} opacity={queueSteps.length > 0 ? 1 : 0}
             fill="none" d={d.M(edgeStart[0], edgeStart[1]) + d.c(-width / 2, 0, -width / 2, 0, - width / 2, - width)} />
-        <rect
+        <rect strokeLinejoin='round'
             x={edgeStart[0] - strokeWidth / 2} y={edgeStart[1] - width / 2 - strokeWidth / 2}
             width={normOffsetted + strokeWidth} height={width + strokeWidth} stroke="black" strokeWidth={strokeWidth} fill="none"
         />
