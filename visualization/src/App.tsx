@@ -319,21 +319,33 @@ export default () => {
 
 
     const openFlowFromJsonText = (jsonText: string) => {
-        const json = JSON.parse(jsonText)
-        const network = Network.fromJson(json.network)
-        const flow = Flow.fromJson(json.flow)
-        setNetworkAndFlow({ network, flow })
-        AppToaster.show({ message: "Dynamic Flow loaded.", intent: 'success' })
+        try {
+            const json = JSON.parse(jsonText)
+            const network = Network.fromJson(json.network)
+            const flow = Flow.fromJson(json.flow)
+            setNetworkAndFlow({ network, flow })
+            AppToaster.show({ message: "Dynamic Flow loaded.", intent: 'success' })
+        } catch (error) {
+            if (error instanceof SyntaxError) {
+                console.error(error)
+                AppToaster.show({message: String(error), intent: "danger"})
+            } else {
+                console.error(error)
+                AppToaster.show({ message: "Could not construct a flow: " + String(error), intent: "danger"})
+            }
+        }
     }
 
     const onOpen: React.FormEventHandler<HTMLInputElement> = (event: any) => {
         for (const file of event.target.files) {
             const reader = new FileReader()
-            reader.addEventListener("load", event => {
+            reader.addEventListener("load", () => {
                 // @ts-ignore
                 openFlowFromJsonText(reader.result)
             })
             reader.readAsText(file)
+            reader.addEventListener("abort", () => AppToaster.show({message: "Could not read file.", intent: "danger"}))
+            reader.addEventListener("error", () => AppToaster.show({message: "Could not read file.", intent: "danger"}))
         }
     }
 
@@ -343,7 +355,7 @@ export default () => {
         if (event.dataTransfer.items) {
             // Use DataTransferItemList interface to access the file(s)
             if (event.dataTransfer.items.length != 1) {
-                alert("Error. Please drop exactly one file.")
+                AppToaster.show({message: "Error. Please drop exactly one file.", intent: "danger"})
                 return
             }
             const item = event.dataTransfer.items[0]
