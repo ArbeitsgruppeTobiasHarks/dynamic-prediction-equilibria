@@ -6,9 +6,9 @@ export class Flow {
     }
 
     static fromJson(json) {
-        const inflow = json.inflow.map(inflows => inflows.map(rightConstant => RightConstant.fromJson(rightConstant)))
-        const outflow = json.outflow.map(outflows => outflows.map(rightConstant => RightConstant.fromJson(rightConstant)))
-        const queues = json.queues.map(queue => PiecewiseLinear.fromJson(queue))
+        const inflow = json["inflow"].map(inflows => inflows.map(rightConstant => RightConstant.fromJson(rightConstant)))
+        const outflow = json["outflow"].map(outflows => outflows.map(rightConstant => RightConstant.fromJson(rightConstant)))
+        const queues = json["queues"].map(queue => PiecewiseLinear.fromJson(queue))
         return new Flow(inflow, outflow, queues)
     }
 }
@@ -33,7 +33,10 @@ export class RightConstant {
     }
 
     static fromJson(json) {
-        return new RightConstant(json.times, json.values)
+        if (!isArrayOfNumbers(json["times"]) || !isArrayOfNumbers(json["values"])) {
+            throw TypeError("Could not parse RightConstant.")
+        }
+        return new RightConstant(json["times"], json["values"])
     }
 }
 
@@ -50,6 +53,14 @@ function elemLRank(arr, x) {
         }
     }
     return high - 1
+}
+
+const isArrayOfNumbers = (value) => {
+    if (!Array.isArray(value)) return false
+    for (const entry of value) {
+        if (typeof entry !== "number") return false
+    }
+    return true
 }
 
 export class PiecewiseLinear {
@@ -83,7 +94,10 @@ export class PiecewiseLinear {
     }
 
     static fromJson(json) {
-        return new PiecewiseLinear(json.times, json.values, json.last_slope, json.first_slope)
+        if (!isArrayOfNumbers(json["times"]) || !isArrayOfNumbers(json["values"]) || typeof json["lastSlope"] !== 'number' || typeof json["firstSlope"] !== 'number') {
+            throw TypeError("Could not parse PiecewiseLinear.")
+        }
+        return new PiecewiseLinear(json["times"], json["values"], json["lastSlope"], json["firstSlope"])
     }
 }
 

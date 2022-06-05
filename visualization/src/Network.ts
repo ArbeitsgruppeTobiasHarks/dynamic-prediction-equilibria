@@ -24,7 +24,7 @@ export class Network {
     }
 
     static fromJson(json: any) {
-        return new Network(json.nodes, json.edges, json.commodities)
+        return new Network(json["nodes"], json["edges"], json["commodities"])
     }
 }
 

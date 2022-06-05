@@ -321,8 +321,8 @@ export default () => {
     const openFlowFromJsonText = (jsonText: string) => {
         try {
             const json = JSON.parse(jsonText)
-            const network = Network.fromJson(json.network)
-            const flow = Flow.fromJson(json.flow)
+            const network = Network.fromJson(json["network"])
+            const flow = Flow.fromJson(json["flow"])
             setNetworkAndFlow({ network, flow })
             AppToaster.show({ message: "Dynamic Flow loaded.", intent: 'success' })
         } catch (error) {
