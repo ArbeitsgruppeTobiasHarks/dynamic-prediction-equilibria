@@ -32,8 +32,8 @@ def _generate_commodities(network: Network, number: int, inflow_horizon: float, 
 
 
 def _add_commodity(network: Network, inflow_horizon: float, demands_range: Tuple[float, float]):
-    source = network.graph.nodes[4]
-    sink = network.graph.nodes[24]
+    source = network.graph.nodes[1]
+    sink = network.graph.nodes[14]
     demand = random.uniform(*demands_range)
     if inflow_horizon < float('inf'):
         commodity = Commodity(source, sink, RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf'))),

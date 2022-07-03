@@ -41,7 +41,7 @@ def generate_queues_and_edge_loads(past_timesteps: int, flows_folder: str, out_f
             continue
         with open(os.path.join(flows_folder, flow_path), "rb") as file:
             flow: DynamicFlow = pickle.load(file)
-        times = [-past_timesteps + i*step_length for i in range(floor(horizon / step_length) + 1)]
+        times = [i*step_length for i in range(-past_timesteps, floor(horizon / step_length) + 1)]
         edgeLoads = flow.get_edge_loads()
         edgeLoadSamples = np.asarray([
             [load(time) if time >= 0 else 0 for time in times] for load in edgeLoads

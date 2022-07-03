@@ -39,10 +39,11 @@ class QueueAndEdgeLoadDataset(Dataset):
     def __getitem__(self, index) -> T_co:
         flow_id, sample_id = divmod(index, self.samples_per_flow)
         data = self._data[flow_id]
-        phi = sample_id + self._past_timesteps
-        past_data = np.reshape(data[:, :, sample_id: phi], newshape=(len(self._network.graph.edges), 2*self._past_timesteps))
-        future_queues = (data[0, self.test_mask, phi: phi + self._future_timesteps]).flatten()
-        return [sample_id] + past_data[self.test_mask].flatten(), future_queues
+        phi = sample_id
+        phi_ind = phi + self._past_timesteps
+        past_data = np.reshape(data[:, :, sample_id: phi_ind], newshape=(len(self._network.graph.edges), 2*self._past_timesteps))
+        future_queues = (data[0, self.test_mask, phi_ind: phi_ind + self._future_timesteps]).flatten()
+        return np.concatenate(([phi], past_data[self.test_mask].flatten())), future_queues
 
     def __len__(self):
         return len(self._data) * self.samples_per_flow

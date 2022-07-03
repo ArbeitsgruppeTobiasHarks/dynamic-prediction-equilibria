@@ -2,15 +2,14 @@ import json
 import os
 
 from core.predictors.constant_predictor import ConstantPredictor
-from core.predictors.full_net_linear_regression_predictor import FullNetLinearRegressionPredictor
 from core.predictors.linear_predictor import LinearPredictor
-from core.predictors.per_edge_linear_regression_predictor import PerEdgeLinearRegressionPredictor
 from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
+from core.predictors.tf_full_net_predictor import TFFullNetPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate_network import eval_network
 from importer.sioux_falls_importer import import_sioux_falls
-from ml.SKLearnLinRegFullNetworkModel import train_full_net_model
+from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads
 
@@ -24,20 +23,20 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     models_per_edge_dir = os.path.join(scenario_dir, "models-per-edge")
     eval_dir = os.path.join(scenario_dir, "eval")
 
-    reroute_interval = .25
-    inflow_horizon = 25.
-    horizon = 75
+    reroute_interval = .125
+    inflow_horizon = 12.
+    horizon = 50.
     past_timesteps = 20
     future_timesteps = 20
     pred_horizon = 20.
     prediction_interval = 1.
 
     network = import_sioux_falls(edges_tntp_path, nodes_tntp_path, network_path, inflow_horizon)
-    build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon, number_flows=50, horizon=horizon, reroute_interval=reroute_interval)
+    build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon, number_flows=500, horizon=horizon, reroute_interval=reroute_interval)
 
     generate_queues_and_edge_loads(past_timesteps, flows_dir, queues_dir, horizon, step_length=prediction_interval)
 
-    test_mask = train_full_net_model(queues_dir, future_timesteps, past_timesteps, network, full_net_model_path)
+    test_mask = train_tf_full_net_model(queues_dir, future_timesteps, past_timesteps, network, full_net_model_path)
 
     #expanded_queues_from_flows_per_edge(network_path, past_timesteps, 1., future_timesteps, flows_dir,
     #                                    expanded_per_edge_dir, horizon, average=False, sample_step=1)
@@ -57,7 +56,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
             PredictorType.CONSTANT: ConstantPredictor(network),
             PredictorType.LINEAR: LinearPredictor(network, pred_horizon),
             PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, pred_horizon, delta=1.),
-            PredictorType.MACHINE_LEARNING: FullNetLinearRegressionPredictor.from_model(
+            PredictorType.MACHINE_LEARNING: TFFullNetPredictor.from_model(
                 network,
                 full_net_model_path,
                 test_mask,

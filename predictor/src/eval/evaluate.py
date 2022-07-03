@@ -1,10 +1,14 @@
 import json
+from math import floor
 import os
 import pickle
 from pathlib import Path
 from typing import Optional, Dict, Callable
 
+import numpy as np
+
 from core.bellman_ford import bellman_ford
+from core.dynamic_flow import DynamicFlow
 from core.flow_builder import FlowBuilder
 from core.network import Network, Commodity
 from core.predictor import Predictor
@@ -46,7 +50,8 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
                         output_folder: Optional[str] = None, suppress_log: bool = False,
                         build_predictors: PredictorBuilder = _build_default_predictors):
     if output_folder is not None and flow_id is None:
-        raise ValueError("You specified an output folder, but no flow_id. Specify flow_id to save the flow.")
+        raise ValueError(
+            "You specified an output folder, but no flow_id. Specify flow_id to save the flow.")
     if output_folder is not None:
         os.makedirs(output_folder, exist_ok=True)
         pickle_path = os.path.join(output_folder, f"{flow_id}.pickle")
@@ -67,12 +72,15 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         )
     else:
         demand_per_comm = RightConstant(
-            [0., inflow_horizon], [commodity.net_inflow.values[0] / 16 / len(predictors), 0.], (0., float('inf'))
+            [0., inflow_horizon], [commodity.net_inflow.values[0] /
+                                   16 / len(predictors), 0.], (0., float('inf'))
         )
 
-    new_commodities = range(len(network.commodities), len(network.commodities) + len(predictors))
+    new_commodities = range(len(network.commodities), len(
+        network.commodities) + len(predictors))
     for i in predictors:
-        network.commodities.append(Commodity(commodity.source, commodity.sink, demand_per_comm, i))
+        network.commodities.append(
+            Commodity(commodity.source, commodity.sink, demand_per_comm, i))
 
     if output_folder is not None and Path(pickle_path).exists():
         with open(pickle_path, "rb") as file:
@@ -80,7 +88,8 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         flow._network = network
     else:
         flow_builder = FlowBuilder(network, predictors, reroute_interval)
-        flow, elapsed = build_with_times(flow_builder, flow_id, reroute_interval, horizon, new_commodities, suppress_log)
+        flow, elapsed = build_with_times(
+            flow_builder, flow_id, reroute_interval, horizon, new_commodities, suppress_log)
 
         if pickle_path is not None:
             with open(pickle_path, "wb") as file:
@@ -90,7 +99,8 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
     costs = [
         PiecewiseLinear(
             flow.queues[e].times,
-            [network.travel_time[e] + v / network.capacity[e] for v in flow.queues[e].values],
+            [network.travel_time[e] + v / network.capacity[e]
+                for v in flow.queues[e].values],
             flow.queues[e].first_slope / network.capacity[e],
             flow.queues[e].last_slope / network.capacity[e],
             domain=(0., horizon)
@@ -116,7 +126,8 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             inflow_until = horizon
         integral_travel_time = travel_time.integrate(0, h)
         if h < inflow_until:
-            integral_travel_time += horizon * (inflow_until - h) - (inflow_until ** 2 - h ** 2) / 2
+            integral_travel_time += horizon * \
+                (inflow_until - h) - (inflow_until ** 2 - h ** 2) / 2
         avg_travel_time = integral_travel_time / inflow_until
         return avg_travel_time
 
@@ -125,7 +136,8 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
                        integrate_opt(labels[commodity.source])
                        if commodity.source in labels
                        else inflow_horizon*horizon - inflow_horizon**2 / 2
-                   ]
+    ]
+
     save_dict = {
         "horizon": horizon,
         "original_commodity": flow_id,
@@ -134,10 +146,49 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
     }
 
     if not suppress_log:
-        print(f"The following average travel times were computed for flow#{flow_id}:")
+        print(
+            f"The following average travel times were computed for flow#{flow_id}:")
         print(travel_times)
 
     if json_path is not None:
         with open(json_path, "w") as file:
             json.dump(save_dict, file)
+    evaluate_prediction_accuracy(flow, predictors, 20, horizon)
     return travel_times, elapsed, flow
+
+
+def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorType, Predictor], future_timesteps: int, horizon: int):
+    pred_interval = 1.
+    reroute_interval = .25
+    horizon = 30
+    predictions = {}
+    diffs = {}
+    for (predictor_type, predictor) in predictors.items():
+        pred_times = [
+            i*reroute_interval for i in range(0, floor(horizon / reroute_interval))]
+
+        def to_samples(pred_time):
+            pred_queues = predictor.predict(pred_time, flow)
+            return [
+                [
+                    pred_queue(pred_time + k*pred_interval)
+                    for pred_queue in pred_queues
+                ]
+                for k in range(future_timesteps)
+            ]
+        predictions[predictor_type] = np.array(
+            [to_samples(pred_time) for pred_time in pred_times]
+        )
+        diffs[predictor_type] = np.array(
+            [
+                [
+                    [
+                        predictions[predictor_type][i, k, e] -
+                        queue(pred_time+k*pred_interval)
+                        for e, queue in enumerate(flow.queues)
+                    ]
+                    for k in range(future_timesteps)]
+                for i, pred_time in enumerate(pred_times)]
+        )
+        print(
+            f"Avg. Accuracy {predictor_type.name}: {np.average(diffs[predictor_type])}")

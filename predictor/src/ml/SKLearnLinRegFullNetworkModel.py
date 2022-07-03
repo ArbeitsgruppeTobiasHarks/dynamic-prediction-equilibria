@@ -31,9 +31,10 @@ def train_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_times
     X_train, X_test, Y_train, Y_test = train_test_split(
         X, Y, test_size=0.1, random_state=42)
 
+    print(Y.shape)
     pipe = make_pipeline(
-        preprocessing.StandardScaler(),
-        LinearRegression())
+        preprocessing.MinMaxScaler(),
+        MLPRegressor(max_iter=500, hidden_layer_sizes=(Y.shape[1]*8, Y.shape[1]*4, Y.shape[1]*2, Y.shape[1]), activation="relu"))
     pipe = pipe.fit(X_train, Y_train)
     score = pipe.score(X_test, Y_test)
     Y_pred = pipe.predict(X_test)

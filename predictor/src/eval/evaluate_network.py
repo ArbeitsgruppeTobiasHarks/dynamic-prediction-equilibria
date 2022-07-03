@@ -15,7 +15,8 @@ def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
                  random_commodities: bool = False, suppress_log=True,
                  build_predictors: Optional[PredictorBuilder] = None, check_for_optimizations: bool = True):
     if check_for_optimizations:
-        assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
+        assert (lambda: False)(
+        ), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
     print("Evaluating the network for all (possible) commodities given in the demands file.")
     print("For each of these commodities, we add an additional commodity - one for each predictor - " +
           "with small inflow rate.")
@@ -52,16 +53,19 @@ def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
                 if sink in network.graph.get_reachable_nodes(source):
                     break
             commodity = Commodity(source, sink,
-                                  net_inflow=RightConstant([0, inflow_horizon], [1, 0], (0, float('inf'))),
+                                  net_inflow=RightConstant([0, inflow_horizon], [
+                                                           1, 0], (0, float('inf'))),
                                   predictor_type=PredictorType.CONSTANT)
             network.commodities.append(commodity)
-            selected_commodity = network.remove_unnecessary_commodities(len(network.commodities) - 1)
+            selected_commodity = network.remove_unnecessary_commodities(
+                len(network.commodities) - 1)
         else:
             selected_commodity = network.remove_unnecessary_commodities(k)
         _, _, flow = evaluate_single_run(network, flow_id=k, inflow_horizon=inflow_horizon,
                                          focused_commodity=selected_commodity, horizon=horizon, reroute_interval=reroute_interval,
                                          suppress_log=suppress_log,
                                          split=split, output_folder=output_folder, build_predictors=build_predictors)
+
         to_visualization_json(
             output_folder + "/visualization/ " +
             f"{k}.vis.json", flow, network,
@@ -96,7 +100,8 @@ def network_results_from_file_to_tikz(directory: str):
     configs = [
         {"label": "$\\hat q^{\\text{Z}}$", "color": "blue"},
         {"label": "$\\hat q^{\\text{C}}$", "color": "red"},
-        {"label": "$\\hat q^{\\text{L}}$", "color": "{rgb,255:red,0; green,128; blue,0}"},
+        {"label": "$\\hat q^{\\text{L}}$",
+            "color": "{rgb,255:red,0; green,128; blue,0}"},
         {"label": "$\\hat q^{\\text{RL}}$", "color": "orange"},
         {"label": "$\\hat q^{\\text{ML}}$", "color": "black"},
     ]
