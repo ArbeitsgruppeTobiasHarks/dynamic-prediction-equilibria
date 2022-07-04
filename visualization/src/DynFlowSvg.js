@@ -104,7 +104,7 @@ export const SvgDefs = ({ svgIdPrefix }) => (<>
 </>
 )
 
-export const BaseEdge = ({ multiGroup, translate, svgIdPrefix, waitingTimeScale, transitTime, visible, from, to, offset, strokeWidth, flowScale, capacity, inEdgeSteps = [], queueSteps = [] }) => {
+export const BaseEdge = ({ multiGroup, translate, svgIdPrefix, waitingTimeScale, transitTime, visible, from, to, offset, strokeWidth, flowScale, capacity, inEdgeSteps = [], queueSteps = [], id }) => {
     const width = flowScale * capacity
     const padding = offset
     const arrowHeadWidth = offset / 2
@@ -118,7 +118,7 @@ export const BaseEdge = ({ multiGroup, translate, svgIdPrefix, waitingTimeScale,
     //return <path d={`M${start[0]},${start[1]}L${end[0]},${end[1]}`} />
     const normOffsetted = norm - 2 * padding - arrowHeadWidth
 
-    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]}) translate(0 ${translate})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0}>
+    return <g transform={`rotate(${deg}, ${edgeStart[0]}, ${edgeStart[1]}) translate(0 ${translate})`} style={{ transition: "opacity 0.2s" }} opacity={visible ? 1 : 0} data-id={id}>
         <path strokeLinejoin='round' strokeWidth={strokeWidth} stroke="black" fill="lightgray" d={d.M(edgeStart[0] + normOffsetted + strokeWidth / 2, edgeStart[1] - arrowHeadHeight / 2 - strokeWidth / 2) + d.l(arrowHeadWidth, arrowHeadHeight / 2 + strokeWidth / 2) + d.l(-arrowHeadWidth, arrowHeadHeight / 2 + strokeWidth / 2) + d.z} />
         <rect
             x={edgeStart[0]} y={edgeStart[1] - width / 2}
@@ -164,7 +164,7 @@ export const BaseEdge = ({ multiGroup, translate, svgIdPrefix, waitingTimeScale,
 }
 
 
-export const FlowEdge = ({ flowScale, translate, multiGroup, waitingTimeScale, strokeWidth, svgIdPrefix, from, to, outflowSteps, queue, t, capacity, transitTime, visible = true, offset }) => {
+export const FlowEdge = ({ flowScale, id, translate, multiGroup, waitingTimeScale, strokeWidth, svgIdPrefix, from, to, outflowSteps, queue, t, capacity, transitTime, visible = true, offset }) => {
     const { inEdgeSteps, queueSteps } = splitOutflowSteps(outflowSteps, queue, transitTime, capacity, t)
 
     return (
@@ -178,6 +178,7 @@ export const FlowEdge = ({ flowScale, translate, multiGroup, waitingTimeScale, s
             visible={visible}
             from={from}
             to={to}
+            id={id}
             transitTime={transitTime}
             flowScale={flowScale}
             capacity={capacity}

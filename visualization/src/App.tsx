@@ -160,7 +160,7 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                 event.stopImmediatePropagation()
                 event.preventDefault()
                 const delta = [event.movementX, event.movementY]
-                setCenter(center => [center[0] - delta[0] / zoom / 2, center[1] - delta[1] / zoom / 2])
+                setCenter(center => [center[0] - delta[0] / zoom, center[1] - delta[1] / zoom])
                 return false
             }
             const handleMouseUp = (event: MouseEvent) => {
@@ -303,6 +303,7 @@ const EdgesCoordinator = (
             const fromNode = props.network.nodesMap[edge.from]
             const toNode = props.network.nodesMap[edge.to]
             return <FlowEdge
+                id={edge.id}
                 waitingTimeScale={props.waitingTimeScale} strokeWidth={props.strokeWidth} flowScale={props.flowScale} translate={translate} multiGroup={multiGroup}
                 key={edge.id} t={props.t} capacity={edge.capacity} offset={props.edgeOffset} from={[fromNode.x, fromNode.y]} to={[toNode.x, toNode.y]} svgIdPrefix={props.svgIdPrefix}
                 outflowSteps={outflowSteps[edge.id]} transitTime={edge.transitTime} queue={props.flow.queues[edge.id]}
