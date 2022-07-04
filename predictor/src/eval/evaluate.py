@@ -46,7 +46,8 @@ PredictorBuilder = Callable[[Network], Dict[PredictorType, Predictor]]
 
 
 def evaluate_single_run(network: Network, focused_commodity: int, split: bool, horizon: float,
-                        reroute_interval: float, inflow_horizon: float, flow_id: Optional[int] = None,
+                        reroute_interval: float, inflow_horizon: float, future_timesteps: float,
+                        prediction_interval: float, flow_id: Optional[int] = None,
                         output_folder: Optional[str] = None, suppress_log: bool = False,
                         build_predictors: PredictorBuilder = _build_default_predictors):
     if output_folder is not None and flow_id is None:
@@ -153,25 +154,32 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
     if json_path is not None:
         with open(json_path, "w") as file:
             json.dump(save_dict, file)
-    evaluate_prediction_accuracy(flow, predictors, 20, horizon)
+    evaluate_prediction_accuracy(
+        flow, predictors, future_timesteps, reroute_interval, prediction_interval, horizon)
     return travel_times, elapsed, flow
 
 
-def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorType, Predictor], future_timesteps: int, horizon: int):
-    pred_interval = 1.
-    reroute_interval = .25
-    horizon = 30
+def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorType, Predictor], future_timesteps: int, reroute_interval: float, prediction_interval: float, horizon: float):
+    eval_horizon = horizon - future_timesteps * prediction_interval
     predictions = {}
     diffs = {}
-    for (predictor_type, predictor) in predictors.items():
-        pred_times = [
-            i*reroute_interval for i in range(0, floor(horizon / reroute_interval))]
+    pred_times = [
+        i*reroute_interval for i in range(0, floor(eval_horizon / reroute_interval) + 1)]
 
+    stride = round(prediction_interval / reroute_interval)
+    queue_values = np.array(
+        [
+            [queue(i*reroute_interval) for queue in flow.queues]
+            for i in range(0, floor(horizon / reroute_interval) + 1)
+        ]
+    )
+
+    for (predictor_type, predictor) in predictors.items():
         def to_samples(pred_time):
             pred_queues = predictor.predict(pred_time, flow)
             return [
                 [
-                    pred_queue(pred_time + k*pred_interval)
+                    pred_queue(pred_time + (k+1)*prediction_interval)
                     for pred_queue in pred_queues
                 ]
                 for k in range(future_timesteps)
@@ -182,13 +190,12 @@ def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorTy
         diffs[predictor_type] = np.array(
             [
                 [
-                    [
-                        predictions[predictor_type][i, k, e] -
-                        queue(pred_time+k*pred_interval)
-                        for e, queue in enumerate(flow.queues)
-                    ]
+                    predictions[predictor_type][pred_ind, k, :] -
+                    queue_values[pred_ind + (k+1)*stride, :]
                     for k in range(future_timesteps)]
-                for i, pred_time in enumerate(pred_times)]
+                for pred_ind, _ in enumerate(pred_times)
+            ]
         )
-        print(
-            f"Avg. Accuracy {predictor_type.name}: {np.average(diffs[predictor_type])}")
+    
+    print("MAE. " + "; ".join([f"{predictor_type.name}: {np.average(np.abs(diffs[predictor_type]))}" for predictor_type in diffs]))
+    return diffs

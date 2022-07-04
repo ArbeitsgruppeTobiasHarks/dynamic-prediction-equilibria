@@ -40,7 +40,7 @@ def run_scenario(scenario_dir: str):
                 check_for_optimizations=False)
 
     generate_queues_and_edge_loads(
-        past_timesteps, flows_dir, queues_and_edge_loads_dir, horizon, step_length=prediction_interval)
+        past_timesteps, flows_dir, queues_and_edge_loads_dir, horizon, reroute_interval, prediction_interval)
 
     test_mask = train_full_net_model(
         queues_and_edge_loads_dir, past_timesteps, future_timesteps, network, full_net_model_path)
@@ -54,6 +54,8 @@ def run_scenario(scenario_dir: str):
         network_path,
         eval_dir,
         inflow_horizon,
+        future_timesteps,
+        prediction_interval,
         reroute_interval,
         horizon,
         random_commodities=False,

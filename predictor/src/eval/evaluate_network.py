@@ -11,8 +11,8 @@ from visualization.to_json import to_visualization_json
 
 
 def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
-                 reroute_interval: float, horizon: float, split: bool = False,
-                 random_commodities: bool = False, suppress_log=True,
+                 future_timesteps: int, prediction_interval: float, reroute_interval: float, horizon: float,
+                 split: bool = False, random_commodities: bool = False, suppress_log=True,
                  build_predictors: Optional[PredictorBuilder] = None, check_for_optimizations: bool = True):
     if check_for_optimizations:
         assert (lambda: False)(
@@ -61,10 +61,10 @@ def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
                 len(network.commodities) - 1)
         else:
             selected_commodity = network.remove_unnecessary_commodities(k)
-        _, _, flow = evaluate_single_run(network, flow_id=k, inflow_horizon=inflow_horizon,
-                                         focused_commodity=selected_commodity, horizon=horizon, reroute_interval=reroute_interval,
-                                         suppress_log=suppress_log,
-                                         split=split, output_folder=output_folder, build_predictors=build_predictors)
+        _, _, flow = evaluate_single_run(network, flow_id=k, focused_commodity=selected_commodity,
+                                         horizon=horizon, reroute_interval=reroute_interval,
+                                         inflow_horizon=inflow_horizon, future_timesteps=future_timesteps, prediction_interval=prediction_interval,
+                                         suppress_log=suppress_log, split=split, output_folder=output_folder, build_predictors=build_predictors)
 
         to_visualization_json(
             output_folder + "/visualization/ " +
