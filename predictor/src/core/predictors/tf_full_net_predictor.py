@@ -54,7 +54,7 @@ class TFFullNetPredictor(Predictor):
         # past_data = np.reshape(data[:, :, sample_id: phi_ind], newshape=(len(self._network.graph.edges), 2*self._past_timesteps))
         past_data = np.reshape(data, newshape=(len(self._network.graph.edges), 2*self._past_timesteps))
 
-        future_queues_raw = self._model.predict([[phi, *(past_data[self._test_mask].flatten())]])[0]
+        future_queues_raw = self._model.predict([[phi, *(past_data[self._test_mask].flatten())]], verbose=0)[0]
         future_queues_raw = np.maximum(
             future_queues_raw, np.zeros_like(future_queues_raw))
         for e_id, old_queue in enumerate(flow.queues):
