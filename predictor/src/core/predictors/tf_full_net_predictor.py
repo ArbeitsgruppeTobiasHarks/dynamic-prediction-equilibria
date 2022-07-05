@@ -13,14 +13,14 @@ from utilities.piecewise_linear import PiecewiseLinear
 
 class TFFullNetPredictor(Predictor):
 
-    def __init__(self, model: tf.keras.Sequential, test_mask: np.ndarray, network: Network, past_timesteps: int, future_timesteps: int, step_length: float):
+    def __init__(self, model: tf.keras.Sequential, test_mask: np.ndarray, network: Network, past_timesteps: int, future_timesteps: int, prediction_interval: float):
         super().__init__(network)
         self._model = model
         self._test_mask = test_mask
         self._network = network
         self._past_timesteps = past_timesteps
         self._future_timesteps = future_timesteps
-        self._step_length = step_length
+        self._prediction_interval = prediction_interval
 
     def type(self) -> str:
         return "Full Net Linear Regression Predictor"
@@ -34,7 +34,7 @@ class TFFullNetPredictor(Predictor):
         edges = self.network.graph.edges
         zero_fct = PiecewiseLinear([prediction_time], [0.], 0., 0.)
         assert len(edges) == len(flow.queues)
-        input_times = [prediction_time + t*self._step_length for t in range(-self._past_timesteps+1, 1)]
+        input_times = [prediction_time + t*self._prediction_interval for t in range(-self._past_timesteps+1, 1)]
         queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
 
         edge_loads = flow.get_edge_loads()
@@ -71,13 +71,13 @@ class TFFullNetPredictor(Predictor):
 
             for i in range(1, len(new_values)):
                 new_values[i] = max(
-                    new_values[i], new_values[i-1] - self._step_length * self._network.capacity[e_id])
+                    new_values[i], new_values[i-1] - self._prediction_interval * self._network.capacity[e_id])
 
             queues[e_id] = PiecewiseLinear(times, new_values, 0., 0.)
 
         return queues
 
     @staticmethod
-    def from_model(network: Network, model_path: str, test_mask, past_timesteps: int, future_timesteps: int, step_length: float):
+    def from_model(network: Network, model_path: str, test_mask, past_timesteps: int, future_timesteps: int, prediction_interval: float):
         model = tf.keras.models.load_model(model_path)
-        return TFFullNetPredictor(model, test_mask, network, past_timesteps, future_timesteps, step_length)
+        return TFFullNetPredictor(model, test_mask, network, past_timesteps, future_timesteps, prediction_interval)
