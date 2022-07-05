@@ -14,7 +14,7 @@ from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.tf_full_net_predictor import TFFullNetPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate import evaluate_prediction_accuracy
-from eval.evaluate_network import eval_network
+from eval.evaluate_network import eval_network_demand
 from importer.sioux_falls_importer import import_sioux_falls
 from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.build_test_flows import build_flows
@@ -62,6 +62,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
 
     network = import_sioux_falls(
         edges_tntp_path, nodes_tntp_path, network_path, inflow_horizon)
+    
     build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon,
                 number_flows=500, horizon=horizon, reroute_interval=reroute_interval)
 
@@ -93,15 +94,15 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
 
     #train_per_edge_model(network_path, expanded_per_edge_dir, models_per_edge_dir, past_timesteps, future_timesteps)
 
-    eval_network(
+    eval_network_demand(
         network_path,
+        10,
         eval_dir,
         inflow_horizon,
         future_timesteps,
         prediction_interval,
         reroute_interval,
         horizon,
-        random_commodities=False,
         suppress_log=False,
         build_predictors=build_predictors)
 

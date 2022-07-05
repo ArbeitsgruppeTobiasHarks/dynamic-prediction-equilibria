@@ -7,7 +7,7 @@ from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
-from eval.evaluate_network import eval_network
+from eval.evaluate_network import eval_network_for_commodities
 from importer.csv_importer import network_from_csv, add_demands_to_network
 from ml.SKLearnLinRegExpandedModel import train_expanded_model
 from ml.build_test_flows import build_flows
@@ -43,7 +43,7 @@ def run_scenario(arcs_path: str, demands_path: str, scenario_dir: str):
                                sample_step=10)
     train_expanded_model(os.path.join(scenario_dir, "expanded_queues.csv.gz"), scenario_dir, past_timesteps,
                          future_timesteps)
-    eval_network(
+    eval_network_for_commodities(
         network_path,
         eval_dir,
         inflow_horizon,

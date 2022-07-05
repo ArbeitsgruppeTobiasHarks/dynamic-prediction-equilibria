@@ -1,4 +1,5 @@
 import json
+from math import ceil, log10
 import os
 import random
 from typing import Optional
@@ -6,14 +7,60 @@ from typing import Optional
 from core.network import Network, Commodity
 from core.predictors.predictor_type import PredictorType
 from eval.evaluate import COLORS, evaluate_single_run, PredictorBuilder
+from ml.build_test_flows import generate_network_demands
+from utilities.file_lock import wait_for_locks, with_file_lock
 from utilities.right_constant import RightConstant
 from visualization.to_json import to_visualization_json
 
 
-def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
-                 future_timesteps: int, prediction_interval: float, reroute_interval: float, horizon: float,
-                 split: bool = False, random_commodities: bool = False, suppress_log=True,
-                 build_predictors: Optional[PredictorBuilder] = None, check_for_optimizations: bool = True):
+def eval_network_demand(network_path: str, number_flows: int, out_dir: str, inflow_horizon: float,
+                        future_timesteps: int, prediction_interval: float, reroute_interval: float,
+                        horizon: float, build_predictors: PredictorBuilder, split: bool = False,
+                        suppress_log=True, check_for_optimizations: bool = True):
+    '''
+    Expects a single commodity.
+    '''
+    if check_for_optimizations:
+        assert (lambda: False)(
+        ), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
+    os.makedirs(out_dir, exist_ok=True)
+
+    for flow_id in range(number_flows):
+        flow_path = os.path.join(
+            out_dir, f"{str(flow_id).zfill(ceil(log10(number_flows)))}.pickle")
+
+        def handle(open_file):
+            network = Network.from_file(network_path)
+            json_eval_path = os.path.join(
+                out_dir, f"{str(flow_id).zfill(ceil(log10(number_flows)))}.json")
+
+            seed = -flow_id - 1
+            print()
+            print(
+                f"Building Evaluation Flow#{flow_id} with seed {seed}...")
+            generate_network_demands(network, seed, inflow_horizon)
+            _, _, flow = evaluate_single_run(network, flow_id=flow_id, focused_commodity=0,
+                                             horizon=horizon, reroute_interval=reroute_interval, flow_path=flow_path, json_eval_path=json_eval_path,
+                                             inflow_horizon=inflow_horizon, future_timesteps=future_timesteps, prediction_interval=prediction_interval,
+                                             suppress_log=suppress_log, split=split, build_predictors=build_predictors)
+
+            to_visualization_json(
+                out_dir + "/visualization/ " +
+                f"{flow_id}.vis.json", flow, network,
+                {id: COLORS[comm.predictor_type]
+                    for (id, comm) in enumerate(network.commodities)}
+            )
+        with_file_lock(flow_path, handle)
+    
+    wait_for_locks(out_dir)
+
+    network_results_from_file_to_tikz(out_dir)
+
+
+def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon: float,
+                                 future_timesteps: int, prediction_interval: float, reroute_interval: float, horizon: float,
+                                 split: bool = False, random_commodities: bool = False, suppress_log=True,
+                                 build_predictors: Optional[PredictorBuilder] = None, check_for_optimizations: bool = True):
     if check_for_optimizations:
         assert (lambda: False)(
         ), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
@@ -26,10 +73,10 @@ def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
           "Make sure to delete the output folder if you want to do another round of evaluations.")
     print()
     num_commodities = len(Network.from_file(network_path).commodities)
-    os.makedirs(output_folder, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
     for k in range(num_commodities):
-        eval_path = os.path.join(output_folder, f"{k}.json")
-        lock_path = os.path.join(output_folder, f".lock.{k}.json")
+        eval_path = os.path.join(out_dir, f"{k}.json")
+        lock_path = os.path.join(out_dir, f".lock.{k}.json")
         if os.path.exists(eval_path):
             print(f"Commodity {k} already evaluated. Skipping...")
             continue
@@ -64,17 +111,17 @@ def eval_network(network_path: str, output_folder: str, inflow_horizon: float,
         _, _, flow = evaluate_single_run(network, flow_id=k, focused_commodity=selected_commodity,
                                          horizon=horizon, reroute_interval=reroute_interval,
                                          inflow_horizon=inflow_horizon, future_timesteps=future_timesteps, prediction_interval=prediction_interval,
-                                         suppress_log=suppress_log, split=split, output_folder=output_folder, build_predictors=build_predictors)
+                                         suppress_log=suppress_log, split=split, out_dir=out_dir, build_predictors=build_predictors)
 
         to_visualization_json(
-            output_folder + "/visualization/ " +
+            out_dir + "/visualization/ " +
             f"{k}.vis.json", flow, network,
             {id: COLORS[comm.predictor_type]
                 for (id, comm) in enumerate(network.commodities)}
         )
         os.remove(lock_path)
 
-    network_results_from_file_to_tikz(output_folder)
+    network_results_from_file_to_tikz(out_dir)
 
 
 def network_results_from_file_to_tikz(directory: str):
