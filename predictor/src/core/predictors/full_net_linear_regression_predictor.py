@@ -57,7 +57,8 @@ class FullNetLinearRegressionPredictor(Predictor):
             len(self._network.graph.edges), 2*self._past_timesteps))
 
         future_queues_raw = self._lin_reg.predict(
-            [[phi] + past_data[self._test_mask].flatten()])[0]
+            [np.concatenate([[phi], past_data[self._test_mask].flatten()])]
+        )[0]
         future_queues_raw = np.maximum(
             future_queues_raw, np.zeros_like(future_queues_raw))
         for e_id, old_queue in enumerate(flow.queues):
@@ -71,7 +72,7 @@ class FullNetLinearRegressionPredictor(Predictor):
                 *future_queues_raw[
                     masked_id * self._future_timesteps: (masked_id + 1) * self._future_timesteps]
             ]
-            
+
             for i in range(1, len(new_values)):
                 new_values[i] = max(
                     new_values[i], new_values[i-1] - self._step_length * self._network.capacity[e_id])
