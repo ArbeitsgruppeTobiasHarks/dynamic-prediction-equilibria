@@ -99,6 +99,7 @@ const useAverageCapacity = (network: Network) => React.useMemo(
 )
 
 const FPS = 30
+const ZOOM_MULTIPLER = 1.125
 
 const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     const [t, setT] = useState(0)
@@ -149,7 +150,7 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     }
 
     const handleWheel: React.WheelEventHandler = (event) => {
-        setManualZoom(Math.max(stdZoom / 2, zoom + 1 / 32 * stdZoom * event.deltaY))
+        setManualZoom(Math.max(stdZoom / 4, zoom * (event.deltaY < 0 ? ZOOM_MULTIPLER : 1 / ZOOM_MULTIPLER)))
     }
 
     useEffect(
@@ -247,7 +248,9 @@ const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                     edgeOffset={edgeOffset} t={t} network={props.network} flow={props.flow} />
             </svg>
             <div style={{ position: "absolute", bottom: "16px", right: 0 }}>
-                <div style={{ padding: '8px' }}><Slider value={zoom} min={stdZoom / 2} max={stdZoom * 5} onChange={value => setManualZoom(value)} vertical labelRenderer={false} showTrackFill={false} /></div>
+                <div style={{ padding: '8px' }}>
+                    <Slider value={Math.log(zoom / stdZoom) / Math.log(ZOOM_MULTIPLER)} min={-10} max={10} onChange={value => setManualZoom(stdZoom * Math.pow(ZOOM_MULTIPLER, value))} vertical labelRenderer={false} showTrackFill={false} />
+                </div>
                 <Button icon="reset" onClick={onResetCamera} />
             </div>
         </div>
@@ -288,10 +291,10 @@ const EdgesCoordinator = (
     const edgesWithViewOpts = _.map(grouped, group => {
         const sorted = _.sortBy(group, edge => edge.from)
         const totalCapacity = _.sum(group.map(edge => edge.capacity))
-        let translate = -totalCapacity * props.flowScale / 2 - props.strokeWidth * (group.length + 1)/2
+        let translate = -totalCapacity * props.flowScale / 2 - props.strokeWidth * (group.length + 1) / 2
         return sorted.map(edge => {
-            const edgeTranslate = translate  + edge.capacity * props.flowScale / 2 + props.strokeWidth / 2
-            translate += edge.capacity*props.flowScale + props.strokeWidth
+            const edgeTranslate = translate + edge.capacity * props.flowScale / 2 + props.strokeWidth / 2
+            translate += edge.capacity * props.flowScale + props.strokeWidth
             return {
                 translate: edgeTranslate * (edge.from < edge.to ? -1 : 1), edge, multiGroup: group.length > 1
             }
@@ -329,10 +332,10 @@ export default () => {
         } catch (error) {
             if (error instanceof SyntaxError) {
                 console.error(error)
-                AppToaster.show({message: String(error), intent: "danger"})
+                AppToaster.show({ message: String(error), intent: "danger" })
             } else {
                 console.error(error)
-                AppToaster.show({ message: "Could not construct a flow: " + String(error), intent: "danger"})
+                AppToaster.show({ message: "Could not construct a flow: " + String(error), intent: "danger" })
             }
         }
     }
@@ -345,8 +348,8 @@ export default () => {
                 openFlowFromJsonText(reader.result)
             })
             reader.readAsText(file)
-            reader.addEventListener("abort", () => AppToaster.show({message: "Could not read file.", intent: "danger"}))
-            reader.addEventListener("error", () => AppToaster.show({message: "Could not read file.", intent: "danger"}))
+            reader.addEventListener("abort", () => AppToaster.show({ message: "Could not read file.", intent: "danger" }))
+            reader.addEventListener("error", () => AppToaster.show({ message: "Could not read file.", intent: "danger" }))
         }
     }
 
@@ -356,7 +359,7 @@ export default () => {
         if (event.dataTransfer.items) {
             // Use DataTransferItemList interface to access the file(s)
             if (event.dataTransfer.items.length != 1) {
-                AppToaster.show({message: "Error. Please drop exactly one file.", intent: "danger"})
+                AppToaster.show({ message: "Error. Please drop exactly one file.", intent: "danger" })
                 return
             }
             const item = event.dataTransfer.items[0]
