@@ -31,23 +31,27 @@ def generate_queues(past_timesteps: int, flows_folder: str, out_folder: str, hor
         np.savetxt(queue_path, queues)
 
 
-def generate_queues_and_edge_loads(past_timesteps: int, flows_folder: str, out_folder: str, horizon: int, reroute_interval: float, prediction_interval: float):
-    os.makedirs(out_folder, exist_ok=True)
-    
-    reroute_intervals_in_prediction_interval = round(prediction_interval / reroute_interval)
-    if abs(reroute_intervals_in_prediction_interval - prediction_interval / reroute_interval) > 1e-14:
-        raise ValueError("Prediction interval is not a multiple of reroute interval.")
+def generate_queues_and_edge_loads(past_timesteps: int, flows_dir: str, out_dir: str, horizon: int, reroute_interval: float, prediction_interval: float):
+    os.makedirs(out_dir, exist_ok=True)
 
-    files = sorted([file for file in os.listdir(flows_folder) if file.endswith(".flow.pickle")])
+    reroute_intervals_in_prediction_interval = round(
+        prediction_interval / reroute_interval)
+    if abs(reroute_intervals_in_prediction_interval - prediction_interval / reroute_interval) > 1e-14:
+        raise ValueError(
+            "Prediction interval is not a multiple of reroute interval.")
+
+    files = sorted([file for file in os.listdir(
+        flows_dir) if file.endswith(".flow.pickle")])
 
     for flow_filename in files:
         flow_id = flow_filename[: len(flow_filename) - len(".flow.pickle")]
-        out_path = os.path.join(out_folder, f"{flow_id}-queues-and-edge-loads.npy")
-        
+        out_path = os.path.join(
+            out_dir, f"{flow_id}-queues-and-edge-loads.npy")
+
         def handle(_):
             print(f"Building queues for Flow#{flow_id}...")
-           
-            with open(os.path.join(flows_folder, flow_filename), "rb") as file:
+
+            with open(os.path.join(flows_dir, flow_filename), "rb") as file:
                 flow: DynamicFlow = pickle.load(file)
             times = [
                 i*reroute_interval for i in range(-past_timesteps*reroute_intervals_in_prediction_interval, floor(horizon / reroute_interval) + 1)]
@@ -61,9 +65,9 @@ def generate_queues_and_edge_loads(past_timesteps: int, flows_folder: str, out_f
             stacked = np.stack([queueSamples, edgeLoadSamples])
             np.save(out_path, stacked)
 
-        with_file_lock(out_path, handle)        
-    
-    wait_for_locks(out_folder)
+        with_file_lock(out_path, handle)
+
+    wait_for_locks(out_dir)
 
 
 def generate_training_data_with_edge_loads(past_timesteps: int, future_timesteps: int, flows_dir: str, training_data_dir: str, horizon: float, reroute_interval: float, prediction_interval: float):

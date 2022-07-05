@@ -9,8 +9,8 @@ from core.network import Network
 from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 
 
-def train_tf_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval: float, prediction_interval: float, horizon: float, network: Network, full_net_path: str):
-    epochs = 10
+def train_tf_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval: float, prediction_interval: float, horizon: float, network: Network, full_net_path: str, epochs: int = 10):
+    os.makedirs(full_net_path, exist_ok=True)
 
     if os.path.exists(full_net_path):
         print("Full network model already exists. Skipping...")

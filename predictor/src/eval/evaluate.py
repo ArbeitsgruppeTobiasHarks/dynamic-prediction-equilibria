@@ -2,7 +2,6 @@ import json
 from math import floor
 import os
 import pickle
-from pathlib import Path
 from typing import Optional, Dict, Callable
 
 import numpy as np
@@ -47,19 +46,11 @@ PredictorBuilder = Callable[[Network], Dict[PredictorType, Predictor]]
 
 def evaluate_single_run(network: Network, focused_commodity: int, split: bool, horizon: float,
                         reroute_interval: float, inflow_horizon: float, future_timesteps: float,
-                        prediction_interval: float, flow_id: Optional[int] = None,
-                        output_folder: Optional[str] = None, suppress_log: bool = False,
+                        prediction_interval: float, flow_path: Optional[str] = None, json_eval_path: Optional[str] = None,
+                        flow_id: Optional[str] = None, suppress_log: bool = False,
                         build_predictors: PredictorBuilder = _build_default_predictors):
-    if output_folder is not None and flow_id is None:
-        raise ValueError(
-            "You specified an output folder, but no flow_id. Specify flow_id to save the flow.")
-    if output_folder is not None:
-        os.makedirs(output_folder, exist_ok=True)
-        pickle_path = os.path.join(output_folder, f"{flow_id}.pickle")
-        json_path = os.path.join(output_folder, f"{flow_id}.json")
-    else:
-        pickle_path = None
-        json_path = None
+    os.makedirs(os.path.dirname(flow_path), exist_ok=True)
+    os.makedirs(os.path.dirname(json_eval_path), exist_ok=True)
 
     predictors = build_predictors(network)
 
@@ -83,18 +74,13 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         network.commodities.append(
             Commodity(commodity.source, commodity.sink, demand_per_comm, i))
 
-    if output_folder is not None and Path(pickle_path).exists():
-        with open(pickle_path, "rb") as file:
-            flow = pickle.load(file)
-        flow._network = network
-    else:
-        flow_builder = FlowBuilder(network, predictors, reroute_interval)
-        flow, elapsed = build_with_times(
-            flow_builder, flow_id, reroute_interval, horizon, new_commodities, suppress_log)
+    flow_builder = FlowBuilder(network, predictors, reroute_interval)
+    flow, elapsed = build_with_times(
+        flow_builder, flow_id, reroute_interval, horizon, new_commodities, suppress_log)
 
-        if pickle_path is not None:
-            with open(pickle_path, "wb") as file:
-                pickle.dump(flow, file)
+    if flow_path is not None:
+        with open(flow_path, "wb") as file:
+            pickle.dump(flow, file)
 
     #  Calculating optimal predictor travel times
     costs = [
@@ -151,8 +137,8 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
             f"The following average travel times were computed for flow#{flow_id}:")
         print(travel_times)
 
-    if json_path is not None:
-        with open(json_path, "w") as file:
+    if json_eval_path is not None:
+        with open(json_eval_path, "w") as file:
             json.dump(save_dict, file)
     evaluate_prediction_accuracy(
         flow, predictors, future_timesteps, reroute_interval, prediction_interval, horizon)
@@ -196,6 +182,7 @@ def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorTy
                 for pred_ind, _ in enumerate(pred_times)
             ]
         )
-    
-    print("MAE. " + "; ".join([f"{predictor_type.name}: {np.average(np.abs(diffs[predictor_type]))}" for predictor_type in diffs]))
+
+    print(
+        "MAE. " + "; ".join([f"{predictor_type.name}: {np.average(np.abs(diffs[predictor_type]))}" for predictor_type in diffs]))
     return diffs

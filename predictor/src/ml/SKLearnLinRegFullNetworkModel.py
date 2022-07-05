@@ -17,14 +17,15 @@ from core.network import Network
 from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 
 
-def train_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps, network: Network, model_path):
+def train_full_net_model(queues_and_edge_loads_dir: str, past_timesteps: int, future_timesteps: int,
+                         reroute_interval: float, prediction_interval: float, horizon: float, network: Network, model_path: str):
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     if os.path.exists(model_path):
         print("Full network model already exists. Skipping...")
         return QueueAndEdgeLoadDataset.load_mask(queues_and_edge_loads_dir)
 
     queue_dataset = QueueAndEdgeLoadDataset(
-        queues_and_edge_loads_dir, past_timesteps, future_timesteps, network)
+        queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval, prediction_interval, horizon, network)
     X, Y = zip(*queue_dataset)
     X, Y = np.array(X), np.array(Y)
 
@@ -45,7 +46,6 @@ def train_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_times
     with open(model_path, "wb") as file:
         pickle.dump(pipe, file)
     return queue_dataset.test_mask
-
 
 
 if __name__ == '__main__':

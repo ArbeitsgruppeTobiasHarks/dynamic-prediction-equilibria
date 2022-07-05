@@ -30,7 +30,7 @@ def eval_sample():
             reroute_interval=reroute_interval,
             suppress_log=True,
             inflow_horizon=inflow_horizon,
-            output_folder=None
+            out_dir=None
         )
         for i, val in enumerate(times):
             avg_times[i].append(val)
@@ -155,7 +155,7 @@ def compute_sample_flow_for_visualization():
         reroute_interval=reroute_interval,
         suppress_log=True,
         inflow_horizon=inflow_horizon,
-        output_folder=None
+        out_dir=None
     )
     print(f"Calculated for demand={demand}. times={times}")
     to_visualization_json("./visualization/src/sampleFlowData.json", flow, network, { comm: COLORS[comm.predictor_type] for comm in network.commodities })
