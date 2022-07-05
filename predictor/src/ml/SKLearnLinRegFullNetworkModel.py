@@ -1,11 +1,7 @@
-import datetime
-from gc import callbacks
 import os
 import pickle
 import numpy as np
 from sklearn import preprocessing
-from sklearn.linear_model import LinearRegression
-from sklearn.utils import shuffle
 from sklearn.metrics import mean_squared_error
 
 from sklearn.model_selection import train_test_split
