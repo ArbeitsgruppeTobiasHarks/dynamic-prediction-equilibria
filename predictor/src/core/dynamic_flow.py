@@ -1,4 +1,5 @@
 from __future__ import annotations
+from functools import lru_cache
 
 from typing import List, Dict, Set, Tuple, Optional
 
@@ -179,6 +180,7 @@ class DynamicFlow:
         The user can also specify a maximum extension length using max_extension_length.
         :returns set of edges where the outflow has changed
         """
+        self.get_edge_loads.cache_clear()
         capacity = self._network.capacity
 
         for e in new_inflow.keys():
@@ -217,6 +219,7 @@ class DynamicFlow:
                 horizon)
         return avg_travel_time
 
+    @lru_cache()
     def get_edge_loads(self) -> List[PiecewiseLinear]:
         total_inflow_rates = [
             sum(com_inflow for com_inflow in inflow)
