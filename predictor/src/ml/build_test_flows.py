@@ -2,6 +2,7 @@ from math import ceil, log10
 import os
 import pickle
 import random
+from typing import Optional
 
 from core.flow_builder import FlowBuilder
 from core.network import Network
@@ -14,7 +15,9 @@ from utilities.file_lock import wait_for_locks, with_file_lock
 from visualization.to_json import to_visualization_json
 
 
-def generate_network_demands(network: Network, random_seed: int, inflow_horizon: float, sigma: float):
+def generate_network_demands(network: Network, random_seed: int, inflow_horizon: float, sigma: Optional[float] = None):
+    if sigma is None:
+        sigma = min(network.capacity) / 2.
     random.seed(random_seed)
     for commodity in network.commodities:
         demand = max(0., random.gauss(commodity.net_inflow.values[0], sigma))
@@ -27,7 +30,7 @@ def generate_network_demands(network: Network, random_seed: int, inflow_horizon:
 
 
 def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_flows: int, horizon: float, reroute_interval: float,
-                check_for_optimizations: bool = True):
+                demand_sigma: Optional[float] = None, check_for_optimizations: bool = True):
     os.makedirs(out_dir, exist_ok=True)
     if number_flows == 0:
         return
@@ -42,7 +45,7 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
         def handle(open_file):
             network = Network.from_file(network_path)
             generate_network_demands(
-                network, flow_id, inflow_horizon, sigma=min(network.capacity) / 2.)
+                network, flow_id, inflow_horizon, sigma=demand_sigma)
             print(f"Generating flow with seed {flow_id}...")
             if check_for_optimizations:
                 assert (lambda: False)(
