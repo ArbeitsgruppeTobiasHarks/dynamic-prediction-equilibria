@@ -4,27 +4,33 @@ type EdgeId = IdType
 type CommodityId = IdType
 
 export class Network {
-    edgesMap : { [id: EdgeId]: Edge }
     nodesMap: { [id : NodeId]: NetNode }
+    edgesMap : { [id: EdgeId]: Edge }
     commoditiesMap: { [id: CommodityId]: Commodity}
 
-    constructor(nodes: NetNode[], edges: Edge[], commodities: Commodity[]) {
-        this.nodesMap = nodes.reduce<{ [id: NodeId]: NetNode }>((acc, node) => {
-            acc[node.id] = node
-            return acc
-        }, {})
-        this.edgesMap = edges.reduce<{ [id: EdgeId]: Edge }>((acc, edge) => {
-            acc[edge.id] = edge
-            return acc
-        }, {})
-        this.commoditiesMap = commodities.reduce<{ [id: CommodityId]: Commodity }>((acc, comm) => {
-            acc[comm.id] = comm
-            return acc
-        }, {})
+    constructor(nodesMap: { [id : NodeId]: NetNode }, edgesMap: { [id: EdgeId]: Edge }, commoditiesMap: { [id: CommodityId]: Commodity}) {
+        this.nodesMap = nodesMap
+        this.edgesMap = edgesMap
+        this.commoditiesMap = commoditiesMap
     }
 
     static fromJson(json: any) {
-        return new Network(json["nodes"], json["edges"], json["commodities"])
+        const nodes: NetNode[] = json["nodes"]
+        const edges: Edge[] = json["edges"]
+        const commodities: Commodity[] = json["commodities"]
+        const nodesMap = nodes.reduce<{ [id: NodeId]: NetNode }>((acc, node) => {
+            acc[node.id] = node
+            return acc
+        }, {})
+        const edgesMap = edges.reduce<{ [id: EdgeId]: Edge }>((acc, edge) => {
+            acc[edge.id] = edge
+            return acc
+        }, {})
+        const commoditiesMap = commodities.reduce<{ [id: CommodityId]: Commodity }>((acc, comm) => {
+            acc[comm.id] = comm
+            return acc
+        }, {})
+        return new Network(nodesMap, edgesMap, commoditiesMap)
     }
 }
 

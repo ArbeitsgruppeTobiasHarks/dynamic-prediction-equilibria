@@ -38,7 +38,7 @@ const useAvgDistanceTransitTimeRatio = (network: Network) => React.useMemo(
     [network]
 )
 
-const useInitialBoundingBox = (network: Network, flow: Flow) => React.useMemo(
+const useInitialBoundingBox = (network: Network) => React.useMemo(
     () => {
         const allXCoordinates = _.map(network.nodesMap, node => node.x)
         const x0 = min(allXCoordinates)
@@ -50,7 +50,7 @@ const useInitialBoundingBox = (network: Network, flow: Flow) => React.useMemo(
             x0, x1, width: x1 - x0,
             y0, y1, height: y1 - y0
         }
-    }, [network, flow]
+    }, [network]
 )
 
 const useAverageEdgeDistance = (network: Network) => React.useMemo(
@@ -72,6 +72,22 @@ const useAverageCapacity = (network: Network) => React.useMemo(
     }, [network]
 )
 
+const useScaledNetwork = (network: Network, boundingBox: { x0: number, y0: number, width: number, height: number }) => React.useMemo(
+    () => {
+        const translateX = boundingBox.x0
+        const translateY = boundingBox.y0
+        const scale = 1000 / Math.max(boundingBox.width, boundingBox.height)
+
+        const scaledNodesMap = _.mapValues(network.nodesMap, node => ({
+            id: node.id,
+            label: node.label,
+            x: (node.x - translateX) * scale,
+            y: (node.y - translateY) * scale
+        }))
+        return new Network(scaledNodesMap, network.edgesMap, network.commoditiesMap)
+    }, [network, boundingBox]
+)
+
 const FPS = 30
 const ZOOM_MULTIPLER = 1.125
 
@@ -90,15 +106,16 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
         return () => clearInterval(interval)
     }, [autoplay, autoplaySpeed, maxT])
     const [nodeScale, setNodeScale] = React.useState(0.1)
-    const avgEdgeDistance = useAverageEdgeDistance(props.network)
-    const avgCapacity = useAverageCapacity(props.network)
+    const scaledNetwork = useScaledNetwork(props.network, useInitialBoundingBox(props.network)) 
+    const avgEdgeDistance = useAverageEdgeDistance(scaledNetwork)
+    const avgCapacity = useAverageCapacity(scaledNetwork)
 
     // avgEdgeWidth / avgEdgeDistance !=! 1/2
     // avgEdgeWidth = ratesScale * avgCapacity
     // => ratesScale = avgEdgeWidth/avgCapacity = avgEdgeDistance / (10 * avgCapacity)
     const initialFlowScale = avgEdgeDistance / (10 * avgCapacity)
     const [flowScale, setFlowScale] = useState(initialFlowScale)
-    const avgDistanceTransitTimeRatio = useAvgDistanceTransitTimeRatio(props.network)
+    const avgDistanceTransitTimeRatio = useAvgDistanceTransitTimeRatio(scaledNetwork)
     const [waitingTimeScale, setWaitingTimeScale] = useState(avgDistanceTransitTimeRatio)
 
 
@@ -108,7 +125,7 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     // nodeScale * avgEdgeLength is the radius of a node
     const svgContainerRef = useRef(null);
     const [width, height] = useSize(svgContainerRef);
-    const bb = useInitialBoundingBox(props.network, props.flow)
+    const bb = useInitialBoundingBox(scaledNetwork)
 
     const [manualZoom, setManualZoom] = useState<number | null>(null)
 
@@ -219,7 +236,7 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
             <svg width={width} height={height} viewBox={viewBoxString} onMouseDown={handleMouseDown} onWheel={handleWheel}
                 style={{ position: "absolute", top: "0", left: "0", background: "#eee", cursor: "default" }}>
                 <SvgContent waitingTimeScale={waitingTimeScale} flowScale={flowScale} nodeRadius={nodeRadius} strokeWidth={strokeWidth}
-                    edgeOffset={edgeOffset} t={t} network={props.network} flow={props.flow} />
+                    edgeOffset={edgeOffset} t={t} network={scaledNetwork} flow={props.flow} />
             </svg>
             <div style={{ position: "absolute", bottom: "16px", right: 0 }}>
                 <div style={{ padding: '8px' }}>
