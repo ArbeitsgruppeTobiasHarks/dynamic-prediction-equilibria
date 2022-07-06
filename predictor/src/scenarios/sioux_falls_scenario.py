@@ -26,10 +26,13 @@ def shallow_evaluate_predictors(network_path: str, flows_dir: str, out_dir: str,
                                 horizon: float, reroute_interval: float, prediction_interval: float, build_predictors):
     os.makedirs(out_dir, exist_ok=True)
 
-    files = sorted([file for file in os.listdir(flows_dir) if file.endswith(".flow.pickle")])
+    files = sorted([
+        file for file in os.listdir(flows_dir) if file.endswith(".flow.pickle")
+    ])
     for flow_filename in files:
         flow_id = flow_filename[: len(flow_filename) - len(".flow.pickle")]
         out_path = os.path.join(out_dir, f"{flow_id}-shallow-eval.pickle")
+
         def handle(open_file):
             print(f"Shallow evaluating Flow#{flow_id}...")
             with open(os.path.join(flows_dir, flow_filename), "rb") as flow_file:
@@ -42,6 +45,7 @@ def shallow_evaluate_predictors(network_path: str, flows_dir: str, out_dir: str,
 
         with_file_lock(out_path, handle)
     wait_for_locks(out_dir)
+
 
 def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     network_path = os.path.join(scenario_dir, "network.pickle")
@@ -57,14 +61,16 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     past_timesteps = 20
     future_timesteps = 20
     prediction_interval = 1.
+    number_training_flows = 500
+    number_eval_flows = 20
 
     pred_horizon = future_timesteps * prediction_interval
 
     network = import_sioux_falls(
         edges_tntp_path, nodes_tntp_path, network_path, inflow_horizon)
-    
+
     build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon,
-                number_flows=500, horizon=horizon, reroute_interval=reroute_interval)
+                number_flows=number_training_flows, horizon=horizon, reroute_interval=reroute_interval)
 
     generate_queues_and_edge_loads(
         past_timesteps, flows_dir, queues_dir, horizon, reroute_interval, prediction_interval)
@@ -83,11 +89,11 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
             test_mask,
             past_timesteps,
             future_timesteps,
-            step_length=prediction_interval
+            prediction_interval=prediction_interval
         )
     }
 
-    shallow_evaluate_predictors(network_path, flows_dir, shallow_eval_dir, past_timesteps, future_timesteps, 
+    shallow_evaluate_predictors(network_path, flows_dir, shallow_eval_dir, past_timesteps, future_timesteps,
                                 horizon, reroute_interval, prediction_interval, build_predictors)
     # expanded_queues_from_flows_per_edge(network_path, past_timesteps, 1., future_timesteps, flows_dir,
     #                                    expanded_per_edge_dir, horizon, average=False, sample_step=1)
@@ -96,7 +102,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
 
     eval_network_demand(
         network_path,
-        10,
+        number_eval_flows,
         eval_dir,
         inflow_horizon,
         future_timesteps,

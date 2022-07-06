@@ -3,6 +3,7 @@ from math import ceil, log10
 import os
 import random
 from typing import Optional
+from matplotlib import pyplot
 
 from core.network import Network, Commodity
 from core.predictors.predictor_type import PredictorType
@@ -28,33 +29,34 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
     for flow_id in range(number_flows):
         flow_path = os.path.join(
             out_dir, f"{str(flow_id).zfill(ceil(log10(number_flows)))}.pickle")
+        json_eval_path = os.path.join(
+            out_dir, f"{str(flow_id).zfill(ceil(log10(number_flows)))}.json")
 
         def handle(open_file):
             network = Network.from_file(network_path)
-            json_eval_path = os.path.join(
-                out_dir, f"{str(flow_id).zfill(ceil(log10(number_flows)))}.json")
 
             seed = -flow_id - 1
             print()
             print(
                 f"Building Evaluation Flow#{flow_id} with seed {seed}...")
             generate_network_demands(network, seed, inflow_horizon)
-            _, _, flow = evaluate_single_run(network, flow_id=flow_id, focused_commodity=0,
+            _, _, flow = evaluate_single_run(network, flow_id=flow_id, focused_commodity_index=0,
                                              horizon=horizon, reroute_interval=reroute_interval, flow_path=flow_path, json_eval_path=json_eval_path,
                                              inflow_horizon=inflow_horizon, future_timesteps=future_timesteps, prediction_interval=prediction_interval,
                                              suppress_log=suppress_log, split=split, build_predictors=build_predictors)
 
-            to_visualization_json(
-                out_dir + "/visualization/ " +
-                f"{flow_id}.vis.json", flow, network,
-                {id: COLORS[comm.predictor_type]
-                    for (id, comm) in enumerate(network.commodities)}
-            )
-        with_file_lock(flow_path, handle)
-    
+            visualization_json_path = os.path.join(
+                out_dir, "visualization", f"{str(flow_id).zfill(ceil(log10(number_flows)))}.vis.json")
+
+            to_visualization_json(visualization_json_path, flow, network, {
+                id: COLORS[comm.predictor_type]
+                for (id, comm) in enumerate(network.commodities)
+            })
+        with_file_lock(flow_path, handle, expect_exists=[flow_path, json_eval_path + "nope"])
+
     wait_for_locks(out_dir)
 
-    network_results_from_file_to_tikz(out_dir)
+    eval_jsons_to_tikz_boxplot(out_dir)
 
 
 def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon: float,
@@ -108,7 +110,7 @@ def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon
                 len(network.commodities) - 1)
         else:
             selected_commodity = network.remove_unnecessary_commodities(k)
-        _, _, flow = evaluate_single_run(network, flow_id=k, focused_commodity=selected_commodity,
+        _, _, flow = evaluate_single_run(network, flow_id=k, focused_commodity_index=selected_commodity,
                                          horizon=horizon, reroute_interval=reroute_interval,
                                          inflow_horizon=inflow_horizon, future_timesteps=future_timesteps, prediction_interval=prediction_interval,
                                          suppress_log=suppress_log, split=split, out_dir=out_dir, build_predictors=build_predictors)
@@ -121,11 +123,46 @@ def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon
         )
         os.remove(lock_path)
 
-    network_results_from_file_to_tikz(out_dir)
+    eval_jsons_to_tikz_boxplot(out_dir)
+
+    compare_mae_with_perf(out_dir)
+
+def compare_mae_with_perf(dir: str):
+    files = sorted([file for file in os.listdir(dir) if file.endswith(".json")])
+    # Zero, Constant, Linear, RegularizedLinear, ML
+    coordinates = []
+    for file_path in files:
+        with open(os.path.join(dir, file_path), "r") as file:
+            res_dict = json.load(file)
+            mean_absolute_errors = res_dict['mean_absolute_errors']
+            travel_times = res_dict['avg_travel_times']
+            if any(travel_times[j] != travel_times[0] for j in range(len(travel_times) - 1)):
+                for i, err in enumerate(mean_absolute_errors):
+                    coordinates.append((err, travel_times[i] - travel_times[-1]))
+    pyplot.plot(*zip(coordinates))
+    
+    tikz = r"""
+    \begin{tikzpicture}
+    \begin{axis}
+    \addplot+[only marks] coordinates {
+    """
+    
+    for (x,y) in coordinates:
+        tikz += f"({x} {y})\n"
+
+    tikz += """
+    };
+
+    \end{axis}
+    \end{tikzpicture}
+    """ 
+
+    with open(os.path.join(dir, "time-loss-by-mae.tikz"), "w") as file:
+        file.write(tikz)
 
 
-def network_results_from_file_to_tikz(directory: str):
-    files = os.listdir(directory)
+def eval_jsons_to_tikz_boxplot(dir: str):
+    files = os.listdir(dir)
     # Zero, Constant, Linear, RegularizedLinear, ML
     times = [[], [], [], [], []]
     means = [0, 0, 0, 0, 0, 0]
@@ -135,7 +172,7 @@ def network_results_from_file_to_tikz(directory: str):
             raise ValueError("Detected lock file. Will not create tikz file.")
         if not file_path.endswith(".json"):
             continue
-        with open(os.path.join(directory, file_path), "r") as file:
+        with open(os.path.join(dir, file_path), "r") as file:
             res_dict = json.load(file)
             travel_times = res_dict['avg_travel_times']
             if any(travel_times[j] != travel_times[0] for j in range(len(travel_times) - 1)):
@@ -181,7 +218,7 @@ def network_results_from_file_to_tikz(directory: str):
     \\end{tikzpicture}
     """
 
-    with open(os.path.join(directory, "boxplot.tikz"), "w") as file:
+    with open(os.path.join(dir, "boxplot.tikz"), "w") as file:
         file.write(tikz)
     print("Successfully saved a tikz boxplot in the output directory.")
 

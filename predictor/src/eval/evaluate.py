@@ -1,5 +1,6 @@
 import json
 from math import floor
+from multiprocessing.sharedctypes import Value
 import os
 import pickle
 from typing import Optional, Dict, Callable
@@ -44,50 +45,12 @@ def _build_default_predictors(network: Network) -> Dict[PredictorType, Predictor
 PredictorBuilder = Callable[[Network], Dict[PredictorType, Predictor]]
 
 
-def evaluate_single_run(network: Network, focused_commodity: int, split: bool, horizon: float,
-                        reroute_interval: float, inflow_horizon: float, future_timesteps: float,
-                        prediction_interval: float, flow_path: Optional[str] = None, json_eval_path: Optional[str] = None,
-                        flow_id: Optional[str] = None, suppress_log: bool = False,
-                        build_predictors: PredictorBuilder = _build_default_predictors):
-    os.makedirs(os.path.dirname(flow_path), exist_ok=True)
-    os.makedirs(os.path.dirname(json_eval_path), exist_ok=True)
-
-    predictors = build_predictors(network)
-
-    commodity = network.commodities[focused_commodity]
-    if split:
-        network.commodities.remove(commodity)
-        demand_per_comm = RightConstant(
-            commodity.net_inflow.times,
-            [v / len(predictors) for v in commodity.net_inflow.values],
-            commodity.net_inflow.domain
-        )
-    else:
-        demand_per_comm = RightConstant(
-            [0., inflow_horizon], [commodity.net_inflow.values[0] /
-                                   16 / len(predictors), 0.], (0., float('inf'))
-        )
-
-    new_commodities = range(len(network.commodities), len(
-        network.commodities) + len(predictors))
-    for i in predictors:
-        network.commodities.append(
-            Commodity(commodity.source, commodity.sink, demand_per_comm, i))
-
-    flow_builder = FlowBuilder(network, predictors, reroute_interval)
-    flow, elapsed = build_with_times(
-        flow_builder, flow_id, reroute_interval, horizon, new_commodities, suppress_log)
-
-    if flow_path is not None:
-        with open(flow_path, "wb") as file:
-            pickle.dump(flow, file)
-
-    #  Calculating optimal predictor travel times
+def calculate_optimal_average_travel_time(flow: DynamicFlow, network: Network, inflow_horizon: float, horizon: float, commodity: Commodity):
     costs = [
         PiecewiseLinear(
             flow.queues[e].times,
             [network.travel_time[e] + v / network.capacity[e]
-                for v in flow.queues[e].values],
+             for v in flow.queues[e].values],
             flow.queues[e].first_slope / network.capacity[e],
             flow.queues[e].last_slope / network.capacity[e],
             domain=(0., horizon)
@@ -118,18 +81,81 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
         avg_travel_time = integral_travel_time / inflow_until
         return avg_travel_time
 
-    travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities] + \
-                   [
-                       integrate_opt(labels[commodity.source])
-                       if commodity.source in labels
-                       else inflow_horizon*horizon - inflow_horizon**2 / 2
-    ]
+    if commodity.source in labels:
+        return integrate_opt(labels[commodity.source])
+    else:
+        return inflow_horizon*horizon - inflow_horizon**2 / 2
+
+
+def evaluate_single_run(network: Network, focused_commodity_index: int, split: bool, horizon: float,
+                        reroute_interval: float, inflow_horizon: float, future_timesteps: float,
+                        prediction_interval: float, flow_path: Optional[str] = None, json_eval_path: Optional[str] = None,
+                        flow_id: Optional[str] = None, suppress_log: bool = False,
+                        build_predictors: PredictorBuilder = _build_default_predictors):
+    os.makedirs(os.path.dirname(flow_path), exist_ok=True)
+    os.makedirs(os.path.dirname(json_eval_path), exist_ok=True)
+
+    predictors = build_predictors(network)
+
+    commodity = network.commodities[focused_commodity_index]
+    if split:
+        network.commodities.remove(commodity)
+        demand_per_comm = RightConstant(
+            commodity.net_inflow.times,
+            [v / len(predictors) for v in commodity.net_inflow.values],
+            commodity.net_inflow.domain
+        )
+    else:
+        demand_per_comm = RightConstant(
+            [0., inflow_horizon], [commodity.net_inflow.values[0] /
+                                   16 / len(predictors), 0.], (0., float('inf'))
+        )
+
+    new_commodities_indices = range(len(network.commodities), len(
+        network.commodities) + len(predictors))
+    for i in predictors:
+        network.commodities.append(
+            Commodity(commodity.source, commodity.sink, demand_per_comm, i))
+
+    if flow_path is None or not os.path.exists(flow_path):
+        flow_builder = FlowBuilder(network, predictors, reroute_interval)
+        flow, computation_time = build_with_times(
+            flow_builder, flow_id, reroute_interval, horizon, new_commodities_indices, suppress_log)
+
+        if flow_path is not None:
+            with open(flow_path, "wb") as file:
+                pickle.dump({"flow": flow, "computation_time": computation_time}, file)
+    else:
+        with open(flow_path, "rb") as file:
+            box = pickle.load(file)
+        if isinstance(box, DynamicFlow): # produced by old version of this script
+            if not os.path.exists(json_eval_path):
+                raise ValueError(f"Box was a flow, but {json_eval_path} does not exist.")
+            flow = box
+            flow._network = network
+            with open(json_eval_path, "r") as file:
+                json_eval = json.load(file)
+            computation_time = json_eval["comp_time"] if "comp_time" in json_eval else json_eval["computation_time"]
+            with open(flow_path, "wb") as file:
+                pickle.dump({"flow": flow, "computation_time": computation_time}, file)
+        else:
+            computation_time: float = box["computation_time"]
+            flow: DynamicFlow = box["flow"]
+            flow._network = network
+
+    travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities_indices] + \
+                   [calculate_optimal_average_travel_time(
+                       flow, network, inflow_horizon, horizon, commodity)]
+
+    mean_absolute_errors = evaluate_prediction_accuracy(
+        flow, predictors, future_timesteps, reroute_interval, prediction_interval, horizon)
 
     save_dict = {
         "horizon": horizon,
         "original_commodity": flow_id,
         "avg_travel_times": travel_times,
-        "comp_time": elapsed
+        "computation_time": computation_time,
+        "mean_absolute_errors": [mae for mae in mean_absolute_errors.values()]
     }
 
     if not suppress_log:
@@ -140,13 +166,12 @@ def evaluate_single_run(network: Network, focused_commodity: int, split: bool, h
     if json_eval_path is not None:
         with open(json_eval_path, "w") as file:
             json.dump(save_dict, file)
-    evaluate_prediction_accuracy(
-        flow, predictors, future_timesteps, reroute_interval, prediction_interval, horizon)
-    return travel_times, elapsed, flow
+
+    return travel_times, computation_time, flow
 
 
 def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorType, Predictor], future_timesteps: int, reroute_interval: float, prediction_interval: float, horizon: float):
-    eval_horizon = horizon - future_timesteps * prediction_interval
+    eval_horizon = horizon - (future_timesteps + 1) * prediction_interval
     predictions = {}
     diffs = {}
     pred_times = [
@@ -182,7 +207,10 @@ def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorTy
                 for pred_ind, _ in enumerate(pred_times)
             ]
         )
-
+    mean_absolute_errors = {
+        predictor_type: np.average(np.abs(diff))
+        for predictor_type, diff in diffs.items()
+    }
     print(
-        "MAE. " + "; ".join([f"{predictor_type.name}: {np.average(np.abs(diffs[predictor_type]))}" for predictor_type in diffs]))
-    return diffs
+        "MAE. " + "; ".join([f"{predictor_type.name}: {round(mae, 4)}" for predictor_type, mae in mean_absolute_errors.items()]))
+    return mean_absolute_errors

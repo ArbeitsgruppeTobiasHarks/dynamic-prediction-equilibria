@@ -24,7 +24,7 @@ def eval_sample():
         times, comp_time = evaluate_single_run(
             network,
             flow_id=None,
-            focused_commodity=0,
+            focused_commodity_index=0,
             split=True,
             horizon=horizon,
             reroute_interval=reroute_interval,
@@ -149,7 +149,7 @@ def compute_sample_flow_for_visualization():
     times, comp_time, flow = evaluate_single_run(
         network,
         flow_id=None,
-        focused_commodity=0,
+        focused_commodity_index=0,
         split=True,
         horizon=horizon,
         reroute_interval=reroute_interval,
