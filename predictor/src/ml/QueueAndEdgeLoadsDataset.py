@@ -1,5 +1,6 @@
 from math import floor
 import os
+from turtle import shape
 from typing import List, Optional
 
 import numpy as np
@@ -25,21 +26,32 @@ class QueueAndEdgeLoadDataset(Dataset):
         self._network = network
         self._reroute_interval = reroute_interval
         self._prediction_interval = prediction_interval
-        self._reroute_intervals_in_prediction_interval = round(prediction_interval / reroute_interval)
+        self._reroute_intervals_in_prediction_interval = round(
+            prediction_interval / reroute_interval)
         self._times = [
-            i*reroute_interval for i in range(-past_timesteps*self._reroute_intervals_in_prediction_interval, floor(horizon / reroute_interval) + 1)]
+            i*reroute_interval
+            for i in range(
+                -(past_timesteps - 1) *
+                self._reroute_intervals_in_prediction_interval,
+                floor(horizon / reroute_interval) + 1
+            )
+        ]
 
-        assert len(self._data_files) > 0
+        if len(self._data_files) == 0:
+            raise ValueError("There are no queue files.")
 
         print("Reading in dataset...")
         max_data = np.zeros(len(network.graph.edges))
         all_data = []
         for file in self._data_files:
             data = np.load(file)
-            assert data.shape == (2, len(network.graph.edges), len(self._times))
+            if data.shape != (2, len(network.graph.edges), len(self._times)):
+                raise ValueError(
+                    f"Queue data has wrong shape: Expected (2, {len(network.graph.edges)}, {len(self._times)}), but got {data.shape}.")
             max_data = np.maximum(max_data, np.amax(data, axis=(0, 2)))
             all_data.append(data)
-            self.samples_per_flow = data.shape[2] - self._reroute_intervals_in_prediction_interval * (past_timesteps + future_timesteps)
+            self.samples_per_flow = data.shape[2] - self._reroute_intervals_in_prediction_interval * (
+                past_timesteps + future_timesteps)
         self._data = np.asarray(all_data)
         print("Done reading dataset.")
         self.test_mask = np.asarray([val > 0 for val in max_data])
@@ -54,10 +66,10 @@ class QueueAndEdgeLoadDataset(Dataset):
         phi_ind = sample_id + (self._past_timesteps - 1) * stride
         last_ind = phi_ind + self._future_timesteps * stride
 
-        past_data = np.reshape(data[:, :, first_ind : phi_ind + 1 : stride], newshape=(
+        past_data = np.reshape(data[:, :, first_ind: phi_ind + 1: stride], newshape=(
             len(self._network.graph.edges), 2*self._past_timesteps))
         future_queues = (
-            data[0, self.test_mask, phi_ind + stride : last_ind + 1 : stride]).flatten()
+            data[0, self.test_mask, phi_ind + stride: last_ind + 1: stride]).flatten()
         return np.concatenate(([phi], past_data[self.test_mask].flatten())), future_queues
 
     def __len__(self):
