@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Scenario Sample",
+            "name": "Python: Sample Scenario",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/predictor/src/scenarios/sample_scenario.py",
@@ -16,7 +16,7 @@
             "justMyCode": true
         },
         {
-            "name": "Python: Sioux Falls Sample",
+            "name": "Python: Sioux Falls Scenario",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/predictor/src/scenarios/sioux_falls_scenario.py",
