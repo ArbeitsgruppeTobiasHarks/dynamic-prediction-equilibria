@@ -186,8 +186,9 @@ def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorTy
     )
 
     for (predictor_type, predictor) in predictors.items():
-        def to_samples(pred_time):
-            pred_queues = predictor.predict(pred_time, flow)
+        predictor_predictions = predictor.batch_predict(pred_times, flow)
+        def to_samples(i, pred_time):
+            pred_queues = predictor_predictions[i]
             return [
                 [
                     pred_queue(pred_time + (k+1)*prediction_interval)
@@ -196,7 +197,7 @@ def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorTy
                 for k in range(future_timesteps)
             ]
         predictions[predictor_type] = np.array(
-            [to_samples(pred_time) for pred_time in pred_times]
+            [to_samples(i, pred_time) for i, pred_time in enumerate(pred_times)]
         )
         diffs[predictor_type] = np.array(
             [
