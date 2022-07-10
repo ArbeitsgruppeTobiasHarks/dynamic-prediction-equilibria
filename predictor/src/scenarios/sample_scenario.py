@@ -89,10 +89,10 @@ def run_scenario(scenario_dir: str):
             path = os.path.join(eval_dir, file)
             with open(path, "r") as file:
                 d = json.load(file)
-            average_comp_times.append(d["comp_time"])
+            average_comp_times.append(d["computation_time"])
 
     avg_comp_time = sum(average_comp_times) / len(average_comp_times)
-    print(f"Average computing time: {avg_comp_time}")
+    print(f"Average computation time: {avg_comp_time}")
 
 
 if __name__ == "__main__":
