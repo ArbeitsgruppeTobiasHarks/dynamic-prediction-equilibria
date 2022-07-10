@@ -1,6 +1,5 @@
 from math import floor
 import os
-from turtle import shape
 from typing import List, Optional
 
 import numpy as np
@@ -22,7 +21,7 @@ class QueueAndEdgeLoadDataset(Dataset):
         self._past_timesteps = past_timesteps
         self._future_timesteps = future_timesteps
         self._data_files = [os.path.join(folder_path, file)
-                            for file in os.listdir(folder_path)]
+                            for file in sorted(os.listdir(folder_path))]
         self._network = network
         self._reroute_interval = reroute_interval
         self._prediction_interval = prediction_interval
@@ -66,11 +65,9 @@ class QueueAndEdgeLoadDataset(Dataset):
         phi_ind = sample_id + (self._past_timesteps - 1) * stride
         last_ind = phi_ind + self._future_timesteps * stride
 
-        past_data = np.reshape(data[:, :, first_ind: phi_ind + 1: stride], newshape=(
-            len(self._network.graph.edges), 2*self._past_timesteps))
-        future_queues = (
-            data[0, self.test_mask, phi_ind + stride: last_ind + 1: stride]).flatten()
-        return np.concatenate(([phi], past_data[self.test_mask].flatten())), future_queues
+        past_data = np.array([phi, *(data[:, self.test_mask, first_ind: phi_ind + 1: stride].flatten())])
+        future_queues = data[0, self.test_mask, phi_ind + stride: last_ind + 1: stride].flatten()
+        return past_data, future_queues
 
     def __len__(self):
         return len(self._data) * self.samples_per_flow
