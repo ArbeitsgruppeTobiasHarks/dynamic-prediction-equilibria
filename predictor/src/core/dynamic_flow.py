@@ -229,8 +229,17 @@ class DynamicFlow:
             sum(com_outflow for com_outflow in outflow)
             for outflow in self.outflow
         ]
-        edge_loads = [
+        edge_loads: List[PiecewiseLinear] = [
             (total_inflow_rates[e] - total_outflow_rates[e]).integral()
             for e in range(len(self.inflow))
         ]
+        assert all(edge_load.domain[0] == 0. for edge_load in edge_loads)
+        assert all(abs(edge_load(0.)) < 1e-10 for edge_load in edge_loads)
+        for edge_load in edge_loads:
+            if edge_load.values[0] != 0.:
+                edge_load.times.insert(0, 0.)
+                edge_load.values.insert(0, 0.)
+            edge_load.first_slope = 0.
+            edge_load.domain = (float("-inf"), edge_load.domain[1])
+
         return edge_loads
