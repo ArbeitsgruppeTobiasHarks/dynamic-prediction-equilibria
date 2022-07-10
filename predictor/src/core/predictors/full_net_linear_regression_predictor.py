@@ -43,6 +43,8 @@ class FullNetLinearRegressionPredictor(Predictor):
         edge_loads = flow.get_edge_loads()
 
         phi = flow.phi
+        if phi != prediction_time:
+            raise ValueError("Please make predictor independent of flow.phi!")
         data = np.asarray([
             [
                 [queue(t) for t in input_times]
