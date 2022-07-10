@@ -20,6 +20,11 @@ class Predictor(ABC):
     def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         pass
 
+    def batch_predict(self, prediction_times: List[float], flow: DynamicFlow) -> List[List[PiecewiseLinear]]:
+        if flow.phi < max(prediction_times):
+            raise ValueError("Prediction time larger than flow horizon.") 
+        return [self.predict(prediction_time, flow) for prediction_time in prediction_times]
+
     @abstractmethod
     def is_constant(self) -> bool:
         pass
