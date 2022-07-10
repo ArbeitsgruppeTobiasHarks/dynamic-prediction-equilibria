@@ -52,11 +52,12 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
                 id: COLORS[comm.predictor_type]
                 for (id, comm) in enumerate(network.commodities)
             })
-        with_file_lock(flow_path, handle, expect_exists=[flow_path, json_eval_path + "nope"])
+        with_file_lock(flow_path, handle, expect_exists=[flow_path, json_eval_path])
 
     wait_for_locks(out_dir)
 
     eval_jsons_to_tikz_boxplot(out_dir)
+    compare_mae_with_perf(out_dir)
 
 
 def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon: float,
@@ -130,7 +131,8 @@ def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon
 def compare_mae_with_perf(dir: str):
     files = sorted([file for file in os.listdir(dir) if file.endswith(".json")])
     # Zero, Constant, Linear, RegularizedLinear, ML
-    coordinates = []
+    colors = ["blue", "red", "{rgb,255:red,0; green,128; blue,0}", "orange", "black"] 
+    coordinates = [[],[],[],[],[]]
     for file_path in files:
         with open(os.path.join(dir, file_path), "r") as file:
             res_dict = json.load(file)
@@ -138,24 +140,25 @@ def compare_mae_with_perf(dir: str):
             travel_times = res_dict['avg_travel_times']
             if any(travel_times[j] != travel_times[0] for j in range(len(travel_times) - 1)):
                 for i, err in enumerate(mean_absolute_errors):
-                    coordinates.append((err, travel_times[i] - travel_times[-1]))
-    pyplot.plot(*zip(coordinates))
-    
+                    coordinates[i].append((err, travel_times[i] - travel_times[-1]))
+   
     tikz = r"""
     \begin{tikzpicture}
     \begin{axis}
-    \addplot+[only marks] coordinates {
     """
-    
-    for (x,y) in coordinates:
-        tikz += f"({x} {y})\n"
 
-    tikz += """
-    };
+    for i, pairs in enumerate(coordinates):
+        tikz += r"""
+        \addplot+[only marks, color=""" + colors[i] + """, mark=x] coordinates {
+        """
+        for (x,y) in pairs:
+            tikz += f"({x}, {y})\n"
 
+        tikz += r"""};"""
+    tikz += r"""
     \end{axis}
     \end{tikzpicture}
-    """ 
+    """
 
     with open(os.path.join(dir, "time-loss-by-mae.tikz"), "w") as file:
         file.write(tikz)
