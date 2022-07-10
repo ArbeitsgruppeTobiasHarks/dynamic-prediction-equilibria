@@ -93,12 +93,13 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
         )
     }
 
-    shallow_evaluate_predictors(network_path, flows_dir, shallow_eval_dir, past_timesteps, future_timesteps,
-                                horizon, reroute_interval, prediction_interval, build_predictors)
-    # expanded_queues_from_flows_per_edge(network_path, past_timesteps, 1., future_timesteps, flows_dir,
-    #                                    expanded_per_edge_dir, horizon, average=False, sample_step=1)
+    # shallow_evaluate_predictors(network_path, flows_dir, shallow_eval_dir, past_timesteps, future_timesteps,
+    #                             horizon, reroute_interval, prediction_interval, build_predictors)
 
-    #train_per_edge_model(network_path, expanded_per_edge_dir, models_per_edge_dir, past_timesteps, future_timesteps)
+    # expanded_queues_from_flows_per_edge(network_path, past_timesteps, 1., future_timesteps, flows_dir,
+    #                                     expanded_per_edge_dir, horizon, average=False, sample_step=1)
+
+    # train_per_edge_model(network_path, expanded_per_edge_dir, models_per_edge_dir, past_timesteps, future_timesteps)
 
     eval_network_demand(
         network_path,
@@ -118,7 +119,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
             path = os.path.join(eval_dir, file)
             with open(path, "r") as file:
                 d = json.load(file)
-            average_comp_times.append(d["comp_time"])
+            average_comp_times.append(d["computation_time"])
 
     avg_comp_time = sum(average_comp_times) / len(average_comp_times)
     print(f"Average computing time: {avg_comp_time}")
