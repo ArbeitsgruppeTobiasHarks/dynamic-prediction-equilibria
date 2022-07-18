@@ -31,30 +31,18 @@ def _generate_commodities(network: Network, number: int, inflow_horizon: float, 
     return commodities
 
 
-def _add_commodity(network: Network, inflow_horizon: float, demands_range: Tuple[float, float]):
-    source = network.graph.nodes[1]
-    sink = network.graph.nodes[14]
-    demand = random.uniform(*demands_range)
-    if inflow_horizon < float('inf'):
-        commodity = Commodity(source, sink, RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf'))),
-                              PredictorType.CONSTANT)
-    else:
-        commodity = Commodity(source, sink, RightConstant([0.], [demand], (0, float('inf'))),
-                              PredictorType.CONSTANT)
-    network.commodities.append(commodity)
-
-
 DemandsRangeBuilder = Callable[[Network], Tuple[float, float]]
 
 
 def _natural_earth_projection(latInRad: float, lngInRad: float) -> Tuple[float, float]:
     l = 0.870700 - 0.131979*latInRad**2 - 0.013791 * \
         latInRad**4 + 0.003971*latInRad**10-0.001529*latInRad**12
-    d = latInRad * (1.007226 + 0.015085*latInRad**2 -0.044475*latInRad**6 + 0.028874*latInRad**8 - 0.005916*latInRad**10)
+    d = latInRad * (1.007226 + 0.015085*latInRad**2 - 0.044475 *
+                    latInRad**6 + 0.028874*latInRad**8 - 0.005916*latInRad**10)
 
-    x= l * lngInRad
+    x = l * lngInRad
     y = d
-    return (x* 1000 + 1333, y *1000 - 768)
+    return (x * 1000 + 1333, - y * 1000 + 768)
 
 
 def import_sioux_falls(edges_file_path: str, nodes_file_path: str, out_file_path: str, inflow_horizon: float) -> Network:
@@ -73,14 +61,10 @@ def import_sioux_falls(edges_file_path: str, nodes_file_path: str, out_file_path
     nodes.columns = trimmed
     nodes.drop([';'], axis=1, inplace=True)
     network.graph.positions = {
-        v["node"]: _natural_earth_projection(v["y"] / 180 * pi, v["x"] / 180 * pi)
+        v["node"]: _natural_earth_projection(
+            v["y"] / 180 * pi, v["x"] / 180 * pi)
         for _, v in nodes.iterrows()
     }
-
-    random.seed(-3)
-    _add_commodity(network, inflow_horizon, (8000, 8000))
-    network.remove_unnecessary_nodes()
-    network.print_info()
     os.makedirs(pathlib.Path(out_file_path).parent, exist_ok=True)
     network.to_file(out_file_path)
     return network

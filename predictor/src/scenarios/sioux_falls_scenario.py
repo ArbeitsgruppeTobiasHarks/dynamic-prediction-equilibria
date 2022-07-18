@@ -1,9 +1,6 @@
 import json
 import os
 import pickle
-from typing import IO
-
-import numpy as np
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
 
@@ -19,6 +16,7 @@ from importer.sioux_falls_importer import import_sioux_falls
 from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads
+from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.file_lock import wait_for_locks, with_file_lock
 
 
@@ -63,14 +61,25 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     prediction_interval = 1.
     number_training_flows = 500
     number_eval_flows = 20
+    average_demand = 8000
+    demand_sigma = min(Network.from_file(network_path).capacity) / 2.
 
     pred_horizon = future_timesteps * prediction_interval
 
     network = import_sioux_falls(
         edges_tntp_path, nodes_tntp_path, network_path, inflow_horizon)
 
-    build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon,
-                number_flows=number_training_flows, horizon=horizon, reroute_interval=reroute_interval)
+    network.add_commodity(
+        1,
+        14,
+        get_demand_with_inflow_horizon(average_demand, inflow_horizon),
+        PredictorType.CONSTANT
+    )
+
+    network.print_info()
+
+    build_flows(network_path, flows_dir, inflow_horizon,
+                number_training_flows, horizon, reroute_interval, demand_sigma)
 
     generate_queues_and_edge_loads(
         past_timesteps, flows_dir, queues_dir, horizon, reroute_interval, prediction_interval)
