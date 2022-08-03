@@ -1,5 +1,6 @@
 import json
 import os
+import pathlib
 import pickle
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
@@ -61,20 +62,21 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     prediction_interval = 1.
     number_training_flows = 500
     number_eval_flows = 20
-    average_demand = 8000
-    demand_sigma = min(Network.from_file(network_path).capacity) / 2.
-
     pred_horizon = future_timesteps * prediction_interval
 
-    network = import_sioux_falls(
-        edges_tntp_path, nodes_tntp_path, network_path, inflow_horizon)
+    average_demand = 8000
 
+    network = import_sioux_falls(edges_tntp_path, nodes_tntp_path)
     network.add_commodity(
         1,
         14,
         get_demand_with_inflow_horizon(average_demand, inflow_horizon),
         PredictorType.CONSTANT
     )
+    os.makedirs(os.path.dirname(network_path), exist_ok=True)
+    network.to_file(network_path)
+
+    demand_sigma = min(Network.from_file(network_path).capacity) / 2.
 
     network.print_info()
 

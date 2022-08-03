@@ -25,6 +25,17 @@
             },
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: Sioux Falls MultiCom Scenario",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/predictor/src/scenarios/sioux_falls_multi_com_scenario.py",
+            "env": {
+                "PYTHONOPTIMIZE": "TRUE"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

@@ -8,6 +8,7 @@ import pandas as pd
 
 from core.network import Network, Commodity
 from core.predictors.predictor_type import PredictorType
+from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.right_constant import RightConstant
 
 
@@ -45,7 +46,13 @@ def _natural_earth_projection(latInRad: float, lngInRad: float) -> Tuple[float, 
     return (x * 1000 + 1333, - y * 1000 + 768)
 
 
-def import_sioux_falls(edges_file_path: str, nodes_file_path: str, out_file_path: str, inflow_horizon: float) -> Network:
+def add_od_pairs(network: Network, od_pairs_file_path: str, inflow_horizon: float):
+    od_pairs = pd.read_csv(od_pairs_file_path, header=0)
+    for _, e in od_pairs.iterrows():
+        network.add_commodity(e["O"], e["D"], get_demand_with_inflow_horizon(e["Ton"], inflow_horizon), PredictorType.CONSTANT)
+
+
+def import_sioux_falls(edges_file_path: str, nodes_file_path: str) -> Network:
     net = pd.read_csv(edges_file_path, skiprows=8, sep='\t')
     trimmed = [s.strip().lower() for s in net.columns]
     net.columns = trimmed
@@ -65,8 +72,6 @@ def import_sioux_falls(edges_file_path: str, nodes_file_path: str, out_file_path
             v["y"] / 180 * pi, v["x"] / 180 * pi)
         for _, v in nodes.iterrows()
     }
-    os.makedirs(pathlib.Path(out_file_path).parent, exist_ok=True)
-    network.to_file(out_file_path)
     return network
 
 
