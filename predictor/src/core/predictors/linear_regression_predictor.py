@@ -5,7 +5,7 @@ from typing import List, Optional
 import numpy as np
 from core.dynamic_flow import DynamicFlow
 
-from core.predictor import Predictor
+from core.predictor import ComputeMode, Predictor
 from utilities.piecewise_linear import PiecewiseLinear
 
 
@@ -13,9 +13,9 @@ class LinearRegressionPredictor(Predictor):
 
     def type(self) -> str:
         return "Kostas' Tokyo Weka Predictor"
-
-    def is_constant(self) -> bool:
-        return False
+    
+    def compute_mode(self) -> ComputeMode:
+        return ComputeMode.DYNAMIC
 
     def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         t = prediction_time

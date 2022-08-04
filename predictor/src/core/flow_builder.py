@@ -7,7 +7,7 @@ from core.graph import Node, Edge
 from core.machine_precision import eps
 from core.dynamic_flow import DynamicFlow
 from core.network import Network, Commodity
-from core.predictor import Predictor
+from core.predictor import ComputeMode, Predictor
 from core.predictors.predictor_type import PredictorType
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
@@ -24,6 +24,8 @@ class FlowBuilder:
     _next_reroute_time: float
     _route_time: float
     _costs: Dict[PredictorType, List[PiecewiseLinear]]
+    _commodity_ids_by_source: Dict[Node, Set[Commodity]]
+    _commodity_ids_by_sink: Dict[Node, Set[Commodity]]
     _network_inflow_changes: PriorityQueue[Tuple[Commodity, float]]
 
     def __init__(self,
@@ -45,6 +47,20 @@ class FlowBuilder:
                 network.graph.get_reachable_nodes(commodity.source))
             for commodity in self.network.commodities
         ]
+        self._commodity_ids_by_source = {
+            v: set(
+                i for i, c in enumerate(self.network.commodities)
+                if c.source == v
+            )
+            for v in network.graph.nodes.values()
+        }
+        self._commodity_ids_by_sink = {
+            v: set(
+                i for i, c in enumerate(self.network.commodities)
+                if c.sink == v
+            )
+            for v in network.graph.nodes.values()
+        }
         assert all(c.source in self._important_nodes[i] for i, c in enumerate(
             self.network.commodities))
         self._network_inflow_changes = PriorityQueue([
@@ -110,7 +126,8 @@ class FlowBuilder:
         com_nodes = self._important_nodes[i]
         sink = commodity.sink
 
-        if self.predictors[commodity.predictor_type].is_constant():
+        compute_mode = self.predictors[commodity.predictor_type].compute_mode()
+        if compute_mode in [ComputeMode.CONSTANT, ComputeMode.CONSTANT_AND_SAME_FOR_SINK]:
             const_costs = [c.values[0]
                            for c in self._costs[commodity.predictor_type]]
             distances = reverse_dijkstra(
@@ -126,7 +143,11 @@ class FlowBuilder:
                     if const_costs[e.id] + distances[w] <= distances[v] + eps:
                         active_edges.append(e)
                 assert len(active_edges) > 0
-                self._active_edges[i][v] = active_edges
+                if compute_mode == ComputeMode.CONSTANT:
+                    self._active_edges[i][v] = active_edges
+                else:
+                    for j in self._commodity_ids_by_sink[commodity.sink]:
+                        self._active_edges[j][v] = active_edges
         else:
             # Do Time-Dependent dijkstra from s to t to find active outgoing edges of s
             arrival_times, realised_cost = dynamic_dijkstra(self._route_time, s, sink, com_nodes,
@@ -162,13 +183,7 @@ class FlowBuilder:
                 key
                 for e in v.incoming_edges
                 for key in self._flow.outflow[e.id].keys()
-            ).union(
-                i for i, commodity in enumerate(self.network.commodities)
-                if v == commodity.source
-            ).difference(
-                i for i, commodity in enumerate(self.network.commodities)
-                if v == commodity.sink
-            )
+            ).union(self._commodity_ids_by_source[v]).difference(self._commodity_ids_by_sink[v])
 
             for i in used_commodities:
                 commodity = self.network.commodities[i]

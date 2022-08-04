@@ -9,7 +9,7 @@ from sklearn.linear_model import LinearRegression
 from core.dynamic_flow import DynamicFlow
 
 from core.network import Network
-from core.predictor import Predictor
+from core.predictor import ComputeMode, Predictor
 from utilities.piecewise_linear import PiecewiseLinear
 
 
@@ -27,8 +27,8 @@ class FullNetLinearRegressionPredictor(Predictor):
     def type(self) -> str:
         return "Full Net Linear Regression Predictor"
 
-    def is_constant(self) -> bool:
-        return False
+    def compute_mode(self) -> ComputeMode:
+        return ComputeMode.DYNAMIC
 
     def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         times = [prediction_time +
