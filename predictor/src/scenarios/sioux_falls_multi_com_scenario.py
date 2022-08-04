@@ -35,7 +35,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
     past_timesteps = 20
     future_timesteps = 20
     prediction_interval = 1.
-    number_training_flows = 1
+    number_training_flows = 500
     number_eval_flows = 20
 
     pred_horizon = future_timesteps * prediction_interval
@@ -45,12 +45,12 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
     os.makedirs(os.path.dirname(network_path), exist_ok=True)
     network.to_file(network_path)
 
-    demand_sigma= min(Network.from_file(network_path).capacity) / 8.
+    demand_sigma = min(Network.from_file(network_path).capacity) / 8.
 
     network.print_info()
 
     build_flows(network_path, flows_dir, inflow_horizon,
-                number_training_flows, horizon, reroute_interval, demand_sigma)
+                number_training_flows, horizon, reroute_interval, demand_sigma, check_for_optimizations=False)
 
     #generate_queues_and_edge_loads(
     #    past_timesteps, flows_dir, queues_dir, horizon, reroute_interval, prediction_interval)

@@ -29,7 +29,8 @@ class FlowBuilder:
     def __init__(self,
                  network: Network,
                  predictors: Dict[PredictorType, Predictor],
-                 reroute_interval: Optional[float]  # None means rerouting every time some outflow changes
+                 # None means rerouting every time some outflow changes
+                 reroute_interval: Optional[float]
                  ):
         self.network = network
         self.predictors = predictors
@@ -44,7 +45,8 @@ class FlowBuilder:
                 network.graph.get_reachable_nodes(commodity.source))
             for commodity in self.network.commodities
         ]
-        assert all(c.source in self._important_nodes[i] for i, c in enumerate(self.network.commodities))
+        assert all(c.source in self._important_nodes[i] for i, c in enumerate(
+            self.network.commodities))
         self._network_inflow_changes = PriorityQueue([
             ((c, t), t) for c in network.commodities for t in c.net_inflow.times
         ])
@@ -52,7 +54,8 @@ class FlowBuilder:
 
     def build_flow(self) -> Generator[DynamicFlow, None, None]:
         if self._built:
-            raise RuntimeError("Flow was already built. Initialize a new builder.")
+            raise RuntimeError(
+                "Flow was already built. Initialize a new builder.")
         self._built = True
         graph = self.network.graph
         travel_time = self.network.travel_time
@@ -73,7 +76,8 @@ class FlowBuilder:
                     key: [
                         PiecewiseLinear(
                             prediction[e].times,
-                            [travel_time[e] + value / capacity[e] for value in prediction[e].values],
+                            [travel_time[e] + value / capacity[e]
+                                for value in prediction[e].values],
                             prediction[e].first_slope / capacity[e],
                             prediction[e].last_slope / capacity[e],
                             (self._flow.phi, float('inf'))
@@ -89,9 +93,12 @@ class FlowBuilder:
                 self._handle_nodes = set(self.network.graph.nodes.values())
 
             new_inflow = self._determine_new_inflow()
-            max_ext_time = min(self._next_reroute_time, self._network_inflow_changes.min_key())
-            edges_with_outflow_change = self._flow.extend(new_inflow, max_ext_time)
-            self._handle_nodes = set(self.network.graph.edges[e].node_to for e in edges_with_outflow_change)
+            max_ext_time = min(self._next_reroute_time,
+                               self._network_inflow_changes.min_key())
+            edges_with_outflow_change = self._flow.extend(
+                new_inflow, max_ext_time)
+            self._handle_nodes = set(
+                self.network.graph.edges[e].node_to for e in edges_with_outflow_change)
 
             yield self._flow
 
@@ -104,8 +111,10 @@ class FlowBuilder:
         sink = commodity.sink
 
         if self.predictors[commodity.predictor_type].is_constant():
-            const_costs = [c.values[0] for c in self._costs[commodity.predictor_type]]
-            distances = reverse_dijkstra(commodity.sink, const_costs, com_nodes)
+            const_costs = [c.values[0]
+                           for c in self._costs[commodity.predictor_type]]
+            distances = reverse_dijkstra(
+                commodity.sink, const_costs, com_nodes)
             for v in com_nodes:
                 if v == commodity.sink:
                     continue
@@ -144,22 +153,43 @@ class FlowBuilder:
             self._active_edges[i][s] = active_edges
         return self._active_edges[i][s]
 
-    def _determine_new_inflow(self) -> Dict[int, List[float]]:
+    def _determine_new_inflow(self) -> Dict[int, Dict[int, float]]:
         new_inflow = {}
-        m = len(self.network.commodities)
         for v in self._handle_nodes:
-            new_inflow.update({e.id: [0.] * m for e in v.outgoing_edges})
-            for i, commodity in enumerate(self.network.commodities):
-                if v not in self._important_nodes[i] or v == commodity.sink:
-                    continue
-                inflow = sum(self._flow.outflow[e.id][i](self._flow.phi) for e in v.incoming_edges)
+            new_inflow.update({e.id: {} for e in v.outgoing_edges})
+
+            used_commodities = set(
+                key
+                for e in v.incoming_edges
+                for key in self._flow.outflow[e.id].keys()
+            ).union(
+                i for i, commodity in enumerate(self.network.commodities)
+                if v == commodity.source
+            ).difference(
+                i for i, commodity in enumerate(self.network.commodities)
+                if v == commodity.sink
+            )
+
+            for i in used_commodities:
+                commodity = self.network.commodities[i]
+                inflow = sum(
+                    self._flow.outflow[e.id][i](self._flow.phi)
+                    for e in v.incoming_edges
+                    if i in self._flow.outflow[e.id]
+                )
                 if v == commodity.source:
                     inflow += commodity.net_inflow(self._flow.phi)
                 if inflow < eps:
+                    for e in v.outgoing_edges:
+                        if i in self._flow.inflow[e.id]:
+                            new_inflow[e.id][i] = 0.
                     continue
 
                 active_edges = self._get_active_edges(i, v)
                 distribution = inflow / len(active_edges)
-                for e in active_edges:
-                    new_inflow[e.id][i] = distribution
+                for e in v.outgoing_edges:
+                    if e in active_edges:
+                        new_inflow[e.id][i] = distribution
+                    elif i in self._flow.inflow[e.id]:
+                        new_inflow[e.id][i] = 0.
         return new_inflow

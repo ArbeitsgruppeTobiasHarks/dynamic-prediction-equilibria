@@ -1,6 +1,6 @@
 import _, { max, min } from "lodash"
 import React, { useEffect, useRef, useState } from "react"
-import { Flow } from "./Flow"
+import { Flow, RightConstant } from "./Flow"
 import { Network } from "./Network"
 import TeX from '@matejmazur/react-katex'
 import useSize from '@react-hook/size'
@@ -12,8 +12,8 @@ import { calcOutflowSteps, FlowEdge, SvgDefs, Vertex } from "./DynFlowSvg"
 const useMinMaxTime = (flow: Flow) => React.useMemo(
     () => {
         const allTimes = _.concat(
-            _.map(flow.inflow.flat(), pwc => pwc.times).flat(),
-            _.map(flow.outflow.flat(), pwc => pwc.times).flat(),
+            _.map(flow.inflow, flowObject => Object.values(flowObject).map((pwc: RightConstant) => pwc.times).flat()).flat(),
+            _.map(flow.outflow, flowObject => Object.values(flowObject).map((pwc: RightConstant) => pwc.times).flat()).flat(),
             _.map(flow.queues, pwc => pwc.times).flat()
         )
 

@@ -25,7 +25,7 @@ def run_scenario(scenario_dir: str):
 
     reroute_interval = .125
     inflow_horizon = 12.
-    horizon = 50
+    horizon = 50.
     prediction_interval = .5
     past_timesteps = 20
     future_timesteps = 20
@@ -97,6 +97,6 @@ def run_scenario(scenario_dir: str):
 
 if __name__ == "__main__":
     def main():
-        run_scenario("./out/journal-sample")
+        run_scenario("./out/journal-sample2")
 
     main()
