@@ -2,17 +2,14 @@ from __future__ import annotations
 
 import os
 import pickle
-from pyclbr import Function
 import re
-import string
 from typing import List, Optional, Dict, Callable
 
-import numpy as np
 from sklearn.linear_model import LinearRegression
 from core.dynamic_flow import DynamicFlow
 
 from core.network import Network
-from core.predictor import ComputeMode, Predictor, PredictionResult
+from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear
 
 PredictFunction = Callable[[float, DynamicFlow], List[PiecewiseLinear]]
@@ -28,8 +25,8 @@ class ExpandedLinearRegressionPredictor(Predictor):
     def type(self) -> str:
         return "Expanded Linear Regression Predictor"
 
-    def compute_mode(self) -> ComputeMode:
-        return ComputeMode.DYNAMIC
+    def is_constant(self) -> bool:
+        return False
 
     def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         return self._predict(prediction_time, flow)

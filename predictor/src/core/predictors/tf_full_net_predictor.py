@@ -7,7 +7,7 @@ from core.dynamic_flow import DynamicFlow
 import tensorflow as tf
 
 from core.network import Network
-from core.predictor import ComputeMode, Predictor
+from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear
 
 
@@ -25,8 +25,8 @@ class TFFullNetPredictor(Predictor):
     def type(self) -> str:
         return "Full Net Linear Regression Predictor"
 
-    def compute_mode(self) -> ComputeMode:
-        return ComputeMode.DYNAMIC
+    def is_constant(self) -> bool:
+        return False
 
     def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         times = [prediction_time +

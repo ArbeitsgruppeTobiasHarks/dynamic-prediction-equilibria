@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-import numpy as np
 from core.dynamic_flow import DynamicFlow
 
 from core.network import Network
-from core.predictor import ComputeMode, Predictor
+from core.predictor import Predictor
 from utilities.arrays import elem_rank
 from utilities.piecewise_linear import PiecewiseLinear
 
@@ -21,8 +20,8 @@ class LinearPredictor(Predictor):
     def type(self) -> str:
         return "Linear Predictor"
 
-    def compute_mode(self) -> ComputeMode:
-        return ComputeMode.DYNAMIC
+    def is_constant(self) -> bool:
+        return False
 
     def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
         times = [prediction_time, prediction_time + self.horizon]

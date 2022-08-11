@@ -1,20 +1,10 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from enum import Enum
 from typing import List
-
-import numpy as np
 from core.dynamic_flow import DynamicFlow
 
 from core.network import Network
 from utilities.piecewise_linear import PiecewiseLinear
-
-
-class ComputeMode(Enum):
-    DYNAMIC = 0
-    CONSTANT = 1
-    CONSTANT_AND_SAME_FOR_SINK = 2
 
 
 class Predictor(ABC):
@@ -33,7 +23,10 @@ class Predictor(ABC):
         return [self.predict(prediction_time, flow) for prediction_time in prediction_times]
 
     @abstractmethod
-    def compute_mode(self) -> ComputeMode:
+    def is_constant(self) -> bool:
+        '''
+        Returns whether the functions returned by `predict` are constant.
+        '''
         pass
 
     @abstractmethod
