@@ -234,7 +234,11 @@ class DynamicFlow:
     def avg_travel_time(self, i: int, horizon: float) -> float:
         commodity = self._network.commodities[i]
         net_outflow: RightConstant = sum(
-            self.outflow[e.id][i] for e in commodity.sink.incoming_edges)
+            (self.outflow[e.id][i]
+             for e in commodity.sink.incoming_edges
+             if i in self.outflow[e.id]),
+            start=RightConstant([0.], [0.], (0, float('inf')))
+        )
         accum_net_outflow = net_outflow.integral()
         accum_net_inflow = commodity.net_inflow.integral()
 
@@ -246,11 +250,13 @@ class DynamicFlow:
     @lru_cache()
     def get_edge_loads(self) -> List[PiecewiseLinear]:
         total_inflow_rates = [
-            sum(com_inflow for com_inflow in inflow.values())
+            sum([com_inflow for com_inflow in inflow.values()],
+                start=RightConstant([0.], [0.], (0, float('inf'))))
             for inflow in self.inflow
         ]
         total_outflow_rates = [
-            sum(com_outflow for com_outflow in outflow.values())
+            sum([com_outflow for com_outflow in outflow.values()],
+                start=RightConstant([0.], [0.], (0, float('inf'))))
             for outflow in self.outflow
         ]
         edge_loads: List[PiecewiseLinear] = [
