@@ -20,7 +20,9 @@ def generate_network_demands(network: Network, random_seed: int, inflow_horizon:
         sigma = min(network.capacity) / 2.
     random.seed(random_seed)
     for commodity in network.commodities:
-        demand = max(0., random.gauss(commodity.net_inflow.values[0], sigma))
+        demand = 0.
+        while demand == 0.:
+            demand = max(0., random.gauss(commodity.net_inflow.values[0], sigma))
         if inflow_horizon < float('inf'):
             commodity.net_inflow = RightConstant(
                 [0., inflow_horizon], [demand, 0.], (0., float('inf')))
