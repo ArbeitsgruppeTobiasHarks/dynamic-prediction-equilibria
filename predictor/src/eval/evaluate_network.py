@@ -16,10 +16,10 @@ from visualization.to_json import to_visualization_json
 
 def eval_network_demand(network_path: str, number_flows: int, out_dir: str, inflow_horizon: float,
                         future_timesteps: int, prediction_interval: float, reroute_interval: float,
-                        horizon: float, build_predictors: PredictorBuilder, split: bool = False,
+                        horizon: float, build_predictors: PredictorBuilder, demand_sigma: Optional[float], split: bool = False,
                         suppress_log=True, check_for_optimizations: bool = True):
     '''
-    Expects a single commodity.
+    Evaluates a single (randomly chosen) commodity.
     '''
     if check_for_optimizations:
         assert (lambda: False)(
@@ -39,8 +39,10 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
             print()
             print(
                 f"Building Evaluation Flow#{flow_id} with seed {seed}...")
-            generate_network_demands(network, seed, inflow_horizon)
-            _, _, flow = evaluate_single_run(network, flow_id=flow_id, focused_commodity_index=0,
+            generate_network_demands(network, seed, inflow_horizon, demand_sigma)
+            focused_commodity_index=random.randrange(0, len(network.commodities))
+            print(f"Focused Commodity {focused_commodity_index} with source {network.commodities[focused_commodity_index].source} and sink {network.commodities[focused_commodity_index].sink}.")
+            _, _, flow = evaluate_single_run(network, flow_id=flow_id, focused_commodity_index=focused_commodity_index,
                                              horizon=horizon, reroute_interval=reroute_interval, flow_path=flow_path, json_eval_path=json_eval_path,
                                              inflow_horizon=inflow_horizon, future_timesteps=future_timesteps, prediction_interval=prediction_interval,
                                              suppress_log=suppress_log, split=split, build_predictors=build_predictors)

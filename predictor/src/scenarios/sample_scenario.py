@@ -79,6 +79,7 @@ def run_scenario(scenario_dir: str):
         prediction_interval,
         reroute_interval,
         horizon,
+        demand_sigma=None,
         suppress_log=False,
         build_predictors=build_predictors,
         check_for_optimizations=False)
