@@ -121,6 +121,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
         prediction_interval,
         reroute_interval,
         horizon,
+        demand_sigma=demand_sigma,
         suppress_log=False,
         build_predictors=build_predictors)
 

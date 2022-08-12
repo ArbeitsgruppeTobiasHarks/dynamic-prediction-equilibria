@@ -1,3 +1,5 @@
+import { mapValues } from "lodash"
+
 export class Flow {
     constructor(inflow, outflow, queues) {
         this.inflow = inflow
@@ -6,8 +8,8 @@ export class Flow {
     }
 
     static fromJson(json) {
-        const inflow = json["inflow"].map(inflows => inflows.map(rightConstant => RightConstant.fromJson(rightConstant)))
-        const outflow = json["outflow"].map(outflows => outflows.map(rightConstant => RightConstant.fromJson(rightConstant)))
+        const inflow = json["inflow"].map(inflows => mapValues(inflows, rightConstant => RightConstant.fromJson(rightConstant)))
+        const outflow = json["outflow"].map(outflows => mapValues(outflows, rightConstant => RightConstant.fromJson(rightConstant)))
         const queues = json["queues"].map(queue => PiecewiseLinear.fromJson(queue))
         return new Flow(inflow, outflow, queues)
     }

@@ -16,7 +16,7 @@ class Commodity:
     net_inflow: RightConstant
     predictor_type: PredictorType
 
-    def __init__(self, source: Node, sink: Node, net_inflow: RightConstant, predictor_type: PredictorType):
+    def __init__(self, source: Node, sink: Node, net_inflow: RightConstant, predictor_type: PredictorType) -> Commodity:
         self.source = source
         self.sink = sink
         self.net_inflow = net_inflow
@@ -57,7 +57,8 @@ class Network:
         self.travel_time = state["travel_time"]
         self.commodities = []
         for c in state["commodities"]:
-            self.add_commodity(c["source"], c["sink"], c["net_inflow"], c["predictor_type"])
+            self.add_commodity(c["source"], c["sink"],
+                               c["net_inflow"], c["predictor_type"])
 
     def add_edge(self, node_from: int, node_to: int, travel_time: float, capacity: float):
         self.graph.add_edge(node_from, node_to)
@@ -68,7 +69,8 @@ class Network:
         nodes = self.graph.nodes
         assert source in nodes.keys(), f"No node with id#{sink} in the graph!"
         assert sink in nodes.keys(), f"No node with id#{sink} in the graph!"
-        self.commodities.append(Commodity(nodes[source], nodes[sink], net_inflow, predictor_type))
+        self.commodities.append(
+            Commodity(nodes[source], nodes[sink], net_inflow, predictor_type))
 
     def _remove_edge(self, edge: Edge):
         edge.node_to.incoming_edges.remove(edge)
@@ -90,12 +92,15 @@ class Network:
                     all(c.source != v != c.sink for c in self.commodities):
                 edge1 = v.incoming_edges[0]
                 edge2 = v.outgoing_edges[0]
-                new_travel_time = self.travel_time[edge1.id] + self.travel_time[edge2.id]
-                new_capacity = min(self.capacity[edge1.id], self.capacity[edge2.id])
+                new_travel_time = self.travel_time[edge1.id] + \
+                    self.travel_time[edge2.id]
+                new_capacity = min(
+                    self.capacity[edge1.id], self.capacity[edge2.id])
                 self._remove_edge(edge1)
                 self._remove_edge(edge2)
                 if edge1.node_from != edge2.node_to:
-                    self.add_edge(edge1.node_from.id, edge2.node_to.id, new_travel_time, new_capacity)
+                    self.add_edge(edge1.node_from.id, edge2.node_to.id,
+                                  new_travel_time, new_capacity)
                 remove_nodes.append(v)
         for v in remove_nodes:
             self.graph.nodes.pop(v.id)
@@ -109,9 +114,11 @@ class Network:
         for commodity in self.commodities:
             reaching_t = self.graph.get_nodes_reaching(commodity.sink)
             reachable_from_s = self.graph.get_reachable_nodes(commodity.source)
-            important_nodes = important_nodes.union(reaching_t.intersection(reachable_from_s))
+            important_nodes = important_nodes.union(
+                reaching_t.intersection(reachable_from_s))
 
-        remove_nodes = set(self.graph.nodes.values()).difference(important_nodes)
+        remove_nodes = set(self.graph.nodes.values()
+                           ).difference(important_nodes)
 
         print(f"\rRemoving {len(remove_nodes)} unnecessary nodes.", end="\r")
         for v in remove_nodes:
@@ -140,23 +147,29 @@ class Network:
             if len(important_nodes[i].intersection(important_nodes[selected_commodity])) == 0:
                 remove_commodities.append(comm)
 
-        print(f"\rRemoving {len(remove_commodities)} non-interfering commodities.", end="\r")
+        print(
+            f"\rRemoving {len(remove_commodities)} non-interfering commodities.", end="\r")
         for comm in remove_commodities:
             self.commodities.remove(comm)
-        print(f"Removed {len(remove_commodities)} non-interfering commodities.")
+        print(
+            f"Removed {len(remove_commodities)} non-interfering commodities.")
 
         return self.commodities.index(selected_comm)
 
     def print_info(self):
-        print(f"The network contains {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges.")
+        print(
+            f"The network contains {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges.")
         print(f"Moreover, there are {len(self.commodities)} commodities.")
-        print(f"Minimum/Maximum capacity: {np.min(self.capacity)}/{np.max(self.capacity)}")
-        print(f"Minimum/Maximum transit time: {np.min(self.travel_time)}/{np.max(self.travel_time)}")
+        print(
+            f"Minimum/Maximum capacity: {np.min(self.capacity)}/{np.max(self.capacity)}")
+        print(
+            f"Minimum/Maximum transit time: {np.min(self.travel_time)}/{np.max(self.travel_time)}")
         max_in_degree = 0
         max_out_degree = 0
         max_degree = 0
         for node in self.graph.nodes.values():
-            max_degree = max(max_degree, len(node.incoming_edges) + len(node.outgoing_edges))
+            max_degree = max(max_degree, len(
+                node.incoming_edges) + len(node.outgoing_edges))
             max_in_degree = max(max_in_degree, len(node.incoming_edges))
             max_out_degree = max(max_out_degree, len(node.outgoing_edges))
         print(f"Maximum indgree: {max_in_degree}")

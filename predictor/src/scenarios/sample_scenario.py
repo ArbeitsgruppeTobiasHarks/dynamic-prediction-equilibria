@@ -25,7 +25,7 @@ def run_scenario(scenario_dir: str):
 
     reroute_interval = .125
     inflow_horizon = 12.
-    horizon = 50
+    horizon = 50.
     prediction_interval = .5
     past_timesteps = 20
     future_timesteps = 20
@@ -79,6 +79,7 @@ def run_scenario(scenario_dir: str):
         prediction_interval,
         reroute_interval,
         horizon,
+        demand_sigma=None,
         suppress_log=False,
         build_predictors=build_predictors,
         check_for_optimizations=False)

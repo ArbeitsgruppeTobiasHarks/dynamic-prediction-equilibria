@@ -4,7 +4,6 @@ import os
 import pickle
 from typing import List, Optional
 
-import numpy as np
 from sklearn.linear_model import LinearRegression
 from core.dynamic_flow import DynamicFlow
 
@@ -28,22 +27,26 @@ class PerEdgeLinearRegressionPredictor(Predictor):
         return False
 
     def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
-        times = [prediction_time + t for t in range(0, self._future_timesteps + 1, 1)]
+        times = [prediction_time +
+                 t for t in range(0, self._future_timesteps + 1, 1)]
         edges = self.network.graph.edges
         assert len(edges) == len(flow.queues)
-        past_times = [prediction_time - t for t in range(-self._past_timesteps + 1, 1)]
+        past_times = [prediction_time -
+                      t for t in range(-self._past_timesteps + 1, 1)]
         queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
         for e in edges:
             inputs = [flow.queues[ie.id](t) for t in past_times for ie in e.node_from.incoming_edges] + \
                      [flow.queues[oe.id](t) for t in past_times for oe in e.node_to.outgoing_edges] + \
                      [flow.queues[e.id](t) for t in past_times]
             prediction = self._models[e.id].predict([inputs])[0]
-            prediction: List[float] = [flow.queues[e.id](prediction_time), *prediction]
+            prediction: List[float] = [
+                flow.queues[e.id](prediction_time), *prediction]
             cap = self.network.capacity[e.id]
             new_values = [0.] * len(prediction)
             new_values[0] = prediction[0]
             for t in range(1, len(new_values)):
-                new_values[t] = 2 * prediction[t] - new_values[t - 1] if self._average else prediction[t]
+                new_values[t] = 2 * prediction[t] - \
+                    new_values[t - 1] if self._average else prediction[t]
                 new_values[t] = max(new_values[t], new_values[t - 1] - cap, 0.)
             queues[e.id] = PiecewiseLinear(
                 times,

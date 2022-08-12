@@ -1,9 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import List
-
-import numpy as np
 from core.dynamic_flow import DynamicFlow
 
 from core.network import Network
@@ -22,11 +19,14 @@ class Predictor(ABC):
 
     def batch_predict(self, prediction_times: List[float], flow: DynamicFlow) -> List[List[PiecewiseLinear]]:
         if flow.phi < max(prediction_times):
-            raise ValueError("Prediction time larger than flow horizon.") 
+            raise ValueError("Prediction time larger than flow horizon.")
         return [self.predict(prediction_time, flow) for prediction_time in prediction_times]
 
     @abstractmethod
     def is_constant(self) -> bool:
+        '''
+        Returns whether the functions returned by `predict` are constant.
+        '''
         pass
 
     @abstractmethod

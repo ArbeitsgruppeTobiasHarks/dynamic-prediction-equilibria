@@ -49,7 +49,7 @@ def _natural_earth_projection(latInRad: float, lngInRad: float) -> Tuple[float, 
 def add_od_pairs(network: Network, od_pairs_file_path: str, inflow_horizon: float):
     od_pairs = pd.read_csv(od_pairs_file_path, header=0)
     for _, e in od_pairs.iterrows():
-        network.add_commodity(e["O"], e["D"], get_demand_with_inflow_horizon(e["Ton"], inflow_horizon), PredictorType.CONSTANT)
+        network.add_commodity(int(e["O"]), int(e["D"]), get_demand_with_inflow_horizon(e["Ton"], inflow_horizon), PredictorType.CONSTANT)
 
 
 def import_sioux_falls(edges_file_path: str, nodes_file_path: str) -> Network:
@@ -60,7 +60,7 @@ def import_sioux_falls(edges_file_path: str, nodes_file_path: str) -> Network:
     network = Network()
     #  columns: init_node, term_node, capacity, length, free_flow_time, b, power, speed, toll, link_type
     for _, e in net.iterrows():
-        network.add_edge(e["init_node"], e["term_node"],
+        network.add_edge(int(e["init_node"]), int(e["term_node"]),
                          e["free_flow_time"], e["capacity"])
 
     nodes = pd.read_csv(nodes_file_path, sep='\t')

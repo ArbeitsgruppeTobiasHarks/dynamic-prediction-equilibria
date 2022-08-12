@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pickle
 from typing import List, Optional
-from matplotlib.pyplot import step
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
