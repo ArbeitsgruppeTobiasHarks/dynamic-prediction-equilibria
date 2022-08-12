@@ -98,6 +98,6 @@ def run_scenario(scenario_dir: str):
 
 if __name__ == "__main__":
     def main():
-        run_scenario("./out/journal-sample2")
+        run_scenario("./out/journal-sample")
 
     main()
