@@ -1,6 +1,5 @@
 import json
 import os
-import pathlib
 import pickle
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
