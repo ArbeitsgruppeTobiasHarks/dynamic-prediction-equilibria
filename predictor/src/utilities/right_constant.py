@@ -96,7 +96,19 @@ class RightConstant:
         if not isinstance(other, RightConstant):
             raise TypeError("Can only subtract a RightConstantFunction.")
         return self + (-other)
-
+    
+    def simplify(self) -> RightConstant:
+        """
+        This removes unnecessary timesteps
+        """
+        new_times = [self.times[0]]
+        new_values = [self.values[0]]
+        for i in range(0, len(self.times) - 1):
+            # Add i+1, if it's necessary.
+            if abs(self.values[i] - self.values[i + 1]) >= 1000*eps:
+                new_times.append(self.times[i + 1])
+                new_values.append(self.values[i + 1])
+        return RightConstant(new_times, new_values, self.domain)
 
     def integral(self) -> PiecewiseLinear:
         """
