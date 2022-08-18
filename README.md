@@ -6,7 +6,7 @@ This file descibes how the results in the computational study can be reproduced.
 
 To start working:
 
-* Install Python 3.8 (if not already)
+* Install Python 3.10 (if not already)
 * Install pipenv (if not already) `python3 -m pip install --user pipenv`
 * Run `pipenv install`
 * Run `pipenv shell` to create a shell session with an activated pipenv environment
