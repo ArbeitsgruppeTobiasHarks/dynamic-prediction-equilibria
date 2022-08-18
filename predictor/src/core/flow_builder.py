@@ -82,7 +82,7 @@ class FlowBuilder:
                  for value in predictions[e].values],
                 predictions[e].first_slope / capacity[e],
                 predictions[e].last_slope / capacity[e],
-                (self._flow.phi, float('inf'))
+                (prediction_time, float('inf'))
             )
             for e in range(len(graph.edges))
         ]
