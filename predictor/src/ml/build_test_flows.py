@@ -2,7 +2,8 @@ from math import ceil, log10
 import os
 import pickle
 import random
-from typing import Optional
+from typing import Dict, Optional, Set
+from core.dynamic_flow import DynamicFlow
 
 from core.flow_builder import FlowBuilder
 from core.network import Network
@@ -12,7 +13,7 @@ from eval.evaluate import COLORS
 from utilities.build_with_times import build_with_times
 from utilities.right_constant import RightConstant
 from utilities.file_lock import wait_for_locks, with_file_lock
-from visualization.to_json import to_visualization_json
+from visualization.to_json import merge_commodities, to_visualization_json
 
 
 def generate_network_demands(network: Network, random_seed: int, inflow_horizon: float, sigma: Optional[float] = None):
@@ -22,7 +23,8 @@ def generate_network_demands(network: Network, random_seed: int, inflow_horizon:
     for commodity in network.commodities:
         demand = 0.
         while demand == 0.:
-            demand = max(0., random.gauss(commodity.net_inflow.values[0], sigma))
+            demand = max(0., random.gauss(
+                commodity.net_inflow.values[0], sigma))
         if inflow_horizon < float('inf'):
             commodity.net_inflow = RightConstant(
                 [0., inflow_horizon], [demand, 0.], (0., float('inf')))
@@ -62,8 +64,13 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
             print(f"Successfully built flow up to time {flow.phi}!")
             with open_file("wb") as file:
                 pickle.dump(flow, file)
-            to_visualization_json(flow_path + ".json", flow, network, {
-                id: COLORS[comm.predictor_type] for (id, comm) in enumerate(network.commodities)})
+
+            merged_flow = merge_commodities(
+                flow, network, range(len(network.commodities)))
+
+            to_visualization_json(flow_path + ".json", merged_flow, network, {
+                id: COLORS[comm.predictor_type] for (id, comm) in enumerate(network.commodities)}, )
+
             print(f"Successfully written flow to disk!\n\n")
         with_file_lock(flow_path, handle)
 

@@ -1,8 +1,45 @@
 import os
 import json
+from typing import Dict, Set
 import json_fix
 
+from core.dynamic_flow import DynamicFlow
+from core.network import Network
+from utilities.right_constant import RightConstant
+
 json_fix.fix_it()
+
+
+def merge_commodities(flow: DynamicFlow, network: Network, commodities: Set[int]) -> DynamicFlow:
+    if len(commodities) == 0:
+        return flow, network
+    new_comm_id = min(commodities)
+    merged_flow = DynamicFlow(network)
+    merged_flow.queues = flow.queues
+
+    def merge_dict(d: Dict[int, RightConstant]) -> Dict[int, RightConstant]:
+        new_d: Dict[int, RightConstant] = {}
+        for i, right_constant in d.items():
+            if i not in commodities:
+                new_d[i] = right_constant
+            elif new_comm_id not in new_d:
+                new_d[new_comm_id] = right_constant
+            else:
+                new_d[new_comm_id] += right_constant
+        if new_comm_id in new_d:
+            new_d[new_comm_id] = new_d[new_comm_id].simplify()
+        return new_d
+
+    merged_flow.inflow = [
+        merge_dict(v)
+        for v in flow.inflow
+    ]
+
+    merged_flow.outflow = [
+        merge_dict(v)
+        for v in flow.outflow
+    ]
+    return merged_flow
 
 
 def to_visualization_json(path, flow, network, colors):

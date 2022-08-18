@@ -3,7 +3,6 @@ from math import ceil, log10
 import os
 import random
 from typing import Optional
-from matplotlib import pyplot
 
 from core.network import Network, Commodity
 from core.predictors.predictor_type import PredictorType
@@ -11,7 +10,7 @@ from eval.evaluate import COLORS, evaluate_single_run, PredictorBuilder
 from ml.build_test_flows import generate_network_demands
 from utilities.file_lock import wait_for_locks, with_file_lock
 from utilities.right_constant import RightConstant
-from visualization.to_json import to_visualization_json
+from visualization.to_json import merge_commodities, to_visualization_json
 
 
 def eval_network_demand(network_path: str, number_flows: int, out_dir: str, inflow_horizon: float,
@@ -34,7 +33,7 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
 
         def handle(open_file):
             network = Network.from_file(network_path)
-
+            original_num_commodities = len(network.commodities)
             seed = -flow_id - 1
             print()
             print(
@@ -50,7 +49,8 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
             visualization_json_path = os.path.join(
                 out_dir, "visualization", f"{str(flow_id).zfill(ceil(log10(number_flows)))}.vis.json")
 
-            to_visualization_json(visualization_json_path, flow, network, {
+            merged_flow = merge_commodities(flow, network, range(original_num_commodities))
+            to_visualization_json(visualization_json_path, merged_flow, network, {
                 id: COLORS[comm.predictor_type]
                 for (id, comm) in enumerate(network.commodities)
             })
