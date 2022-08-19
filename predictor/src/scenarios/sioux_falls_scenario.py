@@ -85,7 +85,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     generate_queues_and_edge_loads(
         past_timesteps, flows_dir, queues_dir, horizon, reroute_interval, prediction_interval)
 
-    test_mask = train_tf_full_net_model(queues_dir, past_timesteps, future_timesteps,
+    input_mask, output_mask = train_tf_full_net_model(queues_dir, past_timesteps, future_timesteps,
                                         reroute_interval, prediction_interval, horizon, network, full_net_model_path)
 
     def build_predictors(network): return {
@@ -96,7 +96,8 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
         PredictorType.MACHINE_LEARNING: TFFullNetPredictor.from_model(
             network,
             full_net_model_path,
-            test_mask,
+            input_mask,
+            output_mask,
             past_timesteps,
             future_timesteps,
             prediction_interval=prediction_interval
@@ -134,6 +135,8 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
 
     avg_comp_time = sum(average_comp_times) / len(average_comp_times)
     print(f"Average computing time: {avg_comp_time}")
+
+    Network.from_file(network_path).print_info()
 
 
 if __name__ == "__main__":

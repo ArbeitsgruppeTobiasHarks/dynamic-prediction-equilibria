@@ -14,8 +14,9 @@ class QueueAndEdgeLoadDataset(Dataset):
     _flow: Optional[DynamicFlow]
     _reroute_interval: float
     _prediction_interval: float
-    test_mask: np.ndarray
     _times: List[float]
+    input_mask: np.ndarray
+    output_mask: np.ndarray
 
     def __init__(self, folder_path: str, past_timesteps: int, future_timesteps: int,  reroute_interval: float, prediction_interval: float, horizon: float, network: Network):
         self._past_timesteps = past_timesteps
@@ -41,6 +42,7 @@ class QueueAndEdgeLoadDataset(Dataset):
 
         print("Reading in dataset...")
         max_data = np.zeros(len(network.graph.edges))
+        max_queue = np.zeros(len(network.graph.edges))
         all_data = []
         for file in self._data_files:
             data = np.load(file)
@@ -48,13 +50,16 @@ class QueueAndEdgeLoadDataset(Dataset):
                 raise ValueError(
                     f"Queue data has wrong shape: Expected (2, {len(network.graph.edges)}, {len(self._times)}), but got {data.shape}.")
             max_data = np.maximum(max_data, np.amax(data, axis=(0, 2)))
+            max_queue = np.maximum(max_queue, np.amax(data[0], axis=(1)))
             all_data.append(data)
             self.samples_per_flow = data.shape[2] - self._reroute_intervals_in_prediction_interval * (
                 past_timesteps + future_timesteps)
         self._data = np.asarray(all_data)
         print("Done reading dataset.")
-        self.test_mask = np.asarray([val > 0 for val in max_data])
-        np.savetxt(os.path.join(folder_path, "../mask.txt"), self.test_mask)
+        self.input_mask = np.asarray([val > 0 for val in max_data])
+        self.output_mask = np.asarray([val > 0 for val in max_queue])
+        np.savetxt(os.path.join(folder_path, "../input-mask.txt"), self.input_mask)
+        np.savetxt(os.path.join(folder_path, "../output-mask.txt"), self.output_mask)
 
     def __getitem__(self, index) -> T_co:
         flow_id, sample_id = divmod(index, self.samples_per_flow)
@@ -65,8 +70,8 @@ class QueueAndEdgeLoadDataset(Dataset):
         phi_ind = sample_id + (self._past_timesteps - 1) * stride
         last_ind = phi_ind + self._future_timesteps * stride
 
-        past_data = np.array([phi, *(data[:, self.test_mask, first_ind: phi_ind + 1: stride].flatten())])
-        future_queues = data[0, self.test_mask, phi_ind + stride: last_ind + 1: stride].flatten()
+        past_data = np.array([phi, *(data[:, self.input_mask, first_ind: phi_ind + 1: stride].flatten())])
+        future_queues = data[0, self.output_mask, phi_ind + stride: last_ind + 1: stride].flatten()
         return past_data, future_queues
 
     def __len__(self):
@@ -74,4 +79,6 @@ class QueueAndEdgeLoadDataset(Dataset):
 
     @staticmethod
     def load_mask(folder_path: str) -> np.ndarray:
-        return np.array([v > 0 for v in np.loadtxt(os.path.join(folder_path, "../mask.txt"))])
+        input_mask = np.array([v > 0 for v in np.loadtxt(os.path.join(folder_path, "../input-mask.txt"))])
+        output_mask = np.array([v > 0 for v in np.loadtxt(os.path.join(folder_path, "../output-mask.txt"))])
+        return input_mask, output_mask

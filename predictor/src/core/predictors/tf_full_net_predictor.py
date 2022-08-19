@@ -13,10 +13,11 @@ from utilities.piecewise_linear import PiecewiseLinear
 
 class TFFullNetPredictor(Predictor):
 
-    def __init__(self, model: tf.keras.Sequential, test_mask: np.ndarray, network: Network, past_timesteps: int, future_timesteps: int, prediction_interval: float):
+    def __init__(self, model: tf.keras.Sequential, input_mask: np.ndarray, output_mask: np.ndarray, network: Network, past_timesteps: int, future_timesteps: int, prediction_interval: float):
         super().__init__(network)
         self._model = model
-        self._test_mask = test_mask
+        self._input_mask = input_mask
+        self._output_mask = output_mask
         self._network = network
         self._past_timesteps = past_timesteps
         self._future_timesteps = future_timesteps
@@ -44,23 +45,24 @@ class TFFullNetPredictor(Predictor):
             [
                 [queue(t) for t in input_times]
                 for e_id, queue in enumerate(flow.queues)
-                if self._test_mask[e_id]
+                if self._input_mask[e_id]
             ],
             [
                 [load(t) for t in input_times]
                 for e_id, load in enumerate(edge_loads)
-                if self._test_mask[e_id]
+                if self._input_mask[e_id]
             ]
         ])
 
-        future_queues_raw = self._model.predict(np.array([[prediction_time, *(data.flatten())]]), verbose=0)[0]
+        future_queues_raw = self._model.predict(
+            np.array([[prediction_time, *(data.flatten())]]), verbose=0)[0]
         future_queues_raw = np.maximum(
             future_queues_raw, np.zeros_like(future_queues_raw))
         for e_id, old_queue in enumerate(flow.queues):
-            if not self._test_mask[e_id]:
+            if not self._output_mask[e_id]:
                 queues[e_id] = zero_fct
                 continue
-            masked_id = np.count_nonzero(self._test_mask[:e_id])
+            masked_id = np.count_nonzero(self._output_mask[:e_id])
 
             new_values = [
                 old_queue(prediction_time),
@@ -81,12 +83,12 @@ class TFFullNetPredictor(Predictor):
 
         evaluated_queues = {}
         evaluated_loads = {}
-        number_masked_ids = np.count_nonzero(self._test_mask)
+        number_input_masked_ids = np.count_nonzero(self._input_mask)
 
         for e_id, old_queue in enumerate(flow.queues):
-            if not self._test_mask[e_id]:
+            if not self._input_mask[e_id]:
                 continue
-            masked_id = np.count_nonzero(self._test_mask[:e_id])
+            masked_id = np.count_nonzero(self._input_mask[:e_id])
             evaluated_queues[masked_id] = {}
             evaluated_loads[masked_id] = {}
 
@@ -110,20 +112,22 @@ class TFFullNetPredictor(Predictor):
                 *[
                     evaluated_queues[masked_id][prediction_time +
                                                 t*self._prediction_interval]
-                    for masked_id in range(number_masked_ids)
+                    for masked_id in range(number_input_masked_ids)
                     for t in range(-self._past_timesteps+1, 1)
                 ],
                 *[
                     evaluated_loads[masked_id][prediction_time +
                                                t*self._prediction_interval]
-                    for masked_id in range(number_masked_ids)
+                    for masked_id in range(number_input_masked_ids)
                     for t in range(-self._past_timesteps+1, 1)
                 ]
             ]
             for prediction_time in prediction_times
         ])
-        future_queues_raw = self._model.predict(raw_predictions_input, verbose=0)
-        future_queues_raw = np.maximum(future_queues_raw, np.zeros_like(future_queues_raw))
+        future_queues_raw = self._model.predict(
+            raw_predictions_input, verbose=0)
+        future_queues_raw = np.maximum(
+            future_queues_raw, np.zeros_like(future_queues_raw))
 
         for prediction_ind, prediction_time in enumerate(prediction_times):
             queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
@@ -132,7 +136,7 @@ class TFFullNetPredictor(Predictor):
             times = [prediction_time + t *
                      self._prediction_interval for t in range(0, self._future_timesteps + 1)]
             for e_id, old_queue in enumerate(flow.queues):
-                if not self._test_mask[e_id]:
+                if not self._output_mask[e_id]:
                     queues[e_id] = zero_fct
                     continue
                 masked_id += 1
@@ -140,7 +144,7 @@ class TFFullNetPredictor(Predictor):
                 new_values = [
                     evaluated_queues[masked_id][prediction_time],
                     *future_queues_raw[prediction_ind,
-                        masked_id * self._future_timesteps: (masked_id + 1) * self._future_timesteps]
+                                       masked_id * self._future_timesteps: (masked_id + 1) * self._future_timesteps]
                 ]
 
                 for i in range(1, len(new_values)):
@@ -153,6 +157,7 @@ class TFFullNetPredictor(Predictor):
         return result_predictions
 
     @staticmethod
-    def from_model(network: Network, model_path: str, test_mask, past_timesteps: int, future_timesteps: int, prediction_interval: float):
+    def from_model(network: Network, model_path: str, input_mask: np.ndarray, output_mask: np.ndarray,
+                   past_timesteps: int, future_timesteps: int, prediction_interval: float):
         model = tf.keras.models.load_model(model_path)
-        return TFFullNetPredictor(model, test_mask, network, past_timesteps, future_timesteps, prediction_interval)
+        return TFFullNetPredictor(model, input_mask, output_mask, network, past_timesteps, future_timesteps, prediction_interval)

@@ -1,5 +1,6 @@
 import json
 import os
+import numpy as np
 from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
@@ -48,7 +49,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
     generate_queues_and_edge_loads(
         past_timesteps, flows_dir, queues_dir, horizon, reroute_interval, prediction_interval)
 
-    test_mask = train_tf_full_net_model(queues_dir, past_timesteps, future_timesteps,
+    input_mask, output_mask = train_tf_full_net_model(queues_dir, past_timesteps, future_timesteps,
                                         reroute_interval, prediction_interval, horizon, network, full_net_model_path)
 
     def build_predictors(network): return {
@@ -59,7 +60,8 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
         PredictorType.MACHINE_LEARNING: TFFullNetPredictor.from_model(
             network,
             full_net_model_path,
-            test_mask,
+            input_mask,
+            output_mask,
             past_timesteps,
             future_timesteps,
             prediction_interval=prediction_interval

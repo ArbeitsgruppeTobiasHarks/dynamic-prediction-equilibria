@@ -10,15 +10,21 @@ from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 from utilities.file_lock import wait_for_locks, with_file_lock
 
 
-def train_tf_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval: float, prediction_interval: float, horizon: float, network: Network, full_net_path: str, epochs: int = 10):
-    test_mask = None
+def train_tf_full_net_model(
+        queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval: float,
+        prediction_interval: float, horizon: float, network: Network, full_net_path: str,
+        epochs: int = 10):
+    input_mask = None
+    output_mask = None
+
     def handle(_):
         os.makedirs(full_net_path, exist_ok=True)
 
         dataset = QueueAndEdgeLoadDataset(queues_and_edge_loads_dir, past_timesteps,
-                                        future_timesteps, reroute_interval, prediction_interval, horizon, network)
-        nonlocal test_mask
-        test_mask = dataset.test_mask
+                                          future_timesteps, reroute_interval, prediction_interval, horizon, network)
+        nonlocal input_mask, output_mask
+        input_mask = dataset.input_mask
+        output_mask = dataset.output_mask
 
         X, Y = zip(*dataset)
         X, Y = np.array(X), np.array(Y)
@@ -32,16 +38,16 @@ def train_tf_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_ti
         model: tf.keras.models.Sequential = tf.keras.models.Sequential([
             normalization,
             tf.keras.layers.Dense(units=X.shape[1],
-                                kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                  kernel_regularizer=tf.keras.regularizers.l2(0.001)),
             tf.keras.layers.LeakyReLU(),
             tf.keras.layers.Dense(units=X.shape[1],
-                                kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                  kernel_regularizer=tf.keras.regularizers.l2(0.001)),
             tf.keras.layers.LeakyReLU(),
             tf.keras.layers.Dense(units=X.shape[1],
-                                kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                  kernel_regularizer=tf.keras.regularizers.l2(0.001)),
             tf.keras.layers.LeakyReLU(),
-            tf.keras.layers.Dense(units=X.shape[1] // 2,
-                                kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+            tf.keras.layers.Dense(units=Y.shape[1],
+                                  kernel_regularizer=tf.keras.regularizers.l2(0.001)),
             tf.keras.layers.LeakyReLU()
         ])
         log_dir = "log/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -52,7 +58,8 @@ def train_tf_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_ti
 
         checkpoint_path = "training/cp.ckpt"
         # Create a callback that saves the model's weights
-        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path)
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpoint_path)
 
         model.summary()
 
@@ -66,10 +73,10 @@ def train_tf_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_ti
 
         model.save(full_net_path)
         print(f"Finished Fitting Training data.")
-    
+
     with_file_lock(full_net_path, handle)
 
     wait_for_locks(os.path.dirname(full_net_path))
-    if test_mask is None:
+    if input_mask is None or output_mask is None:
         return QueueAndEdgeLoadDataset.load_mask(queues_and_edge_loads_dir)
-    return test_mask
+    return input_mask, output_mask
