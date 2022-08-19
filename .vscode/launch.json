@@ -36,6 +36,17 @@
             },
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: Anaheim Scenario",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/predictor/src/scenarios/anaheim_scenario.py",
+            "env": {
+                "PYTHONOPTIMIZE": "TRUE"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
