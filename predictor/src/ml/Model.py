@@ -8,7 +8,7 @@ from dgl.nn.pytorch import GraphConv
 from torch.utils.data import DataLoader
 
 from importer.csv_importer import network_from_csv
-from ml.DataLoader import QueueDataset
+from ml.QueueDataset import QueueDataset
 
 
 class Model(nn.Module):

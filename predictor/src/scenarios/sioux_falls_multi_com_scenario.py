@@ -100,6 +100,13 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
     avg_comp_time = sum(average_comp_times) / len(average_comp_times)
     print(f"Average computing time: {avg_comp_time}")
 
+    network = Network.from_file(network_path)
+    network.print_info()
+    print(f"""Average Demand: {np.average([
+        c.net_inflow.values[0]
+        for c in network.commodities
+    ])}""")
+
 
 if __name__ == "__main__":
     def main():

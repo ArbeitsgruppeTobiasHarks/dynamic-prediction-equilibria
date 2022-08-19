@@ -161,9 +161,9 @@ class Network:
             f"The network contains {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges.")
         print(f"Moreover, there are {len(self.commodities)} commodities.")
         print(
-            f"Minimum/Maximum capacity: {np.min(self.capacity)}/{np.max(self.capacity)}")
+            f"Minimum/Average/Maximum capacity: {np.min(self.capacity)}/{np.average(self.capacity)}/{np.max(self.capacity)}")
         print(
-            f"Minimum/Maximum transit time: {np.min(self.travel_time)}/{np.max(self.travel_time)}")
+            f"Minimum/Average/Maximum transit time: {np.min(self.travel_time)}/{np.average(self.travel_time)}/{np.max(self.travel_time)}")
         max_in_degree = 0
         max_out_degree = 0
         max_degree = 0

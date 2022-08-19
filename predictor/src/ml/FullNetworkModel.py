@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from core.network import Network
-from ml.DataLoader import QueueDataset
+from ml.QueueDataset import QueueDataset
 
 
 class FullNetworkModel(nn.Module):
