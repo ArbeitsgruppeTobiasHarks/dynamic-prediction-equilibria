@@ -105,10 +105,14 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
         }, 1000 / FPS)
         return () => clearInterval(interval)
     }, [autoplay, autoplaySpeed, maxT])
-    const [nodeScale, setNodeScale] = React.useState(0.1)
+
+    const initialNodeScale = 0.1
+    const [nodeScale, setNodeScale] = React.useState(initialNodeScale)
     const scaledNetwork = useScaledNetwork(props.network, useInitialBoundingBox(props.network)) 
     const avgEdgeDistance = useAverageEdgeDistance(scaledNetwork)
     const avgCapacity = useAverageCapacity(scaledNetwork)
+    const initialNodeRadius = initialNodeScale * avgEdgeDistance
+    const nodeRadius = nodeScale * avgEdgeDistance
 
     // avgEdgeWidth / avgEdgeDistance !=! 1/2
     // avgEdgeWidth = ratesScale * avgCapacity
@@ -117,11 +121,10 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     const [flowScale, setFlowScale] = useState(initialFlowScale)
     const avgDistanceTransitTimeRatio = useAvgDistanceTransitTimeRatio(scaledNetwork)
     const [waitingTimeScale, setWaitingTimeScale] = useState(avgDistanceTransitTimeRatio)
-
-
-    const nodeRadius = nodeScale * avgEdgeDistance
-    const strokeWidth = 0.05 * nodeRadius
-    const edgeOffset = (nodeScale + 0.1) * avgEdgeDistance
+    const initialStrokeWidth = 0.05 * initialNodeRadius
+    const [strokeWidth, setStrokeWidth] = useState(initialStrokeWidth)
+    const initialEdgeOffset = (initialNodeScale + 0.1) * avgEdgeDistance
+    const [edgeOffset, setEdgeOffset] = useState(initialEdgeOffset)
     // nodeScale * avgEdgeLength is the radius of a node
     const svgContainerRef = useRef(null);
     const [width, height] = useSize(svgContainerRef);
@@ -179,6 +182,8 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
             setWaitingTimeScale(avgDistanceTransitTimeRatio)
             setManualZoom(null)
             setCenter(initialCenter)
+            setStrokeWidth(initialStrokeWidth)
+            setEdgeOffset(initialEdgeOffset)
         },
         [props.network, props.flow]
     )
@@ -214,6 +219,16 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                     <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
                     <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={avgDistanceTransitTimeRatio / 100}
                         labelPrecision={2} labelStepSize={2 * avgDistanceTransitTimeRatio / 10} />
+                </div>
+                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                    <Icon icon={'horizontal-inbetween'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Offset:</div>
+                    <Slider onChange={(value) => setEdgeOffset(value)} value={edgeOffset} min={0} max={2 * initialEdgeOffset} stepSize={2 * initialEdgeOffset / 100}
+                        labelPrecision={2} labelStepSize={2 * initialEdgeOffset / 10} />
+                </div>
+                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                    <Icon icon={'full-circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Stroke-Width:</div>
+                    <Slider onChange={(value) => setStrokeWidth(value)} value={strokeWidth} min={0} max={2 * initialStrokeWidth} stepSize={2 * initialStrokeWidth / 100}
+                        labelPrecision={2} labelStepSize={2 * initialStrokeWidth / 10} />
                 </div>
             </Card>
             <Card style={{ flex: '1' }}>
@@ -275,19 +290,24 @@ const EdgesCoordinator = (
         [props.flow]
     )
 
-    const grouped = _.groupBy(props.network.edgesMap, ({ from, to }) => JSON.stringify(from < to ? [from, to] : [to, from]))
-    const edgesWithViewOpts = _.map(grouped, group => {
-        const sorted = _.sortBy(group, edge => edge.from)
-        const totalCapacity = _.sum(group.map(edge => edge.capacity))
-        let translate = -totalCapacity * props.flowScale / 2 - props.strokeWidth * (group.length + 1) / 2
-        return sorted.map(edge => {
-            const edgeTranslate = translate + edge.capacity * props.flowScale / 2 + props.strokeWidth / 2
-            translate += edge.capacity * props.flowScale + props.strokeWidth
-            return {
-                translate: edgeTranslate * (edge.from < edge.to ? -1 : 1), edge, multiGroup: group.length > 1
-            }
-        })
-    }).flat()
+    const edgesWithViewOpts = React.useMemo(
+        () => {
+            const grouped = _.groupBy(props.network.edgesMap, ({ from, to }) => JSON.stringify(from < to ? [from, to] : [to, from]))
+            return _.map(grouped, group => {
+                const sorted = _.sortBy(group, edge => edge.from)
+                const totalCapacity = _.sum(group.map(edge => edge.capacity))
+                let translate = -totalCapacity * props.flowScale / 2 - props.strokeWidth * (group.length + 1) / 2
+                return sorted.map(edge => {
+                    const edgeTranslate = translate + edge.capacity * props.flowScale / 2 + props.strokeWidth / 2
+                    translate += edge.capacity * props.flowScale + props.strokeWidth
+                    return {
+                        translate: edgeTranslate * (edge.from < edge.to ? -1 : 1), edge, multiGroup: group.length > 1
+                    }
+                })
+            }).flat()
+        },
+        [props.network, props.strokeWidth, props.flowScale]
+    )
 
     return <>
         {_.map(edgesWithViewOpts, ({ edge, translate, multiGroup }) => {
