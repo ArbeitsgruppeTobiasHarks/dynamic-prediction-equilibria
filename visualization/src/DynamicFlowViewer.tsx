@@ -87,7 +87,6 @@ const useScaledNetwork = (network: Network, boundingBox: { x0: number, y0: numbe
     }, [network, boundingBox]
 )
 
-const FPS = 30
 const ZOOM_MULTIPLER = 1.125
 
 export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
@@ -99,15 +98,25 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
         if (!autoplay || autoplaySpeed === 0) {
             return
         }
-        const interval = setInterval(() => {
-            setT(t => Math.min(maxT, t + autoplaySpeed / FPS))
-        }, 1000 / FPS)
-        return () => clearInterval(interval)
+        let last_time_ms = Date.now()
+        let done = false
+        const callback = () => {
+            if (done) return
+            setT(t => {
+                const new_time_ms = Date.now()
+                const delta_t = (new_time_ms - last_time_ms) / 1000 * autoplaySpeed
+                last_time_ms = new_time_ms
+                return Math.min(maxT, t + delta_t)
+            })
+            requestAnimationFrame(callback)
+        }
+        requestAnimationFrame(callback)
+        return () => { done = true }
     }, [autoplay, autoplaySpeed, maxT])
 
     const initialNodeScale = 0.1
     const [nodeScale, setNodeScale] = React.useState(initialNodeScale)
-    const scaledNetwork = useScaledNetwork(props.network, useInitialBoundingBox(props.network)) 
+    const scaledNetwork = useScaledNetwork(props.network, useInitialBoundingBox(props.network))
     const avgEdgeDistance = useAverageEdgeDistance(scaledNetwork)
     const avgCapacity = useAverageCapacity(scaledNetwork)
     const initialNodeRadius = initialNodeScale * avgEdgeDistance
@@ -221,35 +230,35 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                 </div>
             </Card>
             <Card style={{ flex: '1' }}>
-                <div style={{ display: 'flex', flexDirection: 'row'}}>
+                <div style={{ display: 'flex', flexDirection: 'row' }}>
                     <h5>View Options</h5>
-                    <Button icon={viewOptionsOpen ? 'caret-up' : 'caret-down'} minimal onClick={() => setViewOptionsOpen(value => !value)}/>
+                    <Button icon={viewOptionsOpen ? 'caret-up' : 'caret-down'} minimal onClick={() => setViewOptionsOpen(value => !value)} />
                 </div>
                 <Collapse isOpen={viewOptionsOpen}>
-                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                    <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Node-Scale:</div>
-                    <Slider onChange={(value) => setNodeScale(value)} value={nodeScale} min={0} max={0.5} stepSize={0.01} labelStepSize={1 / 10} />
-                </div>
-                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                    <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Scale:</div>
-                    <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10 * initialFlowScale} stepSize={initialFlowScale / 100}
-                        labelPrecision={2} labelStepSize={initialFlowScale} />
-                </div>
-                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                    <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
-                    <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={avgDistanceTransitTimeRatio / 100}
-                        labelPrecision={2} labelStepSize={2 * avgDistanceTransitTimeRatio / 10} />
-                </div>
-                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                    <Icon icon={'horizontal-inbetween'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Offset:</div>
-                    <Slider onChange={(value) => setEdgeOffset(value)} value={edgeOffset} min={0} max={2 * initialEdgeOffset} stepSize={2 * initialEdgeOffset / 100}
-                        labelPrecision={2} labelStepSize={2 * initialEdgeOffset / 10} />
-                </div>
-                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                    <Icon icon={'full-circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Stroke-Width:</div>
-                    <Slider onChange={(value) => setStrokeWidth(value)} value={strokeWidth} min={0} max={2 * initialStrokeWidth} stepSize={2 * initialStrokeWidth / 100}
-                        labelPrecision={2} labelStepSize={2 * initialStrokeWidth / 10} />
-                </div>
+                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                        <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Node-Scale:</div>
+                        <Slider onChange={(value) => setNodeScale(value)} value={nodeScale} min={0} max={0.5} stepSize={0.01} labelStepSize={1 / 10} />
+                    </div>
+                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                        <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Scale:</div>
+                        <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10 * initialFlowScale} stepSize={initialFlowScale / 100}
+                            labelPrecision={2} labelStepSize={initialFlowScale} />
+                    </div>
+                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                        <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
+                        <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={avgDistanceTransitTimeRatio / 100}
+                            labelPrecision={2} labelStepSize={2 * avgDistanceTransitTimeRatio / 10} />
+                    </div>
+                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                        <Icon icon={'horizontal-inbetween'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Offset:</div>
+                        <Slider onChange={(value) => setEdgeOffset(value)} value={edgeOffset} min={0} max={2 * initialEdgeOffset} stepSize={2 * initialEdgeOffset / 100}
+                            labelPrecision={2} labelStepSize={2 * initialEdgeOffset / 10} />
+                    </div>
+                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                        <Icon icon={'full-circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Stroke-Width:</div>
+                        <Slider onChange={(value) => setStrokeWidth(value)} value={strokeWidth} min={0} max={2 * initialStrokeWidth} stepSize={2 * initialStrokeWidth / 100}
+                            labelPrecision={2} labelStepSize={2 * initialStrokeWidth / 10} />
+                    </div>
                 </Collapse>
             </Card>
         </div>
