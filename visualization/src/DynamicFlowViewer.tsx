@@ -2,9 +2,8 @@ import _, { max, min } from "lodash"
 import React, { useEffect, useRef, useState } from "react"
 import { Flow, RightConstant } from "./Flow"
 import { Network } from "./Network"
-import TeX from '@matejmazur/react-katex'
 import useSize from '@react-hook/size'
-import { Button, Card, Icon, Slider } from "@blueprintjs/core"
+import { Button, Card, Collapse, Icon, Slider } from "@blueprintjs/core"
 import { calcOutflowSteps, FlowEdge, SvgDefs, Vertex } from "./DynFlowSvg"
 
 
@@ -147,6 +146,8 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
         setManualZoom(Math.max(stdZoom / 4, zoom * (event.deltaY < 0 ? ZOOM_MULTIPLER : 1 / ZOOM_MULTIPLER)))
     }
 
+    const [viewOptionsOpen, setViewOptionsOpen] = useState(false)
+
     useEffect(
         () => {
             if (!dragMode) return
@@ -203,9 +204,28 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
     const viewBoxString = `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`
 
     return <>
-        <div style={{ display: 'flex' }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
             <Card style={{ flex: '1' }}>
-                <h5>View Options</h5>
+                <h5>Time Options</h5>
+                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                    <Icon icon={'time'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Time:</div>
+                    <Slider onChange={(value) => setT(value)} value={t} min={minT} max={maxT} labelStepSize={(maxT - minT) / 10} stepSize={(maxT - minT) / 400} labelPrecision={2} />
+                </div>
+                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
+                    <Icon icon={'play'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Autoplay:</div>
+                    <Button icon={autoplay ? 'pause' : 'play'} onClick={() => setAutoplay(v => !v)} />
+                    <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', padding: "0px 16px" }}>Speed:<br />(time units per second):</div>
+                    <div style={{ padding: '0px', flex: 1 }}>
+                        <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} labelStepSize={(maxT - minT) / 50} />
+                    </div>
+                </div>
+            </Card>
+            <Card style={{ flex: '1' }}>
+                <div style={{ display: 'flex', flexDirection: 'row'}}>
+                    <h5>View Options</h5>
+                    <Button icon={viewOptionsOpen ? 'caret-up' : 'caret-down'} minimal onClick={() => setViewOptionsOpen(value => !value)}/>
+                </div>
+                <Collapse isOpen={viewOptionsOpen}>
                 <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
                     <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Node-Scale:</div>
                     <Slider onChange={(value) => setNodeScale(value)} value={nodeScale} min={0} max={0.5} stepSize={0.01} labelStepSize={1 / 10} />
@@ -230,21 +250,7 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                     <Slider onChange={(value) => setStrokeWidth(value)} value={strokeWidth} min={0} max={2 * initialStrokeWidth} stepSize={2 * initialStrokeWidth / 100}
                         labelPrecision={2} labelStepSize={2 * initialStrokeWidth / 10} />
                 </div>
-            </Card>
-            <Card style={{ flex: '1' }}>
-                <h5>Time Options</h5>
-                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                    <Icon icon={'time'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Time:</div>
-                    <Slider onChange={(value) => setT(value)} value={t} min={minT} max={maxT} labelStepSize={(maxT - minT) / 10} stepSize={(maxT - minT) / 400} labelPrecision={2} />
-                </div>
-                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                    <Icon icon={'play'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Autoplay:</div>
-                    <Button icon={autoplay ? 'pause' : 'play'} onClick={() => setAutoplay(v => !v)} />
-                    <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', padding: "0px 16px" }}>Speed:<br />(time units per second):</div>
-                    <div style={{ padding: '0px', flex: 1 }}>
-                        <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} labelStepSize={(maxT - minT) / 50} />
-                    </div>
-                </div>
+                </Collapse>
             </Card>
         </div>
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }} ref={svgContainerRef}>
