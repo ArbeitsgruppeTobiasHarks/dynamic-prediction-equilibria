@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { Flow, RightConstant } from "./Flow"
 import { Network } from "./Network"
 import useSize from '@react-hook/size'
-import { Button, Card, Collapse, Icon, Slider } from "@blueprintjs/core"
+import { Button, Card, Collapse, Icon, IconName, Slider } from "@blueprintjs/core"
 import { calcOutflowSteps, FlowEdge, SvgDefs, Vertex } from "./DynFlowSvg"
 
 
@@ -181,19 +181,23 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
         [dragMode]
     )
 
+    const resetViewOptions = () => {
+        setNodeScale(initialNodeScale)
+        setFlowScale(initialFlowScale)
+        setWaitingTimeScale(avgDistanceTransitTimeRatio)
+        setStrokeWidth(initialStrokeWidth)
+        setEdgeOffset(initialEdgeOffset)
+    }
+
     // Reset parameters when props change
     useEffect(
         () => {
             setAutoplay(false)
             setAutoplaySpeed((maxT - minT) / 60)
             setT(0)
-            setNodeScale(0.1)
-            setFlowScale(initialFlowScale)
-            setWaitingTimeScale(avgDistanceTransitTimeRatio)
+            resetViewOptions()
             setManualZoom(null)
             setCenter(initialCenter)
-            setStrokeWidth(initialStrokeWidth)
-            setEdgeOffset(initialEdgeOffset)
         },
         [props.network, props.flow]
     )
@@ -216,16 +220,13 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
             <Card style={{ flex: '1' }}>
                 <h5>Time Options</h5>
-                <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                    <Icon icon={'time'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Time:</div>
-                    <Slider onChange={(value) => setT(value)} value={t} min={minT} max={maxT} labelStepSize={(maxT - minT) / 10} stepSize={(maxT - minT) / 400} labelPrecision={2} />
-                </div>
+                <SliderOption icon="time" label="Time:" value={t} setValue={setT} initialValue={minT} min={minT} max={maxT} />
                 <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
                     <Icon icon={'play'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Autoplay:</div>
                     <Button icon={autoplay ? 'pause' : 'play'} onClick={() => setAutoplay(v => !v)} />
                     <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', padding: "0px 16px" }}>Speed:<br />(time units per second):</div>
                     <div style={{ padding: '0px', flex: 1 }}>
-                        <Slider value={autoplaySpeed} labelPrecision={2} onChange={value => setAutoplaySpeed(value)} stepSize={.01} min={0} max={(maxT - minT) / 10} labelStepSize={(maxT - minT) / 50} />
+                        <Slider value={autoplaySpeed} labelPrecision={2} onChange={setAutoplaySpeed} stepSize={.01} min={0} max={(maxT - minT) / 10} labelStepSize={(maxT - minT) / 50} />
                     </div>
                 </div>
             </Card>
@@ -233,32 +234,16 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
                 <div style={{ display: 'flex', flexDirection: 'row' }}>
                     <h5>View Options</h5>
                     <Button icon={viewOptionsOpen ? 'caret-up' : 'caret-down'} minimal onClick={() => setViewOptionsOpen(value => !value)} />
+                    <div style={{ flex: '1', display: 'flex', justifyContent: 'right' }}>
+                        <Button icon='reset' minimal onClick={resetViewOptions} />
+                    </div>
                 </div>
                 <Collapse isOpen={viewOptionsOpen}>
-                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                        <Icon icon={'circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Node-Scale:</div>
-                        <Slider onChange={(value) => setNodeScale(value)} value={nodeScale} min={0} max={0.5} stepSize={0.01} labelStepSize={1 / 10} />
-                    </div>
-                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                        <Icon icon={'flow-linear'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Scale:</div>
-                        <Slider onChange={(value) => setFlowScale(value)} value={flowScale} min={0} max={10 * initialFlowScale} stepSize={initialFlowScale / 100}
-                            labelPrecision={2} labelStepSize={initialFlowScale} />
-                    </div>
-                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                        <Icon icon={'stopwatch'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Queue-Scale:</div>
-                        <Slider onChange={(value) => setWaitingTimeScale(value)} value={waitingTimeScale} min={0} max={2 * avgDistanceTransitTimeRatio} stepSize={avgDistanceTransitTimeRatio / 100}
-                            labelPrecision={2} labelStepSize={2 * avgDistanceTransitTimeRatio / 10} />
-                    </div>
-                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                        <Icon icon={'horizontal-inbetween'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Edge-Offset:</div>
-                        <Slider onChange={(value) => setEdgeOffset(value)} value={edgeOffset} min={0} max={2 * initialEdgeOffset} stepSize={2 * initialEdgeOffset / 100}
-                            labelPrecision={2} labelStepSize={2 * initialEdgeOffset / 10} />
-                    </div>
-                    <div style={{ display: 'flex', padding: '8px 16px', alignItems: 'center', overflow: 'hidden' }}>
-                        <Icon icon={'full-circle'} /><div style={{ paddingLeft: '8px', width: '150px', paddingRight: '16px' }}>Stroke-Width:</div>
-                        <Slider onChange={(value) => setStrokeWidth(value)} value={strokeWidth} min={0} max={2 * initialStrokeWidth} stepSize={2 * initialStrokeWidth / 100}
-                            labelPrecision={2} labelStepSize={2 * initialStrokeWidth / 10} />
-                    </div>
+                    <SliderOption icon="circle" label="Node-Scale:" value={nodeScale} setValue={setNodeScale} initialValue={initialNodeScale} />
+                    <SliderOption icon="flow-linear" label="Edge-Scale:" value={flowScale} setValue={setFlowScale} initialValue={initialFlowScale} max={10 * initialFlowScale} />
+                    <SliderOption icon="stopwatch" label="Queue-Scale:" value={waitingTimeScale} setValue={setWaitingTimeScale} initialValue={avgDistanceTransitTimeRatio} />
+                    <SliderOption icon="horizontal-inbetween" label="Edge-Offset:" value={edgeOffset} setValue={setEdgeOffset} initialValue={initialEdgeOffset} />
+                    <SliderOption icon="full-circle" label="Stroke-Width:" value={strokeWidth} setValue={setStrokeWidth} initialValue={initialStrokeWidth} />
                 </Collapse>
             </Card>
         </div>
@@ -277,6 +262,20 @@ export const DynamicFlowViewer = (props: { network: Network, flow: Flow }) => {
         </div>
     </>
 }
+
+const SliderOption = (
+    props: { label: string, initialValue: number, icon: IconName, value: number, setValue: (value: number) => void, max?: number, min?: number }
+) => {
+    const min = props.min ?? 0.
+    const max = props.max ?? 2 * props.initialValue
+    return <div style={{ display: 'flex', padding: '8px 0px', alignItems: 'center', overflow: 'hidden' }}>
+        <Icon icon={props.icon} style={{ marginLeft: '16px' }} />
+        <div style={{ padding: '0 16px', width: '150px' }}>{props.label}</div>
+        <Slider onChange={props.setValue} value={props.value} min={min} max={max} stepSize={(max - min) / 100} labelStepSize={(max - min) / 10} labelPrecision={2} />
+        <Button style={{ marginLeft: '16px' }} icon='reset' minimal onClick={() => props.setValue(props.initialValue)} />
+    </div>
+}
+
 export const SvgContent = (
     { t = 0, network, flow, nodeRadius, edgeOffset, strokeWidth, flowScale, waitingTimeScale }:
         { t: number, network: Network, flow: Flow, nodeRadius: number, edgeOffset: number, strokeWidth: number, flowScale: number, waitingTimeScale: number }
