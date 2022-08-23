@@ -1,6 +1,7 @@
 import { Alignment, Button, ButtonGroup, Navbar, NavbarGroup, NavbarHeading, Toaster } from "@blueprintjs/core"
 import * as React from "react"
 import { useRef, useState } from "react"
+import { createRoot } from "react-dom/client"
 
 import styled from 'styled-components'
 import { flow as initialFlow, network as initialNetwork } from "./sample"
@@ -141,4 +142,8 @@ const DragOverContainer = ({ dragOver }: { dragOver: boolean }) => {
     </div>
 }
 
-const AppToaster = Toaster.create()
+let AppToaster: Toaster
+
+createRoot(document.getElementById('toaster')!).render(
+  <Toaster ref={instance => { AppToaster = instance! }} />
+)
