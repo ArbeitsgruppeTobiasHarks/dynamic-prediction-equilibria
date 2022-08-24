@@ -10,7 +10,7 @@ import tensorflow as tf
 from core.network import Network
 from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear
-from ml.TFNeighborhood import get_neighboring_edges_mask
+from ml.TFNeighborhood import get_neighboring_edges_mask_directed
 
 
 class TFNeighborhoodPredictor(Predictor):
@@ -25,7 +25,7 @@ class TFNeighborhoodPredictor(Predictor):
         self._future_timesteps = future_timesteps
         self._prediction_interval = prediction_interval
         self._edge_input_masks = [
-            get_neighboring_edges_mask(
+            get_neighboring_edges_mask_directed(
                 edge, network, max_distance) * input_mask
             for edge in network.graph.edges
         ]
