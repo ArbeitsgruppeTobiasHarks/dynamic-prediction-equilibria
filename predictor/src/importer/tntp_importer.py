@@ -4,6 +4,8 @@ from math import pi
 import pandas as pd
 
 from core.network import Network
+from core.predictors.predictor_type import PredictorType
+from scenarios.scenario_utils import get_demand_with_inflow_horizon
 
 
 DemandsRangeBuilder = Callable[[Network], Tuple[float, float]]
@@ -20,8 +22,29 @@ def natural_earth_projection(latInRad: float, lngInRad: float) -> Tuple[float, f
     return (x * 1000 + 1333, - y * 1000 + 768)
 
 
-def add_commodities(network: Network, od_pairs_file_path: str, inflow_horizon: float):
-    raise NotImplementedError()
+def add_commodities(network: Network, trips_tntp_file_path: str, inflow_horizon: float):
+    with open(trips_tntp_file_path, 'r') as file:
+        all_rows = file.read()
+
+    blocks = all_rows.split('Origin')[1:]
+    od_pairs = []
+    for block in blocks:
+        lines = block.replace(";", "\n").split('\n')
+        origin = int(lines[0])
+        destination_lines = lines[1:]
+
+        for line in destination_lines:
+            if len(line.strip()) == 0:
+                continue
+            entries = line.split(":")
+            assert len(entries) == 2
+            destination = int(entries[0])
+            demand = float(entries[1])
+            od_pairs.append((origin, destination, demand))
+
+    for (origin, destination, demand) in od_pairs:
+        network.add_commodity(
+            origin, destination, get_demand_with_inflow_horizon(demand, inflow_horizon), PredictorType.CONSTANT)
 
 
 def add_node_positions(network: Network, node_tntp_file_path: str):
