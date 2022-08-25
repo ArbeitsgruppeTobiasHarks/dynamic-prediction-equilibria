@@ -9,8 +9,8 @@ from sklearn.pipeline import Pipeline
 
 from core.network import Network
 from core.predictor import Predictor
+from ml.neighboring_edges import get_neighboring_edges_mask_undirected
 from utilities.piecewise_linear import PiecewiseLinear
-from ml.TFNeighborhood import get_neighboring_edges_mask_undirected
 
 
 class SKNeighborhoodPredictor(Predictor):

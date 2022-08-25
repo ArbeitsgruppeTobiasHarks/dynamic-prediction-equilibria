@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 from core.network import Network
 from core.predictors.sk_neighborhood_predictor import SKNeighborhoodPredictor
 from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
-from ml.TFNeighborhood import get_neighboring_edges_mask_undirected
+from ml.neighboring_edges import get_neighboring_edges_mask_undirected
 from utilities.file_lock import wait_for_locks, with_file_lock
 
 
