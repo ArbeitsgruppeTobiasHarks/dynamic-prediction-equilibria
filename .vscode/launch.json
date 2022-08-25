@@ -47,6 +47,17 @@
             },
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: Anaheim MultiCom Scenario",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/predictor/src/scenarios/anaheim_multi_com_scenario.py",
+            "env": {
+                "PYTHONOPTIMIZE": "TRUE"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
