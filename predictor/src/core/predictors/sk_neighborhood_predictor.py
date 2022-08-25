@@ -1,11 +1,11 @@
 from __future__ import annotations
 import os
-
+import pickle
 from typing import Dict, List, Optional
 
 import numpy as np
 from core.dynamic_flow import DynamicFlow
-import tensorflow as tf
+from sklearn.pipeline import Pipeline
 
 from core.network import Network
 from core.predictor import Predictor
@@ -13,9 +13,9 @@ from utilities.piecewise_linear import PiecewiseLinear
 from ml.TFNeighborhood import get_neighboring_edges_mask_undirected
 
 
-class TFNeighborhoodPredictor(Predictor):
+class SKNeighborhoodPredictor(Predictor):
 
-    def __init__(self, models: Dict[int, tf.keras.Sequential], input_mask: np.ndarray, output_mask: np.ndarray, network: Network, past_timesteps: int, future_timesteps: int, prediction_interval: float, max_distance: int):
+    def __init__(self, models: Dict[int, Pipeline], input_mask: np.ndarray, output_mask: np.ndarray, network: Network, past_timesteps: int, future_timesteps: int, prediction_interval: float, max_distance: int):
         super().__init__(network)
         self._models = models
         self._input_mask = input_mask
@@ -31,7 +31,7 @@ class TFNeighborhoodPredictor(Predictor):
         ]
 
     def type(self) -> str:
-        return "Neighborhood Neural Net Predictor"
+        return "Neighborhood Linear Regression Predictor"
 
     def is_constant(self) -> bool:
         return False
@@ -69,7 +69,7 @@ class TFNeighborhoodPredictor(Predictor):
                 continue
 
             future_queues_raw = self._models[e_id].predict(
-                np.array([[prediction_time, *(data[:, self._edge_input_masks[e_id], :].flatten())]]), verbose=0)[0]
+                np.array([[prediction_time, *(data[:, self._edge_input_masks[e_id], :].flatten())]]))[0]
             future_queues_raw = np.maximum(
                 future_queues_raw, np.zeros_like(future_queues_raw))
 
@@ -163,7 +163,7 @@ class TFNeighborhoodPredictor(Predictor):
             ])
 
             future_queues_raw = self._models[e_id].predict(
-                raw_predictions_input, verbose=0)
+                raw_predictions_input)
             future_queues_raw = np.maximum(
                 future_queues_raw, np.zeros_like(future_queues_raw))
 
@@ -188,7 +188,10 @@ class TFNeighborhoodPredictor(Predictor):
                    past_timesteps: int, future_timesteps: int, prediction_interval: float, max_distance: int):
         models = {}
         for edge in network.graph.edges:
-            if output_mask[edge.id] == 1:
-                models[edge.id] = tf.keras.models.load_model(
-                    os.path.join(models_path, str(edge.id)))
-        return TFNeighborhoodPredictor(models, input_mask, output_mask, network, past_timesteps, future_timesteps, prediction_interval, max_distance)
+            if output_mask[edge.id]:
+                model_path = os.path.join(models_path, str(edge.id) + ".pickle")            
+                assert os.path.exists(model_path)
+                with open(model_path, "rb") as file:
+                    models[edge.id] = pickle.load(file)
+
+        return SKNeighborhoodPredictor(models, input_mask, output_mask, network, past_timesteps, future_timesteps, prediction_interval, max_distance)

@@ -1,9 +1,9 @@
+import warnings
 from math import ceil, log10
 import os
 import pickle
 import random
-from typing import Dict, Optional, Set
-from core.dynamic_flow import DynamicFlow
+from typing import Optional
 
 from core.flow_builder import FlowBuilder
 from core.network import Network
@@ -20,11 +20,10 @@ def generate_network_demands(network: Network, random_seed: int, inflow_horizon:
     if sigma is None:
         sigma = min(network.capacity) / 2.
     random.seed(random_seed)
-    for commodity in network.commodities:
-        demand = 0.
-        while demand == 0.:
-            demand = max(0., random.gauss(
-                commodity.net_inflow.values[0], sigma))
+    for index, commodity in enumerate(network.commodities):
+        demand = max(0., random.gauss(commodity.net_inflow.values[0], sigma))
+        if demand == 0.:
+            warnings.warn(f"Generated zero demand for commodity {index}.")
         if inflow_horizon < float('inf'):
             commodity.net_inflow = RightConstant(
                 [0., inflow_horizon], [demand, 0.], (0., float('inf')))

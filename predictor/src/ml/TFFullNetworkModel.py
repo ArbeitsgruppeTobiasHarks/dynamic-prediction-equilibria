@@ -6,6 +6,7 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 from core.network import Network
+from core.predictors.tf_full_net_predictor import TFFullNetPredictor
 from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 from utilities.file_lock import wait_for_locks, with_file_lock
 
@@ -38,16 +39,20 @@ def train_tf_full_net_model(
         model: tf.keras.models.Sequential = tf.keras.models.Sequential([
             normalization,
             tf.keras.layers.Dense(units=X.shape[1],
-                                  kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                    kernel_regularizer=tf.keras.regularizers.l2(0.001),
+                                    bias_regularizer=tf.keras.regularizers.l2(0.001)),
             tf.keras.layers.LeakyReLU(),
             tf.keras.layers.Dense(units=X.shape[1],
-                                  kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                    kernel_regularizer=tf.keras.regularizers.l2(0.001),
+                                    bias_regularizer=tf.keras.regularizers.l2(0.001)),
             tf.keras.layers.LeakyReLU(),
             tf.keras.layers.Dense(units=X.shape[1],
-                                  kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                    kernel_regularizer=tf.keras.regularizers.l2(0.001),
+                                    bias_regularizer=tf.keras.regularizers.l2(0.001)),
             tf.keras.layers.LeakyReLU(),
             tf.keras.layers.Dense(units=Y.shape[1],
-                                  kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                    kernel_regularizer=tf.keras.regularizers.l2(0.001),
+                                    bias_regularizer=tf.keras.regularizers.l2(0.001)),
             tf.keras.layers.LeakyReLU()
         ])
         log_dir = "log/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -78,5 +83,9 @@ def train_tf_full_net_model(
 
     wait_for_locks(os.path.dirname(full_net_path))
     if input_mask is None or output_mask is None:
-        return QueueAndEdgeLoadDataset.load_mask(queues_and_edge_loads_dir)
-    return input_mask, output_mask
+        input_mask, output_mask = QueueAndEdgeLoadDataset.load_mask(queues_and_edge_loads_dir)
+    
+    def build_tf_full_net_predictor(network: Network) -> TFFullNetPredictor:
+        return TFFullNetPredictor.from_model(network, full_net_path, input_mask, output_mask, past_timesteps, future_timesteps, prediction_interval)
+    
+    return build_tf_full_net_predictor

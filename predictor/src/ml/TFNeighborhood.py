@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from core.graph import Edge, Node
 
 from core.network import Network
+from core.predictors.tf_neighborhood_predictor import TFNeighborhoodPredictor
 from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 from utilities.file_lock import wait_for_locks, with_file_lock
 
@@ -43,7 +44,6 @@ def get_neighboring_edges_backward(edge: Edge, max_distance: int) -> Set[Edge]:
     return result
 
 
-
 def get_neighboring_edges_directed(edge: Edge, max_distance: int) -> Set[Edge]:
     return get_neighboring_edges_backward(edge, max_distance).union(get_neighboring_edges_forward(edge, max_distance))
 
@@ -69,7 +69,7 @@ def get_neighboring_edges_undirected(edge: Edge, max_distance: int) -> Set[Edge]
 
 
 def get_neighboring_edges_mask_directed(edge: Edge, network: Network, max_distance: int) -> np.ndarray:
-    neighboring_edges = get_neighboring_edges_directed(edge, max_distance) 
+    neighboring_edges = get_neighboring_edges_directed(edge, max_distance)
     return np.array([
         e in neighboring_edges
         for e in network.graph.edges
@@ -77,11 +77,12 @@ def get_neighboring_edges_mask_directed(edge: Edge, network: Network, max_distan
 
 
 def get_neighboring_edges_mask_undirected(edge: Edge, network: Network, max_distance: int) -> np.ndarray:
-    neighboring_edges = get_neighboring_edges_undirected(edge, max_distance) 
+    neighboring_edges = get_neighboring_edges_undirected(edge, max_distance)
     return np.array([
         e in neighboring_edges
         for e in network.graph.edges
     ])
+
 
 def train_tf_neighborhood_model(
         queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval: float,
@@ -113,8 +114,11 @@ def train_tf_neighborhood_model(
                 dataset = QueueAndEdgeLoadDataset(queues_and_edge_loads_dir, past_timesteps,
                                                   future_timesteps, reroute_interval, prediction_interval, horizon, network)
             input_mask, output_mask = dataset.input_mask, dataset.output_mask
-            edge_input_mask = input_mask * get_neighboring_edges_mask(edge, network, max_distance)
-            edge_output_mask = np.array([ e == edge for e in network.graph.edges ])
+            edge_input_mask = input_mask * \
+                get_neighboring_edges_mask_undirected(
+                    edge, network, max_distance)
+            edge_output_mask = np.array(
+                [e == edge for e in network.graph.edges])
 
             dataset.use_additional_input_mask(edge_input_mask)
             dataset.use_additional_output_mask(edge_output_mask)
@@ -131,16 +135,24 @@ def train_tf_neighborhood_model(
             model: tf.keras.models.Sequential = tf.keras.models.Sequential([
                 normalization,
                 tf.keras.layers.Dense(units=X.shape[1],
-                                      kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                      kernel_regularizer=tf.keras.regularizers.l2(
+                                          0.001),
+                                      bias_regularizer=tf.keras.regularizers.l2(0.001)),
                 tf.keras.layers.LeakyReLU(),
                 tf.keras.layers.Dense(units=X.shape[1],
-                                      kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                      kernel_regularizer=tf.keras.regularizers.l2(
+                                          0.001),
+                                      bias_regularizer=tf.keras.regularizers.l2(0.001)),
                 tf.keras.layers.LeakyReLU(),
                 tf.keras.layers.Dense(units=X.shape[1],
-                                      kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                      kernel_regularizer=tf.keras.regularizers.l2(
+                                          0.001),
+                                      bias_regularizer=tf.keras.regularizers.l2(0.001)),
                 tf.keras.layers.LeakyReLU(),
                 tf.keras.layers.Dense(units=Y.shape[1],
-                                      kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                                      kernel_regularizer=tf.keras.regularizers.l2(
+                                          0.001),
+                                      bias_regularizer=tf.keras.regularizers.l2(0.001)),
                 tf.keras.layers.LeakyReLU()
             ])
             log_dir = "log/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -170,4 +182,8 @@ def train_tf_neighborhood_model(
         with_file_lock(model_dir, handle)
 
     wait_for_locks(os.path.dirname(models_path))
-    return input_mask, output_mask
+
+    def build_tf_neighborhood_predictor(network: Network) -> TFNeighborhoodPredictor:
+        return TFNeighborhoodPredictor.from_models(network, models_path, input_mask, output_mask, past_timesteps, future_timesteps, prediction_interval, max_distance)
+
+    return build_tf_neighborhood_predictor

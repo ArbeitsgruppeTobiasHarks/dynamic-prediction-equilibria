@@ -1,6 +1,6 @@
 from math import floor
 import os
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 from torch.utils.data.dataset import T_co, Dataset
@@ -91,7 +91,7 @@ class QueueAndEdgeLoadDataset(Dataset):
         return len(self._data) * self.samples_per_flow
 
     @staticmethod
-    def load_mask(folder_path: str) -> np.ndarray:
+    def load_mask(folder_path: str) -> Tuple[np.ndarray, np.ndarray]:
         input_mask = np.array([v > 0 for v in np.loadtxt(
             os.path.join(folder_path, "../input-mask.txt"))])
         output_mask = np.array([v > 0 for v in np.loadtxt(

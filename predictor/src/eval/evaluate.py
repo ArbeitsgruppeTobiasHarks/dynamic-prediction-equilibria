@@ -27,7 +27,10 @@ COLORS = {
     PredictorType.CONSTANT: "red",
     PredictorType.LINEAR: "green",
     PredictorType.REGULARIZED_LINEAR: "orange",
-    PredictorType.MACHINE_LEARNING: "black",
+    PredictorType.MACHINE_LEARNING_TF_FULL_NET: "black",
+    PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: "black",
+    PredictorType.MACHINE_LEARNING_SK_FULL_NET: "black",
+    PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: "black"
 }
 
 
@@ -106,9 +109,9 @@ def evaluate_single_run(network: Network, focused_commodity_index: int, split: b
             commodity.net_inflow.domain
         )
     else:
+        test_demand = max(min(network.capacity) / 256, commodity.net_inflow.values[0] / 16 / len(predictors))
         demand_per_comm = RightConstant(
-            [0., inflow_horizon], [commodity.net_inflow.values[0] /
-                                   16 / len(predictors), 0.], (0., float('inf'))
+            [0., inflow_horizon], [test_demand, 0.], (0., float('inf'))
         )
 
     new_commodities_indices = range(len(network.commodities), len(

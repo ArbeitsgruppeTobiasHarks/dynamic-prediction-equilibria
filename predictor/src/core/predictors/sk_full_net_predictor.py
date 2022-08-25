@@ -1,37 +1,32 @@
 from __future__ import annotations
 import os
-
-from typing import Dict, List, Optional
+import pickle
+from sklearn.pipeline import Pipeline
+from typing import List, Optional
 
 import numpy as np
 from core.dynamic_flow import DynamicFlow
-import tensorflow as tf
 
 from core.network import Network
 from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear
-from ml.TFNeighborhood import get_neighboring_edges_mask_undirected
 
 
-class TFNeighborhoodPredictor(Predictor):
 
-    def __init__(self, models: Dict[int, tf.keras.Sequential], input_mask: np.ndarray, output_mask: np.ndarray, network: Network, past_timesteps: int, future_timesteps: int, prediction_interval: float, max_distance: int):
+class SKFullNetPredictor(Predictor):
+
+    def __init__(self, model: Pipeline, input_mask: np.ndarray, output_mask: np.ndarray, network: Network, past_timesteps: int, future_timesteps: int, prediction_interval: float):
         super().__init__(network)
-        self._models = models
+        self._model = model
         self._input_mask = input_mask
         self._output_mask = output_mask
         self._network = network
         self._past_timesteps = past_timesteps
         self._future_timesteps = future_timesteps
         self._prediction_interval = prediction_interval
-        self._edge_input_masks = [
-            get_neighboring_edges_mask_undirected(
-                edge, network, max_distance) * input_mask
-            for edge in network.graph.edges
-        ]
 
     def type(self) -> str:
-        return "Neighborhood Neural Net Predictor"
+        return "Full Net Linear Regression Predictor"
 
     def is_constant(self) -> bool:
         return False
@@ -51,31 +46,30 @@ class TFNeighborhoodPredictor(Predictor):
         data = np.array([
             [
                 [queue(t) for t in input_times]
-                if self._input_mask[e_id]
-                else [0 for _ in input_times]
                 for e_id, queue in enumerate(flow.queues)
+                if self._input_mask[e_id]
             ],
             [
                 [load(t) for t in input_times]
-                if self._input_mask[e_id]
-                else [0 for _ in input_times]
                 for e_id, load in enumerate(edge_loads)
+                if self._input_mask[e_id]
             ]
         ])
 
+        future_queues_raw = self._model.predict(
+            np.array([[prediction_time, *(data.flatten())]]))[0]
+        future_queues_raw = np.maximum(
+            future_queues_raw, np.zeros_like(future_queues_raw))
         for e_id, old_queue in enumerate(flow.queues):
             if not self._output_mask[e_id]:
                 queues[e_id] = zero_fct
                 continue
-
-            future_queues_raw = self._models[e_id].predict(
-                np.array([[prediction_time, *(data[:, self._edge_input_masks[e_id], :].flatten())]]), verbose=0)[0]
-            future_queues_raw = np.maximum(
-                future_queues_raw, np.zeros_like(future_queues_raw))
+            masked_id = np.count_nonzero(self._output_mask[:e_id])
 
             new_values = [
                 old_queue(prediction_time),
-                *future_queues_raw
+                *future_queues_raw[
+                    masked_id * self._future_timesteps: (masked_id + 1) * self._future_timesteps]
             ]
 
             for i in range(1, len(new_values)):
@@ -112,9 +106,7 @@ class TFNeighborhoodPredictor(Predictor):
         zero_fct = PiecewiseLinear([0.], [0.], 0., 0.)
         assert len(edges) == len(flow.queues)
 
-        result_predictions = [
-            [] for _ in prediction_times
-        ]
+        result_predictions = []
 
         raw_predictions_input = np.array([
             [
@@ -134,61 +126,43 @@ class TFNeighborhoodPredictor(Predictor):
             ]
             for prediction_time in prediction_times
         ])
+        future_queues_raw = self._model.predict(
+            raw_predictions_input)
+        future_queues_raw = np.maximum(
+            future_queues_raw, np.zeros_like(future_queues_raw))
 
-        for e_id, old_queue in enumerate(flow.queues):
-            if not self._output_mask[e_id]:
-                for prediction_ind, _ in enumerate(prediction_times):
-                    result_predictions[prediction_ind].append(zero_fct)
-                continue
+        for prediction_ind, prediction_time in enumerate(prediction_times):
+            queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
 
-            raw_predictions_input = np.array([
-                [
-                    prediction_time,
-                    *[
-                        evaluated_queues[masked_id][prediction_time +
-                            t*self._prediction_interval]
-                        for masked_id in range(number_input_masked_ids)
-                        if self._edge_input_masks[e_id][self._input_mask][masked_id]
-                        for t in range(-self._past_timesteps+1, 1)
-                    ],
-                    *[
-                        evaluated_loads[masked_id][prediction_time +
-                                                t*self._prediction_interval]
-                        for masked_id in range(number_input_masked_ids)
-                        if self._edge_input_masks[e_id][self._input_mask][masked_id]
-                        for t in range(-self._past_timesteps+1, 1)
-                    ]
-                ]
-                for prediction_time in prediction_times
-            ])
+            masked_id = -1
+            times = [prediction_time + t *
+                     self._prediction_interval for t in range(0, self._future_timesteps + 1)]
+            for e_id, old_queue in enumerate(flow.queues):
+                if not self._output_mask[e_id]:
+                    queues[e_id] = zero_fct
+                    continue
+                masked_id += 1
 
-            future_queues_raw = self._models[e_id].predict(
-                raw_predictions_input, verbose=0)
-            future_queues_raw = np.maximum(
-                future_queues_raw, np.zeros_like(future_queues_raw))
-
-            masked_id = np.count_nonzero(self._input_mask[:e_id])
-            for prediction_ind, prediction_time in enumerate(prediction_times):
-                times = [prediction_time + t *
-                        self._prediction_interval for t in range(0, self._future_timesteps + 1)]
                 new_values = [
-                   evaluated_queues[masked_id][prediction_time],
-                   *future_queues_raw[prediction_ind, :]
+                    evaluated_queues[masked_id][prediction_time],
+                    *future_queues_raw[prediction_ind,
+                                       masked_id * self._future_timesteps: (masked_id + 1) * self._future_timesteps]
                 ]
 
                 for i in range(1, len(new_values)):
                     new_values[i] = max(
                         new_values[i], new_values[i-1] - self._prediction_interval * self._network.capacity[e_id])
-                result_predictions[prediction_ind].append(PiecewiseLinear(times, new_values, 0., 0.))
 
+                queues[e_id] = PiecewiseLinear(times, new_values, 0., 0.)
+
+            result_predictions.append(queues)
         return result_predictions
 
     @staticmethod
-    def from_models(network: Network, models_path: str, input_mask: np.ndarray, output_mask: np.ndarray,
-                   past_timesteps: int, future_timesteps: int, prediction_interval: float, max_distance: int):
-        models = {}
-        for edge in network.graph.edges:
-            if output_mask[edge.id] == 1:
-                models[edge.id] = tf.keras.models.load_model(
-                    os.path.join(models_path, str(edge.id)))
-        return TFNeighborhoodPredictor(models, input_mask, output_mask, network, past_timesteps, future_timesteps, prediction_interval, max_distance)
+    def from_model(network: Network, model_path: str, input_mask: np.ndarray, output_mask: np.ndarray,
+                   past_timesteps: int, future_timesteps: int, prediction_interval: float):
+        assert os.path.exists(model_path)
+        with open(model_path, "rb") as file:
+            model = pickle.load(file)
+
+        return SKFullNetPredictor(model, input_mask, output_mask, network, past_timesteps, future_timesteps, prediction_interval)

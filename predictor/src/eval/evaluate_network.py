@@ -2,7 +2,7 @@ import json
 from math import ceil, log10
 import os
 import random
-from typing import Optional
+from typing import Dict, Optional, Tuple
 
 from core.network import Network, Commodity
 from core.predictors.predictor_type import PredictorType
@@ -15,8 +15,8 @@ from visualization.to_json import merge_commodities, to_visualization_json
 
 def eval_network_demand(network_path: str, number_flows: int, out_dir: str, inflow_horizon: float,
                         future_timesteps: int, prediction_interval: float, reroute_interval: float,
-                        horizon: float, build_predictors: PredictorBuilder, demand_sigma: Optional[float], split: bool = False,
-                        suppress_log=True, check_for_optimizations: bool = True):
+                        horizon: float, build_predictors: PredictorBuilder, demand_sigma: Optional[float], visualization_config: Dict[PredictorType, Tuple[str, str]], 
+                        split: bool = False, suppress_log=True, check_for_optimizations: bool = True):
     '''
     Evaluates a single (randomly chosen) commodity.
     '''
@@ -58,14 +58,15 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
 
     wait_for_locks(out_dir)
 
-    eval_jsons_to_tikz_boxplot(out_dir)
-    compare_mae_with_perf(out_dir)
+    eval_jsons_to_tikz_boxplot(out_dir, visualization_config)
+    compare_mae_with_perf(out_dir, visualization_config)
 
 
 def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon: float,
                                  future_timesteps: int, prediction_interval: float, reroute_interval: float, horizon: float,
                                  split: bool = False, random_commodities: bool = False, suppress_log=True,
-                                 build_predictors: Optional[PredictorBuilder] = None, check_for_optimizations: bool = True):
+                                 build_predictors: Optional[PredictorBuilder] = None, check_for_optimizations: bool = True,
+                                 visualization_config: Optional[Dict[PredictorType, Tuple[str, str]]] = None):
     if check_for_optimizations:
         assert (lambda: False)(
         ), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
@@ -121,20 +122,22 @@ def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon
         to_visualization_json(
             out_dir + "/visualization/ " +
             f"{k}.vis.json", flow, network,
-            {id: COLORS[comm.predictor_type]
+            {id: visualization_config[comm.predictor_type][0]
                 for (id, comm) in enumerate(network.commodities)}
         )
         os.remove(lock_path)
+    
+    wait_for_locks(out_dir)
 
-    eval_jsons_to_tikz_boxplot(out_dir)
+    eval_jsons_to_tikz_boxplot(out_dir, visualization_config)
 
-    compare_mae_with_perf(out_dir)
+    compare_mae_with_perf(out_dir, visualization_config)
 
-def compare_mae_with_perf(dir: str):
+def compare_mae_with_perf(dir: str, visualization_config):
     files = sorted([file for file in os.listdir(dir) if file.endswith(".json")])
     # Zero, Constant, Linear, RegularizedLinear, ML
-    colors = ["blue", "red", "{rgb,255:red,0; green,128; blue,0}", "orange", "black"] 
-    coordinates = [[],[],[],[],[]]
+    colors = [t[0] for t in visualization_config.values()]
+    coordinates = [[] for _ in colors]
     for file_path in files:
         with open(os.path.join(dir, file_path), "r") as file:
             res_dict = json.load(file)
@@ -166,42 +169,36 @@ def compare_mae_with_perf(dir: str):
         file.write(tikz)
 
 
-def eval_jsons_to_tikz_boxplot(dir: str):
-    files = os.listdir(dir)
-    # Zero, Constant, Linear, RegularizedLinear, ML
-    times = [[], [], [], [], []]
-    means = [0, 0, 0, 0, 0, 0]
-    num = 0
+def eval_jsons_to_tikz_boxplot(dir: str, visualization_config):
+    files = [file for file in os.listdir(dir) if file.endswith(".json")]
+    
+    colors = [t[0] for t in visualization_config.values()]
+    labels = [t[1] for t in visualization_config.values()]
+
+    times = [[] for _ in visualization_config]
+    means = [0. for _ in visualization_config]
     for file_path in files:
-        if file_path.startswith(".lock"):
-            raise ValueError("Detected lock file. Will not create tikz file.")
-        if not file_path.endswith(".json"):
-            continue
         with open(os.path.join(dir, file_path), "r") as file:
             res_dict = json.load(file)
             travel_times = res_dict['avg_travel_times']
             if any(travel_times[j] != travel_times[0] for j in range(len(travel_times) - 1)):
                 for i in range(len(times)):
-                    times[i].append(travel_times[i] / travel_times[5])
+                    times[i].append(travel_times[i] / travel_times[-1] - 1)
                 for j in range(len(means)):
                     means[j] += travel_times[j]
-                num += 1
-    configs = [
-        {"label": "$\\hat q^{\\text{Z}}$", "color": "blue"},
-        {"label": "$\\hat q^{\\text{C}}$", "color": "red"},
-        {"label": "$\\hat q^{\\text{L}}$",
-            "color": "{rgb,255:red,0; green,128; blue,0}"},
-        {"label": "$\\hat q^{\\text{RL}}$", "color": "orange"},
-        {"label": "$\\hat q^{\\text{ML}}$", "color": "black"},
-    ]
+
     tikz = """\\begin{tikzpicture}
         \\begin{axis}
   [
   width=.5\\textwidth,
   boxplot/draw direction = y,
-  ylabel = {$T_i^{\\mathrm{avg}} / T^{\\mathrm{avg}}_{\\text{OPT}}$},
-  xtick = {1, 2, 3, 4, 5},
-  xticklabels = {""" + ",".join([c["label"] for c in configs]) + """},
+  ylabel = {\\begin{tabular}{c}Slowdown\\\\\\small$T_i^{\\mathrm{avg}} / T^{\\mathrm{avg}}_{\\text{OPT}} - 1$\\end{tabular} },
+  ymode = log,
+  log basis y={10},
+  ymajorgrids=true,
+  grid style=dashed,
+  xtick = {""" + ",".join(str(i) for i in range(1, len(times) + 1)) + """},
+  xticklabels = {""" + ",".join(labels) + """},
   every axis plot/.append style = {fill, fill opacity = .1},
   ]
     """
@@ -209,8 +206,9 @@ def eval_jsons_to_tikz_boxplot(dir: str):
         tikz += """\\addplot + [
           mark = *,
           boxplot,
+          solid,
           color="""
-        tikz += configs[i]["color"]
+        tikz += colors[i]
         tikz += """]
           table [row sep = \\\\, y index = 0] {
         data \\\\
@@ -229,7 +227,7 @@ def eval_jsons_to_tikz_boxplot(dir: str):
 
     print("Means:")
     for j in range(len(means)):
-        print(means[j] / num)
+        print(means[j] / len(files))
 
 
 if __name__ == '__main__':

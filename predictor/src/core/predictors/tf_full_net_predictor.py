@@ -24,7 +24,7 @@ class TFFullNetPredictor(Predictor):
         self._prediction_interval = prediction_interval
 
     def type(self) -> str:
-        return "Full Net Linear Regression Predictor"
+        return "Full Net Neural Net Predictor"
 
     def is_constant(self) -> bool:
         return False
