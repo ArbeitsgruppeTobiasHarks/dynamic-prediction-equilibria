@@ -41,7 +41,7 @@ def build_with_times(
             elapsed = now - start_time
             log_msg = f"\rFlow#{flow_id} built until phi={flow.phi:.1f};"
             log_msg += f" Elapsed={timedelta(seconds=round(elapsed))};"
-            log_msg += f" Remaining={timedelta(seconds=round(remaining_time))};"
+            log_msg += f" Remaining={timedelta(seconds=round(new_milestone_time + remaining_time - now))};"
             log_msg += f" Finished={finish_time};"
             if observe_commodities_indices is not None:
                 log_msg += f" TravelTimes={[round(flow.avg_travel_time(i, flow.phi), 4) for i in observe_commodities_indices]};"
