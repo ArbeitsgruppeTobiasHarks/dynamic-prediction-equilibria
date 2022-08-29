@@ -44,6 +44,18 @@ class RightConstant:
     def __call__(self, at: float) -> float:
         return self.eval(at)
 
+    def eval_from_end(self, at: float) -> float:
+        '''
+        Searches the lower rank of the element x in arr by going backwards from the last entry.
+        The lower rank is the minimal number i in -1, ..., len(arr)-1,
+        such that arr[i] <= x < arr[i+1] (with the interpretation arr[-1] = -inf and arr[len(arr)] = inf)
+        '''
+        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
+        rnk = len(self.times) - 1
+        while rnk >= 0 and self.times[rnk] > at:
+            rnk -= 1
+        return self._eval_with_lrank(at, rnk)
+
     def eval(self, at: float) -> float:
         assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         rnk = elem_lrank(self.times, at)
@@ -83,7 +95,18 @@ class RightConstant:
         assert self.domain == other.domain
 
         new_times = merge_sorted(self.times, other.times)
-        new_values = [self(t) + other(t) for t in new_times]
+        
+        new_values = [0.] * len(new_times)
+
+        lptr = 0
+        rptr = 0
+        for i, time in enumerate(new_times):
+            while lptr < len(self.times) - 1 and self.times[lptr + 1] <= time:
+                lptr += 1
+            while rptr < len(other.times) - 1 and other.times[rptr + 1] <= time:
+                rptr += 1
+            new_values[i] = self.values[lptr] + other.values[rptr]
+
         return RightConstant(new_times, new_values, self.domain)
     
     def __add__(self, other):
