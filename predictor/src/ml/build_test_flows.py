@@ -44,6 +44,7 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
     for flow_id in range(number_flows):
         flow_path = os.path.join(
             out_dir, f"{str(flow_id).zfill(ceil(log10(number_flows)))}.flow.pickle")
+        visualization_path = flow_path + ".json"
 
         def handle(open_file):
             network = Network.from_file(network_path)
@@ -54,23 +55,32 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
                 assert (lambda: False)(
                 ), "Use PYTHONOPTIMIZE=TRUE for a faster generation."
 
-            predictors = {PredictorType.CONSTANT: ConstantPredictor(network)}
+            if os.path.exists(flow_path):
+                print("Flow already written to disk. Loading...")
+                with open(flow_path, "rb") as file:
+                    flow = pickle.load(file)
+                flow._network = network
+            else:
+                predictors = {PredictorType.CONSTANT: ConstantPredictor(network)}
 
-            flow_builder = FlowBuilder(network, predictors, reroute_interval)
-            flow, _ = build_with_times(
-                flow_builder, flow_id, reroute_interval, horizon)
+                flow_builder = FlowBuilder(network, predictors, reroute_interval)
+                flow, _ = build_with_times(
+                    flow_builder, flow_id, reroute_interval, horizon)
 
-            print(f"Successfully built flow up to time {flow.phi}!")
-            with open_file("wb") as file:
-                pickle.dump(flow, file)
+                print(f"Successfully built flow up to time {flow.phi}!")
+                with open_file("wb") as file:
+                    pickle.dump(flow, file)
+
+                print(f"Successfully written flow to disk!\n\n")
 
             merged_flow = merge_commodities(
                 flow, network, range(len(network.commodities)))
 
-            to_visualization_json(flow_path + ".json", merged_flow, network, {
-                id: COLORS[comm.predictor_type] for (id, comm) in enumerate(network.commodities)}, )
+            to_visualization_json(visualization_path, merged_flow, network, {
+                id: COLORS[comm.predictor_type] for (id, comm) in enumerate(network.commodities)
+            })
 
-            print(f"Successfully written flow to disk!\n\n")
-        with_file_lock(flow_path, handle)
+            print(f"Successfully written visualization to disk!\n\n")
+        with_file_lock(flow_path, handle, [flow_path, visualization_path])
 
     wait_for_locks(out_dir)
