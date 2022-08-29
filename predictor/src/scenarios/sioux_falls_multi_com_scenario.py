@@ -39,6 +39,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
     prediction_interval = 1.
     number_training_flows = 500
     number_eval_flows = 20
+    max_distance = 3
 
     pred_horizon = future_timesteps * prediction_interval
 
@@ -60,11 +61,11 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
     build_tf_full_net_predictor = train_tf_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
                                                           reroute_interval, prediction_interval, horizon, network, tf_full_net_model_path)
     build_tf_neighborhood_predictor = train_tf_neighborhood_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
-                                                                  reroute_interval, prediction_interval, horizon, network, tf_neighborhood_models_path)
+                                                                  reroute_interval, prediction_interval, horizon, network, tf_neighborhood_models_path, max_distance)
     build_sk_full_net_predictor = train_sk_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
                                                           reroute_interval, prediction_interval, horizon, network, sk_full_net_model_path)
     build_sk_neighborhood_predictor = train_sk_neighborhood_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
-                                                                  reroute_interval, prediction_interval, horizon, network, sk_neighborhood_models_path, max_distance=3)
+                                                                  reroute_interval, prediction_interval, horizon, network, sk_neighborhood_models_path, max_distance)
 
     def build_predictors(network): return {
         PredictorType.ZERO: ZeroPredictor(network),
