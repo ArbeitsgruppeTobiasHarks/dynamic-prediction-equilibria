@@ -7,6 +7,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
+from core.predictors.sk_full_net_predictor import SKFullNetPredictor
 
 from core.network import Network
 from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
@@ -52,5 +53,9 @@ def train_sk_full_net_model(
 
     wait_for_locks(os.path.dirname(full_net_path))
     if input_mask is None or output_mask is None:
-        return QueueAndEdgeLoadDataset.load_mask(queues_and_edge_loads_dir)
-    return input_mask, output_mask
+        input_mask, output_mask = QueueAndEdgeLoadDataset.load_mask(queues_and_edge_loads_dir)
+    
+    def build_sk_full_net_predictor(network: Network) -> SKFullNetPredictor:
+        return SKFullNetPredictor.from_model(network, full_net_path, input_mask, output_mask, past_timesteps, future_timesteps, prediction_interval)
+    
+    return build_sk_full_net_predictor
