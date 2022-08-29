@@ -48,6 +48,20 @@ class PiecewiseLinear:
         rnk = elem_rank(self.times, at)
         return self._eval_with_rank(at, rnk)
 
+    def eval_from_end(self, at: float) -> float:
+        '''
+        Evaluates the function by searching the rank of the time by going backwards in self.times.
+        Returns the rank of the element x in arr:
+        The rank is the minimal number i in -1, ..., len(arr)-1,
+        such that arr[i] < x <= arr[i+1] (with the interpretation arr[-1] = -inf and arr[len(arr)] = inf)
+        '''
+        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
+        rnk = len(self.times) - 1
+        while rnk >= 0 and self.times[rnk] >= at:
+            rnk -= 1
+        return self._eval_with_rank(at, rnk)
+
+
     def simplify(self) -> PiecewiseLinear:
         """
         This removes unnecessary timesteps
