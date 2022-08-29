@@ -6,7 +6,7 @@ from typing import Generator, Optional, Dict, List, Set, Tuple
 from core.dijkstra import reverse_dijkstra, dynamic_dijkstra
 from core.graph import Node, Edge
 from core.machine_precision import eps
-from core.dynamic_flow import DynamicFlow
+from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.network import Network, Commodity
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
@@ -24,7 +24,7 @@ class FlowBuilder:
     _flow: DynamicFlow
     _next_reroute_time: float
     _route_time: float
-    _commodity_ids_by_source: Dict[Node, Set[int]]
+    _net_inflow_by_node: Dict[Node, FlowRatesCollection]
     _commodity_ids_by_sink: Dict[Node, Set[int]]
     _network_inflow_changes: PriorityQueue[Tuple[Commodity, float]]
 
@@ -47,11 +47,12 @@ class FlowBuilder:
                 network.graph.get_reachable_nodes(commodity.source))
             for commodity in self.network.commodities
         ]
-        self._commodity_ids_by_source = {
-            v: set(
-                i for i, c in enumerate(self.network.commodities)
+        self._net_inflow_by_node = {
+            v: FlowRatesCollection({
+                i: c.net_inflow
+                for i, c in enumerate(self.network.commodities)
                 if c.source == v
-            )
+            })
             for v in network.graph.nodes.values()
         }
         self._commodity_ids_by_sink = {
@@ -175,32 +176,32 @@ class FlowBuilder:
         for v in self._handle_nodes:
             new_inflow.update({e.id: {} for e in v.outgoing_edges})
 
+            outflows = {
+                e.id: self._flow.outflow[e.id].get_values_at_time(self._flow.phi)
+                for e in v.incoming_edges
+            }
+
+            net_inflow_by_com = self._net_inflow_by_node[v].get_values_at_time(self._flow.phi)
+
             used_commodities = set(
                 key
-                for e in v.incoming_edges
-                for key in self._flow.outflow[e.id].keys()
-            ).union(self._commodity_ids_by_source[v]).difference(self._commodity_ids_by_sink[v])
+                for outflow in outflows.values()
+                for key in outflow
+            ).union(net_inflow_by_com.keys()).difference(self._commodity_ids_by_sink[v])
 
             for i in used_commodities:
-                commodity = self.network.commodities[i]
                 inflow = sum(
-                    self._flow.outflow[e.id][i](self._flow.phi)
-                    for e in v.incoming_edges
-                    if i in self._flow.outflow[e.id]
+                    outflow[i]
+                    for outflow in outflows.values()
+                    if i in outflow
                 )
-                if v == commodity.source:
-                    inflow += commodity.net_inflow(self._flow.phi)
+                if i in net_inflow_by_com:
+                    inflow += net_inflow_by_com[i]
                 if inflow < eps:
-                    for e in v.outgoing_edges:
-                        if i in self._flow.inflow[e.id]:
-                            new_inflow[e.id][i] = 0.
                     continue
 
                 active_edges = self._get_active_edges(i, v)
                 distribution = inflow / len(active_edges)
-                for e in v.outgoing_edges:
-                    if e in active_edges:
-                        new_inflow[e.id][i] = distribution
-                    elif i in self._flow.inflow[e.id]:
-                        new_inflow[e.id][i] = 0.
+                for e in active_edges:
+                    new_inflow[e.id][i] = distribution
         return new_inflow

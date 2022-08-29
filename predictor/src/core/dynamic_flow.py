@@ -2,6 +2,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from typing import List, Dict, Set, Tuple, Optional
+from core.flow_rates_collection import FlowRatesCollection
 
 from core.machine_precision import eps
 from core.network import Network
@@ -13,14 +14,14 @@ from utilities.right_constant import RightConstant
 class DepletionQueue:
     depletions: PriorityQueue[int]
     change_times: PriorityQueue[int]
-    new_outflow: Dict[int, List[float]]
+    new_outflow: Dict[int, Dict[int, float]]
 
     def __init__(self):
         self.depletions = PriorityQueue()
         self.change_times = PriorityQueue()
         self.new_outflow = {}
 
-    def set(self, edge: int, depletion_time: float, change_event: Optional[Tuple[float, List[float]]] = None):
+    def set(self, edge: int, depletion_time: float, change_event: Optional[Tuple[float, Dict[int, float]]] = None):
         assert depletion_time > float("-inf")
         self.depletions.set(edge, depletion_time)
 
@@ -63,24 +64,27 @@ class DynamicFlow:
     """
 
     phi: float
-    inflow: List[Dict[int, RightConstant]]  # inflow[e][i] is the function fᵢₑ⁺
+    # inflow[e][i] is the function fᵢₑ⁺
+    inflow: List[FlowRatesCollection]
     # outflow[e][i] is the function fᵢₑ⁻
-    outflow: List[Dict[int, RightConstant]]
+    outflow: List[FlowRatesCollection]
     queues: List[PiecewiseLinear]  # queues[e] is the queue length at e
-    # A priority queue with times where some edge outflow changes
+    # A priority queue with times when some edge outflow changes
     outflow_changes: PriorityQueue[Tuple[int, float]]
-    depletions: DepletionQueue  # A priority queue with events where queues deplete
+    depletions: DepletionQueue  # A priority queue with events at which queues deplete
     _network: Network
 
     def __init__(self, network: Network):
         self._network = network
         self.phi = 0.
-        self.inflow = [{} for _ in network.graph.edges]
+        self.inflow = [FlowRatesCollection()
+                       for _ in network.graph.edges]
         self.queues = [
             PiecewiseLinear([self.phi], [0.], 0., 0.)
             for _ in network.graph.edges
         ]
-        self.outflow = [{} for _ in network.graph.edges]
+        self.outflow = [FlowRatesCollection()
+                        for _ in network.graph.edges]
         self.outflow_changes = PriorityQueue()
         self.depletions = DepletionQueue()
 
@@ -95,30 +99,11 @@ class DynamicFlow:
         self.__dict__.update(state)
         print("Please reset network on flow before accessing its functions")
 
-    def _update_queue_depletions(self, phi: float, edge: int, accum_edge_inflow: float, cur_queue: float):
-        """
-            Update the queue_depletions queue and its corresponding dictionary depletion_dict for the change times.
-        """
-        capacity = self._network.capacity
-        travel_time = self._network.travel_time
-        if cur_queue > 0:
-            if accum_edge_inflow < capacity[edge]:
-                depletion_time = phi + cur_queue / \
-                    (capacity[edge] - accum_edge_inflow)
-                assert self.queues[edge](depletion_time) < 1000 * eps
-                self.depletions.set(edge, depletion_time,
-                                    depletion_time + travel_time[edge])
-            elif edge in self.depletions:
-                self.depletions.remove(edge)
-
     def _extend_case_i(self, e: int, cur_queue: float):
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
-        for i in self.inflow[e]:
-            self.inflow[e][i].extend(self.phi, 0)
-        for i in self.outflow[e]:
-            self.outflow[e][i].extend(arrival, 0)
+        self.outflow[e].extend(arrival, {})
 
         self.outflow_changes.set((e, arrival), arrival)
 
@@ -137,14 +122,11 @@ class DynamicFlow:
 
         factor = min(capacity, acc_in) / acc_in
 
-        for i in new_inflow:
-            if i not in self.inflow[e]:
-                self.inflow[e][i] = DynamicFlow._new_flow_fn()
-            self.inflow[e][i].extend(self.phi, new_inflow[i])
-            new_out = factor * new_inflow[i]
-            if i not in self.outflow[e]:
-                self.outflow[e][i] = DynamicFlow._new_flow_fn()
-            self.outflow[e][i].extend(arrival, new_out)
+        new_outflow = {
+            i: factor * value
+            for i, value in new_inflow.items()
+        }
+        self.outflow[e].extend(arrival, new_outflow)
 
         self.outflow_changes.set((e, arrival), arrival)
 
@@ -153,20 +135,17 @@ class DynamicFlow:
         if e in self.depletions:
             self.depletions.remove(e)
 
-    def _extend_case_iii(self, e: int, new_inflow: List[float], cur_queue: float, acc_in: float):
+    def _extend_case_iii(self, e: int, new_inflow: Dict[int, float], cur_queue: float, acc_in: float):
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
         factor = capacity / acc_in
 
-        for i in new_inflow:
-            if i not in self.inflow[e]:
-                self.inflow[e][i] = DynamicFlow._new_flow_fn()
-            self.inflow[e][i].extend(self.phi, new_inflow[i])
-            new_out = factor * new_inflow[i]
-            if i not in self.outflow[e]:
-                self.outflow[e][i] = DynamicFlow._new_flow_fn()
-            self.outflow[e][i].extend(arrival, new_out)
+        new_outflow = {
+            i: factor * value
+            for i, value in new_inflow.items()
+        }
+        self.outflow[e].extend(arrival, new_outflow)
 
         self.outflow_changes.set((e, arrival), arrival)
 
@@ -186,31 +165,25 @@ class DynamicFlow:
             self.queues[e].values[-1] = 0.
             if change_event is not None:
                 self.outflow_changes.set((e, change_event[0]), change_event[0])
-                for i in change_event[1]:
-                    self.outflow[e][i].extend(
-                        change_event[0], change_event[1][i])
+                self.outflow[e].extend(change_event[0], change_event[1])
 
     def extend(self, new_inflow: Dict[int, Dict[int, float]], max_extension_time: float) -> Set[int]:
         """
         Extends the flow with constant inflows new_inflow until some edge outflow changes.
         Edge inflows not in new_inflow are extended with their previous values.
         The user can also specify a maximum extension length using max_extension_length.
-        :returns set of edges where the outflow has changed
+        :returns set of edges where the outflow has changed at the new time self.phi
         """
         self.get_edge_loads.cache_clear()
         capacity = self._network.capacity
 
         for e in new_inflow.keys():
-            if all(
-                (i not in self.inflow[e] and new_inflow[e][i] == 0.) or
-                (i in self.inflow[e] and new_inflow[e]
-                 [i] == self.inflow[e][i].values[-1])
-                for i in new_inflow[e]
-            ):
+            if self.inflow[e].get_values_at_time(self.phi) == new_inflow[e]:
                 continue
-            acc_in, cur_queue = sum(new_inflow[e].values()), max(
-                self.queues[e](self.phi), 0.)
+            acc_in = sum(new_inflow[e].values())
+            cur_queue = max(self.queues[e].eval_from_end(self.phi), 0.)
 
+            self.inflow[e].extend(self.phi, new_inflow[e])
             if acc_in == 0.:
                 self._extend_case_i(e, cur_queue)
             elif cur_queue == 0. or acc_in >= capacity[e]:
@@ -234,9 +207,9 @@ class DynamicFlow:
     def avg_travel_time(self, i: int, horizon: float) -> float:
         commodity = self._network.commodities[i]
         net_outflow: RightConstant = sum(
-            (self.outflow[e.id][i]
+            (self.outflow[e.id]._functions_dict[i]
              for e in commodity.sink.incoming_edges
-             if i in self.outflow[e.id]),
+             if i in self.outflow[e.id]._functions_dict),
             start=RightConstant([0.], [0.], (0, float('inf')))
         )
         accum_net_outflow = net_outflow.integral()
@@ -250,12 +223,12 @@ class DynamicFlow:
     @lru_cache()
     def get_edge_loads(self) -> List[PiecewiseLinear]:
         total_inflow_rates = [
-            sum([com_inflow for com_inflow in inflow.values()],
+            sum([com_inflow for com_inflow in inflow._functions_dict.values()],
                 start=RightConstant([0.], [0.], (0, float('inf'))))
             for inflow in self.inflow
         ]
         total_outflow_rates = [
-            sum([com_outflow for com_outflow in outflow.values()],
+            sum([com_outflow for com_outflow in outflow._functions_dict.values()],
                 start=RightConstant([0.], [0.], (0, float('inf'))))
             for outflow in self.outflow
         ]
@@ -273,7 +246,3 @@ class DynamicFlow:
             edge_load.domain = (float("-inf"), edge_load.domain[1])
 
         return edge_loads
-
-    @staticmethod
-    def _new_flow_fn():
-        return RightConstant([0.], [0.], (0., float('inf')))

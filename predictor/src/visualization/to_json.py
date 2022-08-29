@@ -3,7 +3,7 @@ import json
 from typing import Dict, Set
 import json_fix
 
-from core.dynamic_flow import DynamicFlow
+from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.network import Network
 from utilities.right_constant import RightConstant
 
@@ -12,14 +12,14 @@ json_fix.fix_it()
 
 def merge_commodities(flow: DynamicFlow, network: Network, commodities: Set[int]) -> DynamicFlow:
     if len(commodities) == 0:
-        return flow, network
+        return flow
     new_comm_id = min(commodities)
     merged_flow = DynamicFlow(network)
     merged_flow.queues = flow.queues
 
-    def merge_dict(d: Dict[int, RightConstant]) -> Dict[int, RightConstant]:
+    def merge_collection(old: FlowRatesCollection) -> FlowRatesCollection:
         new_d: Dict[int, RightConstant] = {}
-        for i, right_constant in d.items():
+        for i, right_constant in old._functions_dict.items():
             if i not in commodities:
                 new_d[i] = right_constant
             elif new_comm_id not in new_d:
@@ -28,21 +28,21 @@ def merge_commodities(flow: DynamicFlow, network: Network, commodities: Set[int]
                 new_d[new_comm_id] += right_constant
         if new_comm_id in new_d:
             new_d[new_comm_id] = new_d[new_comm_id].simplify()
-        return new_d
+        return FlowRatesCollection(new_d)
 
     merged_flow.inflow = [
-        merge_dict(v)
+        merge_collection(v)
         for v in flow.inflow
     ]
 
     merged_flow.outflow = [
-        merge_dict(v)
+        merge_collection(v)
         for v in flow.outflow
     ]
     return merged_flow
 
 
-def to_visualization_json(path, flow, network, colors):
+def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as file:
         json.dump({
@@ -68,7 +68,7 @@ def to_visualization_json(path, flow, network, colors):
                 ]
             },
             "flow": {
-                "inflow": flow.inflow,
-                "outflow": flow.outflow,
+                "inflow": [col._functions_dict for col in flow.inflow],
+                "outflow": [col._functions_dict for col in flow.outflow],
                 "queues": flow.queues
             }}, file)
