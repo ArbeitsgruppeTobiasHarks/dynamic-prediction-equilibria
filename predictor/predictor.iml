@@ -2,7 +2,7 @@
 <module type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Python" name="Python">
-      <configuration sdkName="Pipenv (predicted-dynamic-flows)" />
+      <configuration sdkName="" />
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
@@ -11,9 +11,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/out" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="Pipenv (predicted-dynamic-flows) (2)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Pipenv (predicted-dynamic-flows) interpreter library" level="application" />
   </component>
   <component name="PyDocumentationSettings">
     <option name="renderExternalDocumentation" value="true" />
