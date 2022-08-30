@@ -130,9 +130,9 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
 
 if __name__ == "__main__":
     def main():
-        edges_tntp_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_net.tntp"
-        nodes_tntp_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_node.tntp"
-        od_pairs_csv_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/CSV-data/SiouxFalls_od.csv"
+        edges_tntp_path = os.path.expanduser("~/git/TransportationNetworks/SiouxFalls/SiouxFalls_net.tntp")
+        nodes_tntp_path = os.path.expanduser("~/git/TransportationNetworks/SiouxFalls/SiouxFalls_node.tntp")
+        od_pairs_csv_path = os.path.expanduser("~/git/TransportationNetworks/SiouxFalls/CSV-data/SiouxFalls_od.csv")
         run_scenario(edges_tntp_path, nodes_tntp_path,
                      od_pairs_csv_path, "./out/journal-sioux-falls-multi-com")
 

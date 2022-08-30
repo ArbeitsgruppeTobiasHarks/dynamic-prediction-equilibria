@@ -137,9 +137,9 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
 
 if __name__ == "__main__":
     def main():
-        edges_tntp_path = "/home/michael/git/TransportationNetworks/Anaheim/Anaheim_net.tntp"
-        geojson_path = "/home/michael/git/TransportationNetworks/Anaheim/anaheim_nodes.geojson"
-        trips_tntp_file_path = "/home/michael/git/TransportationNetworks/Anaheim/Anaheim_trips.tntp"
+        edges_tntp_path = os.path.expanduser("~/git/TransportationNetworks/Anaheim/Anaheim_net.tntp")
+        geojson_path = os.path.expanduser("~/git/TransportationNetworks/Anaheim/anaheim_nodes.geojson")
+        trips_tntp_file_path = os.path.expanduser("~/git/TransportationNetworks/Anaheim/Anaheim_trips.tntp")
         run_scenario(edges_tntp_path, trips_tntp_file_path,
                      geojson_path, "./out/journal-anaheim-multi-com")
 
