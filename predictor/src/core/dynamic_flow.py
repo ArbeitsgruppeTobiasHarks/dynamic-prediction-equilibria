@@ -213,7 +213,11 @@ class DynamicFlow:
             start=RightConstant([0.], [0.], (0, float('inf')))
         )
         accum_net_outflow = net_outflow.integral()
-        accum_net_inflow = commodity.net_inflow.integral()
+        net_inflow: RightConstant = sum(
+            (inflow for inflow in commodity.sources.values()),
+            start=RightConstant([0.], [0.], (0, float('inf')))
+        )
+        accum_net_inflow = net_inflow.integral()
 
         avg_travel_time = \
             (accum_net_inflow.integrate(0., horizon) - accum_net_outflow.integrate(0., horizon)) / accum_net_inflow(

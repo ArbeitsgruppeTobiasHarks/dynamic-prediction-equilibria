@@ -1,12 +1,28 @@
 import json
-from typing import Any
+from typing import Dict
+from core.network import Network
+from core.predictor import Predictor
+from core.predictors.constant_predictor import ConstantPredictor
+from core.predictors.linear_predictor import LinearPredictor
+from core.predictors.linear_regression_predictor import LinearRegressionPredictor
 
 from core.predictors.predictor_type import PredictorType
+from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
+from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate import COLORS, evaluate_single_run
 from test.sample_network import build_sample_network
 from utilities.right_constant import RightConstant
 from visualization.to_json import to_visualization_json
 
+def build_predictors(network: Network) -> Dict[PredictorType, Predictor]:
+    prediction_horizon = 10.
+    return {
+        PredictorType.ZERO: ZeroPredictor(network),
+        PredictorType.CONSTANT: ConstantPredictor(network),
+        PredictorType.LINEAR: LinearPredictor(network, prediction_horizon),
+        PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, prediction_horizon, delta=5.),
+        PredictorType.MACHINE_LEARNING_SK_FULL_NET: LinearRegressionPredictor(network),
+    }
 
 def eval_sample():
     max_demand = 30.
@@ -30,7 +46,8 @@ def eval_sample():
             reroute_interval=reroute_interval,
             suppress_log=True,
             inflow_horizon=inflow_horizon,
-            out_dir=None
+            out_dir=None,
+            build_predictors=build_predictors
         )
         for i, val in enumerate(times):
             avg_times[i].append(val)

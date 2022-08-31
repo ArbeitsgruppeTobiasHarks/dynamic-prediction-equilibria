@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pickle
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 
@@ -11,15 +11,13 @@ from utilities.right_constant import RightConstant
 
 
 class Commodity:
-    source: Node
+    sources: Dict[Node, RightConstant]
     sink: Node
-    net_inflow: RightConstant
     predictor_type: PredictorType
 
-    def __init__(self, source: Node, sink: Node, net_inflow: RightConstant, predictor_type: PredictorType) -> Commodity:
-        self.source = source
+    def __init__(self, sources: Dict[Node, RightConstant], sink: Node, predictor_type: PredictorType) -> Commodity:
+        self.sources = sources
         self.sink = sink
-        self.net_inflow = net_inflow
         self.predictor_type = predictor_type
 
 
@@ -42,9 +40,8 @@ class Network:
             "travel_time": self.travel_time,
             "commodities": [
                 {
-                    "source": c.source.id,
+                    "sources": {s.id: value for s, value in c.sources.items()},
                     "sink": c.sink.id,
-                    "net_inflow": c.net_inflow,
                     "predictor_type": c.predictor_type
                 }
                 for c in self.commodities
@@ -57,20 +54,20 @@ class Network:
         self.travel_time = state["travel_time"]
         self.commodities = []
         for c in state["commodities"]:
-            self.add_commodity(c["source"], c["sink"],
-                               c["net_inflow"], c["predictor_type"])
+            self.add_commodity(c["sources"], c["sink"], c["predictor_type"])
 
     def add_edge(self, node_from: int, node_to: int, travel_time: float, capacity: float):
         self.graph.add_edge(node_from, node_to)
         self.travel_time = np.append(self.travel_time, travel_time)
         self.capacity = np.append(self.capacity, capacity)
 
-    def add_commodity(self, source: int, sink: int, net_inflow: RightConstant, predictor_type: PredictorType):
+    def add_commodity(self, sources: Dict[int, RightConstant], sink: int, predictor_type: PredictorType):
         nodes = self.graph.nodes
-        assert source in nodes.keys(), f"No node with id#{sink} in the graph!"
+        assert all(s in nodes.keys()
+                   for s in sources), f"No node with id#{sink} in the graph!"
         assert sink in nodes.keys(), f"No node with id#{sink} in the graph!"
         self.commodities.append(
-            Commodity(nodes[source], nodes[sink], net_inflow, predictor_type))
+            Commodity({nodes[s]: v for s, v in sources.items()}, nodes[sink], predictor_type))
 
     def _remove_edge(self, edge: Edge):
         edge.node_to.incoming_edges.remove(edge)

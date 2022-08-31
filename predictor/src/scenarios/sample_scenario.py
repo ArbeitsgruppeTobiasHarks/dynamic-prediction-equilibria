@@ -14,16 +14,19 @@ from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads
+from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from test.sample_network import build_sample_network
-from utilities.right_constant import RightConstant
+
 
 def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
     network_path = os.path.join(scenario_dir, "network.pickle")
     flows_dir = os.path.join(scenario_dir, "flows")
     tf_full_net_model_path = os.path.join(scenario_dir, "tf-full-net-model")
-    tf_neighborhood_models_path = os.path.join(scenario_dir, "tf-neighborhood-models")
-    sk_neighborhood_models_path = os.path.join(scenario_dir, "sk-neighborhood-models")
+    tf_neighborhood_models_path = os.path.join(
+        scenario_dir, "tf-neighborhood-models")
+    sk_neighborhood_models_path = os.path.join(
+        scenario_dir, "sk-neighborhood-models")
     sk_full_net_model_path = os.path.join(scenario_dir, "sk-full-net-model")
     queues_and_edge_loads_dir = os.path.join(scenario_dir, "queues")
     eval_dir = os.path.join(scenario_dir, "eval")
@@ -41,8 +44,8 @@ def run_scenario(scenario_dir: str):
     max_distance = 3
 
     network = build_sample_network()
-    network.add_commodity(0, 2, RightConstant([inflow_horizon, 0.], [
-                          demand, 0.], (0., float('inf'))), PredictorType.CONSTANT)
+    network.add_commodity({0: get_demand_with_inflow_horizon(
+        demand, inflow_horizon)}, 2, PredictorType.CONSTANT)
     network.to_file(network_path)
     build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon, number_flows=number_training_flows, horizon=horizon, reroute_interval=reroute_interval,
                 check_for_optimizations=False)
@@ -54,13 +57,13 @@ def run_scenario(scenario_dir: str):
                                                           reroute_interval, prediction_interval, horizon, network, tf_full_net_model_path)
 
     build_tf_neighborhood_predictor = train_tf_neighborhood_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
-                                                          reroute_interval, prediction_interval, horizon, network, tf_neighborhood_models_path, max_distance)
+                                                                  reroute_interval, prediction_interval, horizon, network, tf_neighborhood_models_path, max_distance)
 
     build_sk_full_net_predictor = train_sk_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
                                                           reroute_interval, prediction_interval, horizon, network, sk_full_net_model_path)
 
     build_sk_neighborhood_predictor = train_sk_neighborhood_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
-                                                          reroute_interval, prediction_interval, horizon, network, sk_neighborhood_models_path, max_distance)
+                                                                  reroute_interval, prediction_interval, horizon, network, sk_neighborhood_models_path, max_distance)
 
     def build_predictors(network): return {
         PredictorType.ZERO: ZeroPredictor(network),
@@ -102,7 +105,8 @@ def run_scenario(scenario_dir: str):
             PredictorType.MACHINE_LEARNING_TF_FULL_NET: ("black", "$\\hat q^{\\text{NN-full}}$"),
             PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{NN-neighboring}}$"),
             PredictorType.MACHINE_LEARNING_SK_FULL_NET: ("black", "$\\hat q^{\\text{LR-full}}$"),
-            PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{LR-neighboring}}$")
+            PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: (
+                "black", "$\\hat q^{\\text{LR-neighboring}}$")
         })
 
     average_comp_times = []

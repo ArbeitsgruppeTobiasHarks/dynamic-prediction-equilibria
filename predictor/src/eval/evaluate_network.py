@@ -15,7 +15,7 @@ from visualization.to_json import merge_commodities, to_visualization_json
 
 def eval_network_demand(network_path: str, number_flows: int, out_dir: str, inflow_horizon: float,
                         future_timesteps: int, prediction_interval: float, reroute_interval: float,
-                        horizon: float, build_predictors: PredictorBuilder, demand_sigma: Optional[float], visualization_config: Dict[PredictorType, Tuple[str, str]], 
+                        horizon: float, build_predictors: PredictorBuilder, demand_sigma: Optional[float], visualization_config: Dict[PredictorType, Tuple[str, str]],
                         split: bool = False, suppress_log=True, check_for_optimizations: bool = True):
     '''
     Evaluates a single (randomly chosen) commodity.
@@ -38,9 +38,12 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
             print()
             print(
                 f"Building Evaluation Flow#{flow_id} with seed {seed}...")
-            generate_network_demands(network, seed, inflow_horizon, demand_sigma)
-            focused_commodity_index=random.randrange(0, len(network.commodities))
-            print(f"Focused Commodity {focused_commodity_index} with source {network.commodities[focused_commodity_index].source} and sink {network.commodities[focused_commodity_index].sink}.")
+            generate_network_demands(
+                network, seed, inflow_horizon, demand_sigma)
+            focused_commodity_index = random.randrange(
+                0, len(network.commodities))
+            print(
+                f"Focused Commodity {focused_commodity_index} with source {next(iter(network.commodities[focused_commodity_index].sources))} and sink {network.commodities[focused_commodity_index].sink}.")
             _, _, flow = evaluate_single_run(network, flow_id=flow_id, focused_commodity_index=focused_commodity_index,
                                              horizon=horizon, reroute_interval=reroute_interval, flow_path=flow_path, json_eval_path=json_eval_path,
                                              inflow_horizon=inflow_horizon, future_timesteps=future_timesteps, prediction_interval=prediction_interval,
@@ -49,12 +52,14 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
             visualization_json_path = os.path.join(
                 out_dir, "visualization", f"{str(flow_id).zfill(ceil(log10(number_flows)))}.vis.json")
 
-            merged_flow = merge_commodities(flow, network, range(original_num_commodities))
+            merged_flow = merge_commodities(
+                flow, network, range(original_num_commodities))
             to_visualization_json(visualization_json_path, merged_flow, network, {
                 id: COLORS[comm.predictor_type]
                 for (id, comm) in enumerate(network.commodities)
             })
-        with_file_lock(flow_path, handle, expect_exists=[flow_path, json_eval_path])
+        with_file_lock(flow_path, handle, expect_exists=[
+                       flow_path, json_eval_path])
 
     wait_for_locks(out_dir)
 
@@ -126,15 +131,17 @@ def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon
                 for (id, comm) in enumerate(network.commodities)}
         )
         os.remove(lock_path)
-    
+
     wait_for_locks(out_dir)
 
     eval_jsons_to_tikz_boxplot(out_dir, visualization_config)
 
     compare_mae_with_perf(out_dir, visualization_config)
 
+
 def compare_mae_with_perf(dir: str, visualization_config):
-    files = sorted([file for file in os.listdir(dir) if file.endswith(".json")])
+    files = sorted([file for file in os.listdir(dir)
+                   if file.endswith(".json")])
     # Zero, Constant, Linear, RegularizedLinear, ML
     colors = [t[0] for t in visualization_config.values()]
     coordinates = [[] for _ in colors]
@@ -145,8 +152,9 @@ def compare_mae_with_perf(dir: str, visualization_config):
             travel_times = res_dict['avg_travel_times']
             if any(travel_times[j] != travel_times[0] for j in range(len(travel_times) - 1)):
                 for i, err in enumerate(mean_absolute_errors):
-                    coordinates[i].append((err, travel_times[i] - travel_times[-1]))
-   
+                    coordinates[i].append(
+                        (err, travel_times[i] - travel_times[-1]))
+
     tikz = r"""
     \begin{tikzpicture}
     \begin{axis}
@@ -156,7 +164,7 @@ def compare_mae_with_perf(dir: str, visualization_config):
         tikz += r"""
         \addplot+[only marks, color=""" + colors[i] + """, mark=x] coordinates {
         """
-        for (x,y) in pairs:
+        for (x, y) in pairs:
             tikz += f"({x}, {y})\n"
 
         tikz += r"""};"""
@@ -171,7 +179,7 @@ def compare_mae_with_perf(dir: str, visualization_config):
 
 def eval_jsons_to_tikz_boxplot(dir: str, visualization_config):
     files = [file for file in os.listdir(dir) if file.endswith(".json")]
-    
+
     colors = [t[0] for t in visualization_config.values()]
     labels = [t[1] for t in visualization_config.values()]
 
