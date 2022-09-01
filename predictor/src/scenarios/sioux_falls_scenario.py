@@ -75,9 +75,8 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
 
     network = import_sioux_falls(edges_tntp_path, nodes_tntp_path)
     network.add_commodity(
-        1,
+        {1: get_demand_with_inflow_horizon(average_demand, inflow_horizon)},
         14,
-        get_demand_with_inflow_horizon(average_demand, inflow_horizon),
         PredictorType.CONSTANT
     )
     os.makedirs(os.path.dirname(network_path), exist_ok=True)
@@ -160,8 +159,10 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
 
 if __name__ == "__main__":
     def main():
-        edges_tntp_path = os.path.expanduser("~/git/TransportationNetworks/SiouxFalls/SiouxFalls_net.tntp")
-        nodes_tntp_path = os.path.expanduser("~/git/TransportationNetworks/SiouxFalls/SiouxFalls_node.tntp")
+        edges_tntp_path = os.path.expanduser(
+            "~/git/TransportationNetworks/SiouxFalls/SiouxFalls_net.tntp")
+        nodes_tntp_path = os.path.expanduser(
+            "~/git/TransportationNetworks/SiouxFalls/SiouxFalls_node.tntp")
         run_scenario(edges_tntp_path, nodes_tntp_path,
                      "./out/journal-sioux-falls")
 

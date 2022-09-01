@@ -44,7 +44,10 @@ def add_commodities(network: Network, trips_tntp_file_path: str, inflow_horizon:
 
     for (origin, destination, demand) in od_pairs:
         network.add_commodity(
-            origin, destination, get_demand_with_inflow_horizon(demand, inflow_horizon), PredictorType.CONSTANT)
+            {origin: get_demand_with_inflow_horizon(demand, inflow_horizon)},
+            destination,
+            PredictorType.CONSTANT
+        )
 
 
 def add_node_positions(network: Network, node_tntp_file_path: str):

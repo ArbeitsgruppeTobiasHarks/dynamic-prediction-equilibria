@@ -1,6 +1,5 @@
 import json
 from math import floor
-from multiprocessing.sharedctypes import Value
 import os
 import pickle
 from typing import Optional, Dict, Callable
@@ -12,13 +11,9 @@ from core.dynamic_flow import DynamicFlow
 from core.flow_builder import FlowBuilder
 from core.network import Network, Commodity
 from core.predictor import Predictor
-from core.predictors.constant_predictor import ConstantPredictor
-from core.predictors.linear_predictor import LinearPredictor
-from core.predictors.linear_regression_predictor import LinearRegressionPredictor
 from core.predictors.predictor_type import PredictorType
-from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
-from core.predictors.zero_predictor import ZeroPredictor
 from utilities.build_with_times import build_with_times
+from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
 
@@ -34,21 +29,13 @@ COLORS = {
 }
 
 
-def _build_default_predictors(network: Network) -> Dict[PredictorType, Predictor]:
-    prediction_horizon = 10.
-    return {
-        PredictorType.ZERO: ZeroPredictor(network),
-        PredictorType.CONSTANT: ConstantPredictor(network),
-        PredictorType.LINEAR: LinearPredictor(network, prediction_horizon),
-        PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, prediction_horizon, delta=5.),
-        PredictorType.MACHINE_LEARNING: LinearRegressionPredictor(network),
-    }
-
-
 PredictorBuilder = Callable[[Network], Dict[PredictorType, Predictor]]
 
 
 def calculate_optimal_average_travel_time(flow: DynamicFlow, network: Network, inflow_horizon: float, horizon: float, commodity: Commodity):
+    if len(commodity.sources) != 1:
+        raise ValueError("Expected a single source!")
+    source = next(iter(commodity.sources))
     costs = [
         PiecewiseLinear(
             flow.queues[e].times,
@@ -62,7 +49,7 @@ def calculate_optimal_average_travel_time(flow: DynamicFlow, network: Network, i
         commodity.sink,
         costs,
         network.graph.get_nodes_reaching(commodity.sink).intersection(
-            network.graph.get_reachable_nodes(commodity.source)),
+            network.graph.get_reachable_nodes(source)),
         0.,
         horizon
     )
@@ -84,41 +71,48 @@ def calculate_optimal_average_travel_time(flow: DynamicFlow, network: Network, i
         avg_travel_time = integral_travel_time / inflow_until
         return avg_travel_time
 
-    if commodity.source in labels:
-        return integrate_opt(labels[commodity.source])
+    if source in labels:
+        return integrate_opt(labels[source])
     else:
         return inflow_horizon*horizon - inflow_horizon**2 / 2
 
 
 def evaluate_single_run(network: Network, focused_commodity_index: int, split: bool, horizon: float,
                         reroute_interval: float, inflow_horizon: float, future_timesteps: float,
-                        prediction_interval: float, flow_path: Optional[str] = None, json_eval_path: Optional[str] = None,
-                        flow_id: Optional[str] = None, suppress_log: bool = False,
-                        build_predictors: PredictorBuilder = _build_default_predictors):
+                        prediction_interval: float, build_predictors: PredictorBuilder,
+                        flow_path: Optional[str] = None, json_eval_path: Optional[str] = None,
+                        flow_id: Optional[str] = None, suppress_log: bool = False):
     os.makedirs(os.path.dirname(flow_path), exist_ok=True)
     os.makedirs(os.path.dirname(json_eval_path), exist_ok=True)
 
     predictors = build_predictors(network)
 
     commodity = network.commodities[focused_commodity_index]
+    if len(commodity.sources) != 1:
+        raise ValueError("Expected a single source.")
+    focused_source, focused_inflow = next(iter(commodity.sources.items()))
+
     if split:
         network.commodities.remove(commodity)
         demand_per_comm = RightConstant(
-            commodity.net_inflow.times,
-            [v / len(predictors) for v in commodity.net_inflow.values],
-            commodity.net_inflow.domain
+            focused_inflow.times,
+            [v / len(predictors) for v in focused_inflow.values],
+            focused_inflow.domain
         )
     else:
-        test_demand = max(min(network.capacity) / 256, commodity.net_inflow.values[0] / 16 / len(predictors))
+        test_demand = max(min(network.capacity) / 256,
+                          focused_inflow.values[0] / 16 / len(predictors))
         demand_per_comm = RightConstant(
             [0., inflow_horizon], [test_demand, 0.], (0., float('inf'))
         )
+
+    combine_commodities_with_same_sink(network)
 
     new_commodities_indices = range(len(network.commodities), len(
         network.commodities) + len(predictors))
     for i in predictors:
         network.commodities.append(
-            Commodity(commodity.source, commodity.sink, demand_per_comm, i))
+            Commodity({focused_source: demand_per_comm}, commodity.sink, i))
 
     if flow_path is None or not os.path.exists(flow_path):
         flow_builder = FlowBuilder(network, predictors, reroute_interval)
@@ -127,20 +121,23 @@ def evaluate_single_run(network: Network, focused_commodity_index: int, split: b
 
         if flow_path is not None:
             with open(flow_path, "wb") as file:
-                pickle.dump({"flow": flow, "computation_time": computation_time}, file)
+                pickle.dump(
+                    {"flow": flow, "computation_time": computation_time}, file)
     else:
         with open(flow_path, "rb") as file:
             box = pickle.load(file)
-        if isinstance(box, DynamicFlow): # produced by old version of this script
+        if isinstance(box, DynamicFlow):  # produced by old version of this script
             if not os.path.exists(json_eval_path):
-                raise ValueError(f"Box was a flow, but {json_eval_path} does not exist.")
+                raise ValueError(
+                    f"Box was a flow, but {json_eval_path} does not exist.")
             flow = box
             flow._network = network
             with open(json_eval_path, "r") as file:
                 json_eval = json.load(file)
             computation_time = json_eval["comp_time"] if "comp_time" in json_eval else json_eval["computation_time"]
             with open(flow_path, "wb") as file:
-                pickle.dump({"flow": flow, "computation_time": computation_time}, file)
+                pickle.dump(
+                    {"flow": flow, "computation_time": computation_time}, file)
         else:
             computation_time: float = box["computation_time"]
             flow: DynamicFlow = box["flow"]
@@ -190,6 +187,7 @@ def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorTy
 
     for (predictor_type, predictor) in predictors.items():
         predictor_predictions = predictor.batch_predict(pred_times, flow)
+
         def to_samples(i, pred_time):
             pred_queues = predictor_predictions[i]
             return [
@@ -200,7 +198,8 @@ def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorTy
                 for k in range(future_timesteps)
             ]
         predictions[predictor_type] = np.array(
-            [to_samples(i, pred_time) for i, pred_time in enumerate(pred_times)]
+            [to_samples(i, pred_time)
+             for i, pred_time in enumerate(pred_times)]
         )
         diffs[predictor_type] = np.array(
             [

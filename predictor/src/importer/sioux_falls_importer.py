@@ -37,8 +37,10 @@ DemandsRangeBuilder = Callable[[Network], Tuple[float, float]]
 def add_od_pairs(network: Network, od_pairs_file_path: str, inflow_horizon: float):
     od_pairs = pd.read_csv(od_pairs_file_path, header=0)
     for _, e in od_pairs.iterrows():
-        network.add_commodity(int(e["O"]), int(e["D"]), get_demand_with_inflow_horizon(
-            e["Ton"], inflow_horizon), PredictorType.CONSTANT)
+        network.add_commodity(
+            {int(e["O"]): get_demand_with_inflow_horizon(
+                e["Ton"], inflow_horizon)},
+            int(e["D"]), PredictorType.CONSTANT)
 
 
 def import_sioux_falls(edges_file_path: str, nodes_file_path: str) -> Network:

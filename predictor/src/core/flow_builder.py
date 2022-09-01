@@ -26,7 +26,7 @@ class FlowBuilder:
     _route_time: float
     _net_inflow_by_node: Dict[Node, FlowRatesCollection]
     _commodity_ids_by_sink: Dict[Node, Set[int]]
-    _network_inflow_changes: PriorityQueue[Tuple[Commodity, float]]
+    _network_inflow_changes: PriorityQueue[Tuple[Commodity, Node, float]]
 
     def __init__(self,
                  network: Network,
@@ -44,14 +44,19 @@ class FlowBuilder:
         self._next_reroute_time = self._route_time = self._flow.phi
         self._important_nodes = [
             network.graph.get_nodes_reaching(commodity.sink).intersection(
-                network.graph.get_reachable_nodes(commodity.source))
+                set(
+                    node
+                    for source in commodity.sources
+                    for node in network.graph.get_reachable_nodes(source)
+                )
+            )
             for commodity in self.network.commodities
         ]
         self._net_inflow_by_node = {
             v: FlowRatesCollection({
-                i: c.net_inflow
+                i: c.sources[v]
                 for i, c in enumerate(self.network.commodities)
-                if c.source == v
+                if v in c.sources
             })
             for v in network.graph.nodes.values()
         }
@@ -62,10 +67,16 @@ class FlowBuilder:
             )
             for v in network.graph.nodes.values()
         }
-        assert all(c.source in self._important_nodes[i] for i, c in enumerate(
-            self.network.commodities))
+        assert all(
+            source in self._important_nodes[i]
+            for i, c in enumerate(self.network.commodities)
+            for source in c.sources
+        )
         self._network_inflow_changes = PriorityQueue([
-            ((c, t), t) for c in network.commodities for t in c.net_inflow.times
+            ((c, s, t), t)
+            for c in network.commodities
+            for s, inflow in c.sources.items()
+            for t in inflow.times
         ])
 
     @lru_cache(maxsize=None)
@@ -98,8 +109,8 @@ class FlowBuilder:
         yield self._flow
         while self._flow.phi < float('inf'):
             while self._flow.phi >= self._network_inflow_changes.min_key():
-                c, t = self._network_inflow_changes.pop()
-                self._handle_nodes.add(c.source)
+                c, s, t = self._network_inflow_changes.pop()
+                self._handle_nodes.add(s)
             if self.reroute_interval is None or self._flow.phi >= self._next_reroute_time:
                 self._get_costs.cache_clear()
 
@@ -177,11 +188,13 @@ class FlowBuilder:
             new_inflow.update({e.id: {} for e in v.outgoing_edges})
 
             outflows = {
-                e.id: self._flow.outflow[e.id].get_values_at_time(self._flow.phi)
+                e.id: self._flow.outflow[e.id].get_values_at_time(
+                    self._flow.phi)
                 for e in v.incoming_edges
             }
 
-            net_inflow_by_com = self._net_inflow_by_node[v].get_values_at_time(self._flow.phi)
+            net_inflow_by_com = self._net_inflow_by_node[v].get_values_at_time(
+                self._flow.phi)
 
             used_commodities = set(
                 key
