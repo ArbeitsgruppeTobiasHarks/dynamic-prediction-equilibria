@@ -28,7 +28,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
     sk_full_net_model_path = os.path.join(scenario_dir, "sk-full-net-model")
     sk_neighborhood_models_path = os.path.join(
         scenario_dir, "sk-neighborhood-models")
-    queues_and_edge_loads_dir = os.path.join(scenario_dir, "queues")
+    queues_and_edge_loads_dir = os.path.join(scenario_dir, "queues-and-edge-loads")
     shallow_eval_dir = os.path.join(scenario_dir, "shallow-eval")
     eval_dir = os.path.join(scenario_dir, "eval")
 
@@ -38,7 +38,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
     past_timesteps = 20
     future_timesteps = 20
     prediction_interval = 1.
-    number_training_flows = 11
+    number_training_flows = 500
     number_eval_flows = 20
     max_distance = 3
 
