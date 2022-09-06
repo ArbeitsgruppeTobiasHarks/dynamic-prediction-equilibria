@@ -4,7 +4,7 @@ from typing import List, Tuple
 import json_fix
 
 from core.machine_precision import eps
-from utilities.arrays import elem_lrank, merge_sorted
+from utilities.arrays import elem_lrank, merge_sorted, merge_sorted_many
 from utilities.piecewise_linear import PiecewiseLinear
 
 json_fix.fix_it()
@@ -27,8 +27,10 @@ class RightConstant:
             "times": self.times,
             "values": self.values,
             "domain": [
-                '-Infinity' if self.domain[0] == float('-inf') else self.domain[0],
-                'Infinity' if self.domain[1] == float('inf') else self.domain[1]
+                '-Infinity' if self.domain[0] == float(
+                    '-inf') else self.domain[0],
+                'Infinity' if self.domain[1] == float(
+                    'inf') else self.domain[1]
             ]
         }
 
@@ -38,8 +40,10 @@ class RightConstant:
         self.values = values
         self.domain = domain
         assert len(self.values) == len(self.times)
-        assert all(float('-inf') < self.values[i] < float('inf') for i in range(len(self.times)))
-        assert all(self.domain[0] <= self.times[i] <= self.domain[1] for i in range(len(self.times)))
+        assert all(
+            float('-inf') < self.values[i] < float('inf') for i in range(len(self.times)))
+        assert all(self.domain[0] <= self.times[i] <=
+                   self.domain[1] for i in range(len(self.times)))
 
     def __call__(self, at: float) -> float:
         return self.eval(at)
@@ -50,19 +54,22 @@ class RightConstant:
         The lower rank is the minimal number i in -1, ..., len(arr)-1,
         such that arr[i] <= x < arr[i+1] (with the interpretation arr[-1] = -inf and arr[len(arr)] = inf)
         '''
-        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
+        assert self.domain[0] <= at <= self.domain[
+            1], f"Function not defined at {at}."
         rnk = len(self.times) - 1
         while rnk >= 0 and self.times[rnk] > at:
             rnk -= 1
         return self._eval_with_lrank(at, rnk)
 
     def eval(self, at: float) -> float:
-        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
+        assert self.domain[0] <= at <= self.domain[
+            1], f"Function not defined at {at}."
         rnk = elem_lrank(self.times, at)
         return self._eval_with_lrank(at, rnk)
 
     def _eval_with_lrank(self, at: float, rnk: int):
-        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
+        assert self.domain[0] <= at <= self.domain[
+            1], f"Function not defined at {at}."
         assert -1 <= rnk <= len(self.times)
         assert rnk == elem_lrank(self.times, at)
 
@@ -95,7 +102,7 @@ class RightConstant:
         assert self.domain == other.domain
 
         new_times = merge_sorted(self.times, other.times)
-        
+
         new_values = [0.] * len(new_times)
 
         lptr = 0
@@ -108,10 +115,26 @@ class RightConstant:
             new_values[i] = self.values[lptr] + other.values[rptr]
 
         return RightConstant(new_times, new_values, self.domain)
-    
+
+    @staticmethod
+    def sum(functions: List[RightConstant], domain=(0, float('inf'))) -> RightConstant:
+        if len(functions) == 0:
+            return RightConstant([0.], [0.], domain)
+        new_times = merge_sorted_many([f.times for f in functions])
+        new_values = [0.] * len(new_times)
+        ptrs = [0 for _ in functions]
+
+        for i, time in enumerate(new_times):
+            for j in range(len(ptrs)):
+                while ptrs[j] < len(functions[j].times) - 1 and functions[j].times[ptrs[j] + 1] <= time:
+                    ptrs[j] += 1
+            new_values[i] = sum(functions[j].values[ptrs[j]]
+                                for j in range(len(functions)))
+        return RightConstant(new_times, new_values, domain)
+
     def __add__(self, other):
         return self.__radd__(other)
-    
+
     def __neg__(self):
         return RightConstant(self.times, [-v for v in self.values], self.domain)
 
@@ -119,7 +142,7 @@ class RightConstant:
         if not isinstance(other, RightConstant):
             raise TypeError("Can only subtract a RightConstantFunction.")
         return self + (-other)
-    
+
     def simplify(self) -> RightConstant:
         """
         This removes unnecessary timesteps
@@ -141,7 +164,6 @@ class RightConstant:
         times = self.times
         values = [0.] * len(times)
         for i in range(len(times) - 1):
-            values[i + 1] = values[i] + self.values[i] * (times[i + 1] - times[i])
+            values[i + 1] = values[i] + \
+                self.values[i] * (times[i + 1] - times[i])
         return PiecewiseLinear(times, values, self.values[0], self.values[-1], self.domain)
-
-    
