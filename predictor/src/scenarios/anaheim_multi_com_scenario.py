@@ -1,6 +1,8 @@
 import json
 from math import pi
 import os
+
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 
 from core.predictors.constant_predictor import ConstantPredictor
@@ -14,7 +16,7 @@ from ml.SKFullNetworkModel import train_sk_full_net_model
 from ml.SKNeighborhood import train_sk_neighborhood_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
-from ml.generate_queues import generate_queues_and_edge_loads
+from ml.generate_queues import generate_queues_and_edge_loads, save_queues_and_edge_loads_for_flow
 
 
 def add_node_position_from_geojson(network: Network, geojson_path: str):
@@ -37,7 +39,7 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
     sk_neighborhood_models_path = os.path.join(
         scenario_dir, "sk-neighborhood-models")
     sk_full_net_path = os.path.join(scenario_dir, "sk-full-net-model")
-    queues_dir = os.path.join(scenario_dir, "queues")
+    queues_and_edge_loads_dir = os.path.join(scenario_dir, "queues-and-edge-loads")
     shallow_eval_dir = os.path.join(scenario_dir, "shallow-eval")
     eval_dir = os.path.join(scenario_dir, "eval")
 
@@ -63,23 +65,30 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
 
     network.print_info()
 
+    def on_flow_computed(flow_id: str, flow: DynamicFlow):
+        out_path = os.path.join(
+            queues_and_edge_loads_dir, f"{flow_id}-queues-and-edge-loads.npy")
+        save_queues_and_edge_loads_for_flow(out_path, past_timesteps, horizon, reroute_interval, prediction_interval,
+                                            flow)
+
     build_flows(network_path, flows_dir, inflow_horizon,
-                number_training_flows, horizon, reroute_interval, demand_sigma, check_for_optimizations=False)
+                number_training_flows, horizon, reroute_interval, demand_sigma, check_for_optimizations=False,
+                on_flow_computed=on_flow_computed)
 
     generate_queues_and_edge_loads(
-        past_timesteps, flows_dir, queues_dir, horizon, reroute_interval, prediction_interval)
+        past_timesteps, flows_dir, queues_and_edge_loads_dir, horizon, reroute_interval, prediction_interval)
 
-    build_tf_neighborhood_predictor = train_tf_neighborhood_model(queues_dir, past_timesteps, future_timesteps,
-                                                                  reroute_interval, prediction_interval, horizon,
-                                                                  network, tf_neighborhood_models_path, max_distance)
+    build_tf_neighborhood_predictor = train_tf_neighborhood_model(
+        queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval, prediction_interval, horizon,
+        network, tf_neighborhood_models_path, max_distance)
 
-    build_sk_full_net_predictor = train_sk_full_net_model(queues_dir, past_timesteps, future_timesteps,
-                                                          reroute_interval, prediction_interval, horizon, network,
-                                                          sk_full_net_path)
+    build_sk_full_net_predictor = train_sk_full_net_model(
+        queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval, prediction_interval, horizon,
+        network, sk_full_net_path)
 
-    build_sk_neighborhood_predictor = train_sk_neighborhood_model(queues_dir, past_timesteps, future_timesteps,
-                                                                  reroute_interval, prediction_interval, horizon,
-                                                                  network, sk_neighborhood_models_path, max_distance)
+    build_sk_neighborhood_predictor = train_sk_neighborhood_model(
+        queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval, prediction_interval, horizon,
+        network, sk_neighborhood_models_path, max_distance)
 
     def build_predictors(network: Network):
         return {
@@ -92,14 +101,6 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
             PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: build_sk_neighborhood_predictor(
                 network)
         }
-
-    # shallow_evaluate_predictors(network_path, flows_dir, shallow_eval_dir, past_timesteps, future_timesteps,
-    #                             horizon, reroute_interval, prediction_interval, build_predictors)
-
-    # expanded_queues_from_flows_per_edge(network_path, past_timesteps, 1., future_timesteps, flows_dir,
-    #                                     expanded_per_edge_dir, horizon, average=False, sample_step=1)
-
-    # train_per_edge_model(network_path, expanded_per_edge_dir, models_per_edge_dir, past_timesteps, future_timesteps)
 
     eval_network_demand(
         network_path,
@@ -142,5 +143,6 @@ if __name__ == "__main__":
         trips_tntp_file_path = os.path.expanduser("~/git/TransportationNetworks/Anaheim/Anaheim_trips.tntp")
         run_scenario(edges_tntp_path, trips_tntp_file_path,
                      geojson_path, "./out/journal-anaheim-multi-com")
+
 
     main()
