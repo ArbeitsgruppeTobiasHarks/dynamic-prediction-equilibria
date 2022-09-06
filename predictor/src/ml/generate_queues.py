@@ -31,9 +31,37 @@ def generate_queues(past_timesteps: int, flows_folder: str, out_folder: str, hor
         np.savetxt(queue_path, queues)
 
 
-def generate_queues_and_edge_loads(past_timesteps: int, flows_dir: str, out_dir: str, horizon: int, reroute_interval: float, prediction_interval: float):
-    os.makedirs(out_dir, exist_ok=True)
+def save_queues_and_edge_loads_for_flow(out_path: str, past_timesteps: int, horizon: float, reroute_interval: float,
+                                        prediction_interval: float, flow: DynamicFlow):
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    reroute_intervals_in_prediction_interval = round(
+        prediction_interval / reroute_interval)
+    if abs(reroute_intervals_in_prediction_interval - prediction_interval / reroute_interval) > 1e-14:
+        raise ValueError(
+            "Prediction interval is not a multiple of reroute interval.")
+    times = [
+        i * reroute_interval
+        for i in range(
+            -(past_timesteps - 1) * reroute_intervals_in_prediction_interval,
+            floor(horizon / reroute_interval) + 1
+        )
+    ]
+    edge_loads = flow.get_edge_loads()
+    edge_load_samples = np.asarray([
+        load.eval_sorted_array(times)
+        for load in edge_loads
+    ])
+    queue_samples = np.asarray([
+        queue.eval_sorted_array(times)
+        for queue in flow.queues
+    ])
+    stacked = np.stack([queue_samples, edge_load_samples])
+    np.save(out_path, stacked)
 
+
+def generate_queues_and_edge_loads(past_timesteps: int, flows_dir: str, out_dir: str, horizon: float,
+                                   reroute_interval: float, prediction_interval: float):
+    os.makedirs(out_dir, exist_ok=True)
     reroute_intervals_in_prediction_interval = round(
         prediction_interval / reroute_interval)
     if abs(reroute_intervals_in_prediction_interval - prediction_interval / reroute_interval) > 1e-14:
@@ -53,24 +81,17 @@ def generate_queues_and_edge_loads(past_timesteps: int, flows_dir: str, out_dir:
 
             with open(os.path.join(flows_dir, flow_filename), "rb") as file:
                 flow: DynamicFlow = pickle.load(file)
-            times = [
-                i*reroute_interval for i in range(-(past_timesteps-1)*reroute_intervals_in_prediction_interval, floor(horizon / reroute_interval) + 1)]
-            edgeLoads = flow.get_edge_loads()
-            edgeLoadSamples = np.asarray([
-                [load(time) if time >= 0 else 0 for time in times] for load in edgeLoads
-            ])
-            queueSamples = np.asarray([
-                [queue(time) for time in times] for queue in flow.queues
-            ])
-            stacked = np.stack([queueSamples, edgeLoadSamples])
-            np.save(out_path, stacked)
+            save_queues_and_edge_loads_for_flow(out_path, past_timesteps, horizon, reroute_interval,
+                                                prediction_interval, flow)
 
         with_file_lock(out_path, handle)
 
     wait_for_locks(out_dir)
 
 
-def generate_training_data_with_edge_loads(past_timesteps: int, future_timesteps: int, flows_dir: str, training_data_dir: str, horizon: float, reroute_interval: float, prediction_interval: float):
+def generate_training_data_with_edge_loads(past_timesteps: int, future_timesteps: int, flows_dir: str,
+                                           training_data_dir: str, horizon: float, reroute_interval: float,
+                                           prediction_interval: float):
     os.makedirs(training_data_dir, exist_ok=True)
     files = [file for file in os.listdir(flows_dir) if
              file.endswith(".flow.pickle") and not file.startswith(".lock.")]
@@ -87,10 +108,10 @@ def generate_training_data_with_edge_loads(past_timesteps: int, future_timesteps
             flow: DynamicFlow = pickle.load(file)
 
         prediction_times = [
-            i*reroute_interval for i in range(floor(horizon / reroute_interval) + 1)
+            i * reroute_interval for i in range(floor(horizon / reroute_interval) + 1)
         ]
 
-        edgeLoads = flow.get_edge_loads()
+        edge_loads = flow.get_edge_loads()
 
         training_sets = np.ndarray(
             (
@@ -104,14 +125,14 @@ def generate_training_data_with_edge_loads(past_timesteps: int, future_timesteps
         row = 0
         for prediction_time in prediction_times:
             past_times = [
-                prediction_time + i*prediction_interval for i in range(-past_timesteps + 1, 1)
+                prediction_time + i * prediction_interval for i in range(-past_timesteps + 1, 1)
             ]
             future_times = [
-                prediction_time + i*prediction_interval for i in range(1, future_timesteps + 1)
+                prediction_time + i * prediction_interval for i in range(1, future_timesteps + 1)
             ]
             training_sets[row] = \
                 [queue(time) for time in past_times for queue in flow.queues] + \
-                [load(time) for time in past_times for load in edgeLoads] + \
+                [load(time) for time in past_times for load in edge_loads] + \
                 [queue(time) for time in future_times for queue in flow.queues]
         np.save(out_path, training_sets)
 
@@ -154,7 +175,7 @@ def expanded_queues_from_flows(network_path: str, past_timesteps: int, step_leng
                 if any(v != 0. for v in d.values()):
                     samples.append(d)
     df = pd.DataFrame(samples, columns=[f"i{e}[{t}]" for e in range(5) for t in range(-past_timesteps, 1)]
-                      + [f"e[{t}]" for t in range(-past_timesteps, future_timesteps + 1)])
+                                       + [f"e[{t}]" for t in range(-past_timesteps, future_timesteps + 1)])
     df.to_csv(out_path)
     print("Successfully written expanded queues to disk.")
     os.remove(lock_path)
