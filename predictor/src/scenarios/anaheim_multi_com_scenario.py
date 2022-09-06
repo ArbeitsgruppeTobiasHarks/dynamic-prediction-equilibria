@@ -73,7 +73,7 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
 
     build_flows(network_path, flows_dir, inflow_horizon,
                 number_training_flows, horizon, reroute_interval, demand_sigma, check_for_optimizations=False,
-                on_flow_computed=on_flow_computed)
+                on_flow_computed=on_flow_computed, generate_visualization=False)
 
     generate_queues_and_edge_loads(
         past_timesteps, flows_dir, queues_and_edge_loads_dir, horizon, reroute_interval, prediction_interval)

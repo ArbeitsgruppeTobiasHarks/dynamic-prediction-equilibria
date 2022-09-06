@@ -40,7 +40,7 @@ def generate_network_demands(network: Network, random_seed: int, inflow_horizon:
 def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_flows: int, horizon: float,
                 reroute_interval: float,
                 demand_sigma: Optional[float] = None, check_for_optimizations: bool = True,
-                on_flow_computed: Callable[[str, DynamicFlow], None] = no_op):
+                on_flow_computed: Callable[[str, DynamicFlow], None] = no_op, generate_visualization: bool = True):
     os.makedirs(out_dir, exist_ok=True)
     if number_flows == 0:
         return
@@ -86,15 +86,19 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
 
                 on_flow_computed(flow_id, flow)
 
-            merged_flow = merge_commodities(
-                flow, network, range(len(network.commodities)))
+            if generate_visualization:
+                merged_flow = merge_commodities(
+                    flow, network, range(len(network.commodities)))
 
-            to_visualization_json(visualization_path, merged_flow, network, {
-                id: COLORS[comm.predictor_type] for (id, comm) in enumerate(network.commodities)
-            })
+                to_visualization_json(visualization_path, merged_flow, network, {
+                    id: COLORS[comm.predictor_type] for (id, comm) in enumerate(network.commodities)
+                })
 
             print(f"Successfully written visualization to disk!\n\n")
 
-        with_file_lock(flow_path, handle, [flow_path, visualization_path])
+        expect_exists = [flow_path]
+        if generate_visualization:
+            expect_exists.append(visualization_path)
+        with_file_lock(flow_path, handle, expect_exists)
 
     wait_for_locks(out_dir)
