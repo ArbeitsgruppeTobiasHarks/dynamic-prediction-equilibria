@@ -15,7 +15,7 @@ class Commodity:
     sink: Node
     predictor_type: PredictorType
 
-    def __init__(self, sources: Dict[Node, RightConstant], sink: Node, predictor_type: PredictorType) -> Commodity:
+    def __init__(self, sources: Dict[Node, RightConstant], sink: Node, predictor_type: PredictorType):
         self.sources = sources
         self.sink = sink
         self.predictor_type = predictor_type
@@ -90,7 +90,7 @@ class Network:
                 edge1 = v.incoming_edges[0]
                 edge2 = v.outgoing_edges[0]
                 new_travel_time = self.travel_time[edge1.id] + \
-                    self.travel_time[edge2.id]
+                                  self.travel_time[edge2.id]
                 new_capacity = min(
                     self.capacity[edge1.id], self.capacity[edge2.id])
                 self._remove_edge(edge1)
