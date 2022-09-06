@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 from utilities.arrays import merge_sorted
+from utilities.piecewise_linear import PiecewiseLinear
 
 from utilities.right_constant import RightConstant
 
@@ -22,11 +23,14 @@ class FlowRatesCollection:
     _functions_dict: Dict[int, RightConstant]
     _queue_head: Optional[FlowRatesCollectionItem]
     _queue_tail: Optional[FlowRatesCollectionItem]
+    accumulative: PiecewiseLinear
 
     def __init__(self, functions_dict: Optional[Dict[int, RightConstant]] = None):
         self._functions_dict = {} if functions_dict is None else functions_dict
         self._queue_head = FlowRatesCollectionItem(0., {})
         self._queue_tail = self._queue_head
+        self.accumulative = RightConstant.sum(
+            list(self._functions_dict.values())).integral()
         times = []
         for fun in self._functions_dict.values():
             times = merge_sorted(times, fun.times)
@@ -69,7 +73,7 @@ class FlowRatesCollection:
                 self._queue_tail.next_item = next_item
                 self._queue_tail = next_item
 
-    def extend(self, time: float, values: Dict[int, float]):
+    def extend(self, time: float, values: Dict[int, float], values_sum: float):
         item = FlowRatesCollectionItem(time, values)
         if self._queue_tail is None:
             self._queue_head = item
@@ -89,6 +93,7 @@ class FlowRatesCollection:
                     self._functions_dict[i].extend(time, 0.)
             self._queue_tail.next_item = item
             self._queue_tail = item
+        self.accumulative.extend_with_slope(time, values_sum)
 
     def get_values_at_time(self, time: float) -> Dict[int, float]:
         if self._queue_head is None:
