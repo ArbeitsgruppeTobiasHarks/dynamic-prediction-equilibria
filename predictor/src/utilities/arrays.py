@@ -25,6 +25,7 @@ def elem_rank(arr: List[float], x: float) -> int:
         return -1
     low = 0
     high = len(arr)
+    # Invariant: low - 1 <= rnk < high
     while high > low:
         mid = (high + low) // 2
         if x <= arr[mid]:
@@ -52,6 +53,33 @@ def elem_lrank(arr: List[float], x: float) -> int:
         else:  # arr[mid] <= x
             low = mid + 1
     return high - 1
+
+
+def merge_sorted_many(arrays: List[List[float]]) -> List[float]:
+    """
+    Merge multiple sorted arrays into a sorted array without duplicates (up to eps)
+    """
+    num_arrays = len(arrays)
+    merged = []
+    indices = [0 for _ in arrays]
+    while True:  # any(indices[i] < len(arrays[i]) for i in range(num_arrays))
+        i = min(
+            (
+                j for j in range(num_arrays)
+                if indices[j] < len(arrays[j])
+            ),
+            key=lambda j: arrays[j][indices[j]],
+            default=None
+        )
+        if i is None:
+            break
+        value_i = arrays[i][indices[i]]
+        if len(merged) == 0 or merged[-1] < value_i - eps:
+            merged.append(value_i)
+        elif len(merged) > 0 and value_i - eps <= merged[-1] < value_i:
+            merged[-1] = value_i
+        indices[i] += 1
+    return merged
 
 
 def merge_sorted(arr1: List[float], arr2: List[float]) -> List[float]:
@@ -90,4 +118,3 @@ def merge_sorted(arr1: List[float], arr2: List[float]) -> List[float]:
         ind2 += 1
 
     return merged
-
