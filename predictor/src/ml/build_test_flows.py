@@ -23,18 +23,22 @@ def generate_network_demands(network: Network, random_seed: int, inflow_horizon:
     if sigma is None:
         sigma = min(network.capacity) / 2.
     random.seed(random_seed)
+    zero_demand_commodities = []
     for index, commodity in enumerate(network.commodities):
         for s in commodity.sources:
             demand = max(0., random.gauss(
                 commodity.sources[s].values[0], sigma))
             if demand == 0.:
-                warnings.warn(f"Generated zero demand for commodity {index}.")
+                zero_demand_commodities.append(index)
             if inflow_horizon < float('inf'):
                 commodity.sources[s] = RightConstant(
                     [0., inflow_horizon], [demand, 0.], (0., float('inf')))
             else:
                 commodity.sources[s] = RightConstant(
                     [0.], [demand], (0., float('inf')))
+    if len(zero_demand_commodities) > 0:
+        print(f"Warning: Generated zero demand for the following {len(zero_demand_commodities)} commodities:")
+        print(zero_demand_commodities)
 
 
 def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_flows: int, horizon: float,
@@ -94,7 +98,7 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
                     id: COLORS[comm.predictor_type] for (id, comm) in enumerate(network.commodities)
                 })
 
-            print(f"Successfully written visualization to disk!\n\n")
+                print(f"Successfully written visualization to disk!\n\n")
 
         expect_exists = [flow_path]
         if generate_visualization:
