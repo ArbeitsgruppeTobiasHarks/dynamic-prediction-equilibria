@@ -10,51 +10,55 @@ from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
 from utilities.right_constant import RightConstant
 
+ChangeEventValue = Tuple[Dict[int, float], float]
+ChangeEvent = Optional[Tuple[float, ChangeEventValue]]
+
 
 class DepletionQueue:
     depletions: PriorityQueue[int]
     change_times: PriorityQueue[int]
-    new_outflow: Dict[int, Dict[int, float]]
+    new_outflow: Dict[int, ChangeEventValue]  # time, comm: outflow, sum over outflow
 
     def __init__(self):
         self.depletions = PriorityQueue()
         self.change_times = PriorityQueue()
         self.new_outflow = {}
 
-    def set(self, edge: int, depletion_time: float, change_event: Optional[Tuple[float, Dict[int, float]]] = None):
+    def set(self, edge: int, depletion_time: float, change_event: ChangeEvent = None) -> None:
         assert depletion_time > float("-inf")
         self.depletions.set(edge, depletion_time)
 
         if change_event is not None:
-            self.new_outflow[edge] = change_event[1]
-            self.change_times.set(edge, change_event[0])
+            (change_time, change_value) = change_event
+            self.new_outflow[edge] = change_value
+            self.change_times.set(edge, change_time)
         elif edge in self.change_times:
             self.change_times.remove(edge)
             self.new_outflow.pop(edge)
 
-    def __contains__(self, edge):
+    def __contains__(self, edge) -> bool:
         return edge in self.depletions
 
-    def remove(self, edge: int):
+    def remove(self, edge: int) -> None:
         self.depletions.remove(edge)
         if edge in self.change_times:
             self.change_times.remove(edge)
             self.new_outflow.pop(edge)
 
-    def min_change_time(self):
+    def min_change_time(self) -> float:
         return self.change_times.min_key()
 
-    def min_depletion(self):
+    def min_depletion(self) -> float:
         return self.depletions.min_key()
 
-    def pop_by_depletion(self):
+    def pop_by_depletion(self) -> Tuple[int, float, ChangeEvent]:
         depl_time, e = self.depletions.min_key(), self.depletions.pop()
         change_event = None
         if e in self.change_times:
             change_time = self.change_times.key_of(e)
             self.change_times.remove(e)
-            new_outflow = self.new_outflow.pop(e)
-            change_event = (change_time, new_outflow)
+            new_outflow, new_outflow_sum = self.new_outflow.pop(e)
+            change_event = (change_time, (new_outflow, new_outflow_sum))
         return e, depl_time, change_event
 
 
@@ -103,7 +107,7 @@ class DynamicFlow:
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
-        self.outflow[e].extend(arrival, {})
+        self.outflow[e].extend(arrival, {}, 0.)
 
         self.outflow_changes.set((e, arrival), arrival)
 
@@ -120,13 +124,14 @@ class DynamicFlow:
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
-        factor = min(capacity, acc_in) / acc_in
+        acc_out = min(capacity, acc_in)
+        factor = acc_out / acc_in
 
         new_outflow = {
             i: factor * value
             for i, value in new_inflow.items()
         }
-        self.outflow[e].extend(arrival, new_outflow)
+        self.outflow[e].extend(arrival, new_outflow, acc_out)
 
         self.outflow_changes.set((e, arrival), arrival)
 
@@ -145,7 +150,7 @@ class DynamicFlow:
             i: factor * value
             for i, value in new_inflow.items()
         }
-        self.outflow[e].extend(arrival, new_outflow)
+        self.outflow[e].extend(arrival, new_outflow, capacity)
 
         self.outflow_changes.set((e, arrival), arrival)
 
@@ -153,9 +158,11 @@ class DynamicFlow:
         self.queues[e].extend_with_slope(self.phi, queue_slope)
 
         depl_time = self.phi - cur_queue / queue_slope
-        planned_change = depl_time + travel_time
+        planned_change_time = depl_time + travel_time
+        planned_change_value = (new_inflow, acc_in)
         assert self.queues[e](depl_time) < 1000 * eps
-        self.depletions.set(e, depl_time, (planned_change, new_inflow))
+
+        self.depletions.set(e, depl_time, (planned_change_time, planned_change_value))
 
     def _process_depletions(self):
         while self.depletions.min_depletion() <= self.phi:
@@ -164,8 +171,9 @@ class DynamicFlow:
             assert abs(self.queues[e].values[-1]) < 1000 * eps
             self.queues[e].values[-1] = 0.
             if change_event is not None:
-                self.outflow_changes.set((e, change_event[0]), change_event[0])
-                self.outflow[e].extend(change_event[0], change_event[1])
+                (change_time, (new_outflow, new_outflow_sum)) = change_event
+                self.outflow_changes.set((e, change_time), change_time)
+                self.outflow[e].extend(change_time, new_outflow, new_outflow_sum)
 
     def extend(self, new_inflow: Dict[int, Dict[int, float]], max_extension_time: float) -> Set[int]:
         """
@@ -183,7 +191,7 @@ class DynamicFlow:
             acc_in = sum(new_inflow[e].values())
             cur_queue = max(self.queues[e].eval_from_end(self.phi), 0.)
 
-            self.inflow[e].extend(self.phi, new_inflow[e])
+            self.inflow[e].extend(self.phi, new_inflow[e], acc_in)
             if acc_in == 0.:
                 self._extend_case_i(e, cur_queue)
             elif cur_queue == 0. or acc_in >= capacity[e]:
@@ -226,18 +234,8 @@ class DynamicFlow:
 
     @lru_cache()
     def get_edge_loads(self) -> List[PiecewiseLinear]:
-        total_inflow_rates = [
-            sum([com_inflow for com_inflow in inflow._functions_dict.values()],
-                start=RightConstant([0.], [0.], (0, float('inf'))))
-            for inflow in self.inflow
-        ]
-        total_outflow_rates = [
-            sum([com_outflow for com_outflow in outflow._functions_dict.values()],
-                start=RightConstant([0.], [0.], (0, float('inf'))))
-            for outflow in self.outflow
-        ]
         edge_loads: List[PiecewiseLinear] = [
-            (total_inflow_rates[e] - total_outflow_rates[e]).integral()
+            self.inflow[e].accumulative - self.outflow[e].accumulative
             for e in range(len(self.inflow))
         ]
         assert all(edge_load.domain[0] == 0. for edge_load in edge_loads)
