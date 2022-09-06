@@ -1,6 +1,8 @@
 import gzip
 import os
 import pickle
+from datetime import timedelta
+from time import time
 
 import numpy as np
 import pandas as pd
@@ -34,7 +36,10 @@ def generate_queues(past_timesteps: int, flows_folder: str, out_folder: str, hor
 
 def save_queues_and_edge_loads_for_flow(out_path: str, past_timesteps: int, horizon: float, reroute_interval: float,
                                         prediction_interval: float, flow: DynamicFlow):
+    print(f"Building {os.path.basename(out_path)}...")
+    started_at = time()
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
+
     reroute_intervals_in_prediction_interval = round(
         prediction_interval / reroute_interval)
     if abs(reroute_intervals_in_prediction_interval - prediction_interval / reroute_interval) > 1e-14:
@@ -58,6 +63,9 @@ def save_queues_and_edge_loads_for_flow(out_path: str, past_timesteps: int, hori
     ])
     stacked = np.stack([queue_samples, edge_load_samples])
     np.save(out_path, stacked)
+    finished_at = time()
+    print(f"Done (took {timedelta(seconds=round(finished_at - started_at))})")
+
 
 
 def generate_queues_and_edge_loads(past_timesteps: int, flows_dir: str, out_dir: str, horizon: float,
@@ -78,8 +86,6 @@ def generate_queues_and_edge_loads(past_timesteps: int, flows_dir: str, out_dir:
             out_dir, f"{flow_id}-queues-and-edge-loads.npy")
 
         def handle(_):
-            print(f"Building queues for Flow#{flow_id}...")
-
             with gzip.open(os.path.join(flows_dir, flow_filename), "rb") as file:
                 flow: DynamicFlow = pickle.load(file)
             save_queues_and_edge_loads_for_flow(out_path, past_timesteps, horizon, reroute_interval,
