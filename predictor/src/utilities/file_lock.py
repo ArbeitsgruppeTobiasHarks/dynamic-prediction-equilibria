@@ -1,14 +1,11 @@
-
 import os
 import time
 from typing import IO, Callable, List, Optional
 
-
-def NoOp(_):
-    pass
+from utilities.no_op import no_op
 
 
-def with_file_lock(file_path: str, handle: Callable[[Callable[[str], IO]], None] = NoOp,
+def with_file_lock(file_path: str, handle: Callable[[Callable[[str], IO]], None] = no_op,
                    expect_exists: Optional[List[str]] = None):
     if expect_exists is None:
         expect_exists = [file_path]
@@ -45,6 +42,6 @@ def wait_for_locks(dir: str):
             print(
                 f"Found locks in {dir}. Waiting for {curr_backoff_secs} seconds...")
             time.sleep(curr_backoff_secs)
-            curr_backoff_secs = min(curr_backoff_secs*2, 30)
+            curr_backoff_secs = min(curr_backoff_secs * 2, 30)
         elif len(locks) == 0 and curr_backoff_secs > 1:
             print(f"Locks have been removed. Proceeding.")
