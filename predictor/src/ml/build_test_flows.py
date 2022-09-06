@@ -1,3 +1,4 @@
+import gzip
 import warnings
 from math import ceil, log10
 import os
@@ -65,7 +66,7 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
 
             if os.path.exists(flow_path):
                 print("Flow already written to disk. Loading...")
-                with open(flow_path, "rb") as file:
+                with gzip.open(flow_path, "rb") as file:
                     flow = pickle.load(file)
                 flow._network = network
             else:
@@ -78,7 +79,7 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
                     flow_builder, flow_index, reroute_interval, horizon)
 
                 print(f"Successfully built flow up to time {flow.phi}!")
-                with open_file("wb") as file:
+                with gzip.open(flow_path, "wb") as file:
                     pickle.dump(flow, file)
 
                 print(f"Successfully written flow to disk!\n\n")

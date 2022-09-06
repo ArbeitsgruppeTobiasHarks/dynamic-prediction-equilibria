@@ -1,3 +1,4 @@
+import gzip
 import os
 import json
 from typing import Dict, Collection
@@ -44,7 +45,7 @@ def merge_commodities(flow: DynamicFlow, network: Network, commodities: Collecti
 
 def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as file:
+    with gzip.open(path, "wt", encoding='UTF-8') as file:
         json.dump({
             "network": {
                 "nodes": [

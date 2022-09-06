@@ -1,3 +1,4 @@
+import gzip
 import os
 import pickle
 
@@ -79,7 +80,7 @@ def generate_queues_and_edge_loads(past_timesteps: int, flows_dir: str, out_dir:
         def handle(_):
             print(f"Building queues for Flow#{flow_id}...")
 
-            with open(os.path.join(flows_dir, flow_filename), "rb") as file:
+            with gzip.open(os.path.join(flows_dir, flow_filename), "rb") as file:
                 flow: DynamicFlow = pickle.load(file)
             save_queues_and_edge_loads_for_flow(out_path, past_timesteps, horizon, reroute_interval,
                                                 prediction_interval, flow)
