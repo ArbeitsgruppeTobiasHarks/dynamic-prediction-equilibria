@@ -39,6 +39,36 @@ class FlowRatesCollection:
             self._queue_tail.next_item = item
             self._queue_tail = item
 
+    def __getstate__(self):
+        """Return state values to be pickled."""
+        state = self.__dict__.copy()
+        # Don't pickle _network b.c. of recursive structure
+        del state["_queue_tail"]
+        del state["_queue_head"]
+        unrolled_queue = []
+
+        curr_item = self._queue_head
+        while curr_item is not None:
+            unrolled_queue.append({"time": curr_item.time, "values": curr_item.values})
+            curr_item = curr_item.next_item
+        state["_queue"] = unrolled_queue
+        return state
+
+    def __setstate__(self, state):
+        queue = state["_queue"]
+        del state["_queue"]
+        self.__dict__.update(state)
+        if len(queue) == 0:
+            self._queue_head = None
+            self._queue_tail = None
+        else:
+            self._queue_head = FlowRatesCollectionItem(queue[0]["time"], queue[0]["values"])
+            self._queue_tail = self._queue_head
+            for i in range(1, len(queue)):
+                next_item = FlowRatesCollectionItem(queue[i]["time"], queue[i]["values"])
+                self._queue_tail.next_item = next_item
+                self._queue_tail = next_item
+
     def extend(self, time: float, values: Dict[int, float]):
         item = FlowRatesCollectionItem(time, values)
         if self._queue_tail is None:
