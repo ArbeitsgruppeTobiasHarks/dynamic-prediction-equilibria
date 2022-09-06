@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Dict, Set
+from typing import Dict, Collection
 import json_fix
 
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
@@ -10,7 +10,7 @@ from utilities.right_constant import RightConstant
 json_fix.fix_it()
 
 
-def merge_commodities(flow: DynamicFlow, network: Network, commodities: Set[int]) -> DynamicFlow:
+def merge_commodities(flow: DynamicFlow, network: Network, commodities: Collection[int]) -> DynamicFlow:
     if len(commodities) == 0:
         return flow
     new_comm_id = min(commodities)
