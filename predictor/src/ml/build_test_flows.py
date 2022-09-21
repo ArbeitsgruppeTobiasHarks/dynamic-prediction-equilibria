@@ -43,7 +43,8 @@ def generate_network_demands(network: Network, random_seed: int, inflow_horizon:
 def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_flows: int, horizon: float,
                 reroute_interval: float,
                 demand_sigma: Optional[float] = None, check_for_optimizations: bool = True,
-                on_flow_computed: Callable[[str, DynamicFlow], None] = no_op, generate_visualization: bool = True):
+                on_flow_computed: Callable[[str, DynamicFlow], None] = no_op, generate_visualization: bool = True,
+                save_dummy: bool = False):
     os.makedirs(out_dir, exist_ok=True)
     if number_flows == 0:
         return
@@ -80,12 +81,16 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
                     network, predictors, reroute_interval)
                 flow, _ = build_with_times(
                     flow_builder, flow_index, reroute_interval, horizon)
+                
+                if save_dummy:
+                    with open(flow_path, "w") as file:
+                        file.write("Dummy file")
+                    print(f"Written dummy file to disk!")
+                else:
+                    with gzip.open(flow_path, "wb") as file:
+                        pickle.dump(flow, file)
 
-                print(f"Successfully built flow up to time {flow.phi}!")
-                with gzip.open(flow_path, "wb") as file:
-                    pickle.dump(flow, file)
-
-                print(f"Successfully written flow to disk!\n\n")
+                    print(f"Successfully written flow to disk!")
 
                 on_flow_computed(flow_id, flow)
 
@@ -97,7 +102,9 @@ def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_f
                     id: COLORS[comm.predictor_type] for (id, comm) in enumerate(network.commodities)
                 })
 
-                print(f"Successfully written visualization to disk!\n\n")
+                print(f"Successfully written visualization to disk!")
+            
+            print()
 
         expect_exists = [flow_path]
         if generate_visualization:
