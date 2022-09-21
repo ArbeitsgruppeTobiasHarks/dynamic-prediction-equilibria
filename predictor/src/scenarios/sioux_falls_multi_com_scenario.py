@@ -137,12 +137,6 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
 
     network = Network.from_file(network_path)
     network.print_info()
-    print(f"""Average Demand: {np.average([
-        source.values[0]
-        for c in network.commodities
-        for source in c.sources.values()
-    ])}""")
-
 
 if __name__ == "__main__":
     def main():
