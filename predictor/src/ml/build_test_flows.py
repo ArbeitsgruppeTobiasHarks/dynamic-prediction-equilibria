@@ -37,8 +37,7 @@ def generate_network_demands(network: Network, random_seed: int, inflow_horizon:
                 commodity.sources[s] = RightConstant(
                     [0.], [demand], (0., float('inf')))
     if len(zero_demand_commodities) > 0:
-        print(f"Warning: Generated zero demand for the following {len(zero_demand_commodities)} commodities:")
-        print(zero_demand_commodities)
+        print(f"Warning: Generated zero demand for {len(zero_demand_commodities)} commodities.")
 
 
 def build_flows(network_path: str, out_dir: str, inflow_horizon: float, number_flows: int, horizon: float,
