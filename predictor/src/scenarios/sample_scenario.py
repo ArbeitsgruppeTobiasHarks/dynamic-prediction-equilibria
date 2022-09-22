@@ -33,7 +33,7 @@ def run_scenario(scenario_dir: str):
 
     reroute_interval = .125
     inflow_horizon = 12.
-    horizon = 50.
+    horizon = 60.
     prediction_interval = .5
     past_timesteps = 20
     future_timesteps = 20
@@ -56,24 +56,24 @@ def run_scenario(scenario_dir: str):
     build_tf_full_net_predictor = train_tf_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
                                                           reroute_interval, prediction_interval, horizon, network, tf_full_net_model_path)
 
-    build_tf_neighborhood_predictor = train_tf_neighborhood_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
-                                                                  reroute_interval, prediction_interval, horizon, network, tf_neighborhood_models_path, max_distance)
+    #build_tf_neighborhood_predictor = train_tf_neighborhood_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
+    #                                                              reroute_interval, prediction_interval, horizon, network, tf_neighborhood_models_path, max_distance)
 
     build_sk_full_net_predictor = train_sk_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
                                                           reroute_interval, prediction_interval, horizon, network, sk_full_net_model_path)
 
-    build_sk_neighborhood_predictor = train_sk_neighborhood_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
-                                                                  reroute_interval, prediction_interval, horizon, network, sk_neighborhood_models_path, max_distance)
+    #build_sk_neighborhood_predictor = train_sk_neighborhood_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
+    #                                                              reroute_interval, prediction_interval, horizon, network, sk_neighborhood_models_path, max_distance)
 
     def build_predictors(network): return {
         PredictorType.ZERO: ZeroPredictor(network),
         PredictorType.CONSTANT: ConstantPredictor(network),
         PredictorType.LINEAR: LinearPredictor(network, pred_horizon),
         PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, pred_horizon, delta=1.),
-        PredictorType.MACHINE_LEARNING_TF_FULL_NET: build_tf_full_net_predictor(network),
-        PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: build_tf_neighborhood_predictor(network),
         PredictorType.MACHINE_LEARNING_SK_FULL_NET: build_sk_full_net_predictor(network),
-        PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: build_sk_neighborhood_predictor(network),
+        # PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: build_sk_neighborhood_predictor(network),
+        PredictorType.MACHINE_LEARNING_TF_FULL_NET: build_tf_full_net_predictor(network),
+        # PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: build_tf_neighborhood_predictor(network),
     }
 
     # test_mask = train_full_net_model(
@@ -102,11 +102,10 @@ def run_scenario(scenario_dir: str):
             PredictorType.CONSTANT: ("red", "$\\hat q^{\\text{C}}$"),
             PredictorType.LINEAR: ("{rgb,255:red,0; green,128; blue,0}", "$\\hat q^{\\text{L}}$"),
             PredictorType.REGULARIZED_LINEAR: ("orange", "$\\hat q^{\\text{RL}}$"),
-            PredictorType.MACHINE_LEARNING_TF_FULL_NET: ("black", "$\\hat q^{\\text{NN-full}}$"),
-            PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{NN-neighboring}}$"),
             PredictorType.MACHINE_LEARNING_SK_FULL_NET: ("black", "$\\hat q^{\\text{LR-full}}$"),
-            PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: (
-                "black", "$\\hat q^{\\text{LR-neighboring}}$")
+            # PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{LR-neighboring}}$"),
+            PredictorType.MACHINE_LEARNING_TF_FULL_NET: ("black", "$\\hat q^{\\text{NN-full}}$"),
+            # PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{NN-neighboring}}$"),
         })
 
     average_comp_times = []
