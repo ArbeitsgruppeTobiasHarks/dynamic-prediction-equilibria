@@ -3,13 +3,12 @@ import os
 from typing import List, Optional, Tuple
 
 import numpy as np
-from torch.utils.data.dataset import T_co, Dataset
 
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
 
 
-class QueueAndEdgeLoadDataset(Dataset):
+class QueueAndEdgeLoadDataset:
     _data: np.ndarray  # Dim0: Flow, Dim1: Queues/EdgeLoad, Dim2: Edge, Dim3: Time
     _flow: Optional[DynamicFlow]
     _reroute_interval: float
@@ -70,7 +69,7 @@ class QueueAndEdgeLoadDataset(Dataset):
     def use_additional_output_mask(self, additional_output_mask):
         self._additional_output_mask = additional_output_mask
 
-    def __getitem__(self, index) -> T_co:
+    def __getitem__(self, index):
         flow_id, sample_id = divmod(index, self.samples_per_flow)
         data = self._data[flow_id]
         phi = sample_id * self._reroute_interval
