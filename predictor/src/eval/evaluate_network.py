@@ -1,5 +1,6 @@
 import json
 from math import ceil, log10
+import numpy as np
 import os
 import random
 from typing import Dict, Optional, Tuple
@@ -64,6 +65,7 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
     wait_for_locks(out_dir)
 
     eval_jsons_to_tikz_boxplot(out_dir, visualization_config)
+    eval_jsons_to_avg_slowdowns(out_dir, visualization_config)
     compare_mae_with_perf(out_dir, visualization_config)
 
 
@@ -135,6 +137,8 @@ def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon
     wait_for_locks(out_dir)
 
     eval_jsons_to_tikz_boxplot(out_dir, visualization_config)
+
+    eval_jsons_to_avg_slowdowns(out_dir, visualization_config)
 
     compare_mae_with_perf(out_dir, visualization_config)
 
@@ -236,6 +240,29 @@ def eval_jsons_to_tikz_boxplot(dir: str, visualization_config):
     print("Means:")
     for j in range(len(means)):
         print(means[j] / len(files))
+
+
+def eval_jsons_to_avg_slowdowns(dir: str, visualization_config):
+    files = [file for file in os.listdir(dir) if file.endswith(".json")]
+
+    colors = [t[0] for t in visualization_config.values()]
+    labels = [t[1] for t in visualization_config.values()]
+
+    slowdowns_by_predictor = [[] for _ in visualization_config]
+    means = [0. for _ in visualization_config]
+    for file_path in files:
+        with open(os.path.join(dir, file_path), "r") as file:
+            res_dict = json.load(file)
+            travel_times = res_dict['avg_travel_times']
+            if any(travel_times[j] != travel_times[0] for j in range(len(travel_times) - 1)):
+                for i in range(len(slowdowns_by_predictor)):
+                    slowdowns_by_predictor[i].append(
+                        travel_times[i] / travel_times[-1] - 1)
+    avg_slowdowns_by_predictor = [
+        np.average(slowdowns) for slowdowns in slowdowns_by_predictor
+    ]
+    with open(os.path.join(dir, "../average_slowdowns.json"), "w") as file:
+        json.dump(avg_slowdowns_by_predictor, file)
 
 
 if __name__ == '__main__':
