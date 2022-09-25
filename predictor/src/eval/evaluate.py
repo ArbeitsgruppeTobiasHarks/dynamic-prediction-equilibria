@@ -16,6 +16,7 @@ from utilities.build_with_times import build_with_times
 from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
+from utilities.status_logger import StatusLogger
 
 COLORS = {
     PredictorType.ZERO: "blue",
@@ -33,48 +34,49 @@ PredictorBuilder = Callable[[Network], Dict[PredictorType, Predictor]]
 
 
 def calculate_optimal_average_travel_time(flow: DynamicFlow, network: Network, inflow_horizon: float, horizon: float, commodity: Commodity):
-    if len(commodity.sources) != 1:
-        raise ValueError("Expected a single source!")
-    source = next(iter(commodity.sources))
-    costs = [
-        PiecewiseLinear(
-            flow.queues[e].times,
-            [network.travel_time[e] + v / network.capacity[e]
-             for v in flow.queues[e].values],
-            flow.queues[e].first_slope / network.capacity[e],
-            flow.queues[e].last_slope / network.capacity[e],
-            domain=(0., horizon)
-        ).simplify() for e in range(len(flow.queues))]
-    labels = bellman_ford(
-        commodity.sink,
-        costs,
-        network.graph.get_nodes_reaching(commodity.sink).intersection(
-            network.graph.get_reachable_nodes(source)),
-        0.,
-        horizon
-    )
+    with StatusLogger("Computing optimal average travel time..."):
+        if len(commodity.sources) != 1:
+            raise ValueError("Expected a single source!")
+        source = next(iter(commodity.sources))
+        costs = [
+            PiecewiseLinear(
+                flow.queues[e].times,
+                [network.travel_time[e] + v / network.capacity[e]
+                 for v in flow.queues[e].values],
+                flow.queues[e].first_slope / network.capacity[e],
+                flow.queues[e].last_slope / network.capacity[e],
+                domain=(0., horizon)
+            ).simplify() for e in range(len(flow.queues))]
+        labels = bellman_ford(
+            commodity.sink,
+            costs,
+            network.graph.get_nodes_reaching(commodity.sink).intersection(
+                network.graph.get_reachable_nodes(source)),
+            0.,
+            horizon
+        )
 
-    def integrate_opt(label: PiecewiseLinear):
-        assert label.is_monotone()
-        travel_time = label.plus(PiecewiseLinear([0], [0.], -1, -1))
-        # Last time h for starting at source to arrive at sink before horizon.
-        if inflow_horizon < float('inf'):
-            h = min(inflow_horizon, label.max_t_below(horizon))
-            inflow_until = min(horizon, inflow_horizon)
+        def integrate_opt(label: PiecewiseLinear) -> float:
+            assert label.is_monotone()
+            travel_time = label.plus(PiecewiseLinear([0], [0.], -1, -1))
+            # Last time h for starting at source to arrive at sink before horizon.
+            if inflow_horizon < float('inf'):
+                h = min(inflow_horizon, label.max_t_below(horizon))
+                inflow_until = min(horizon, inflow_horizon)
+            else:
+                h = label.max_t_below(horizon)
+                inflow_until = horizon
+            integral_travel_time = travel_time.integrate(0, h)
+            if h < inflow_until:
+                integral_travel_time += horizon * \
+                    (inflow_until - h) - (inflow_until ** 2 - h ** 2) / 2
+            avg_travel_time = integral_travel_time / inflow_until
+            return avg_travel_time
+
+        if source in labels:
+            return integrate_opt(labels[source])
         else:
-            h = label.max_t_below(horizon)
-            inflow_until = horizon
-        integral_travel_time = travel_time.integrate(0, h)
-        if h < inflow_until:
-            integral_travel_time += horizon * \
-                (inflow_until - h) - (inflow_until ** 2 - h ** 2) / 2
-        avg_travel_time = integral_travel_time / inflow_until
-        return avg_travel_time
-
-    if source in labels:
-        return integrate_opt(labels[source])
-    else:
-        return inflow_horizon*horizon - inflow_horizon**2 / 2
+            return inflow_horizon*horizon - inflow_horizon**2 / 2
 
 
 def evaluate_single_run(network: Network, focused_commodity_index: int, split: bool, horizon: float,
@@ -85,7 +87,8 @@ def evaluate_single_run(network: Network, focused_commodity_index: int, split: b
     os.makedirs(os.path.dirname(flow_path), exist_ok=True)
     os.makedirs(os.path.dirname(json_eval_path), exist_ok=True)
 
-    predictors = build_predictors(network)
+    with StatusLogger("Building predictors..."):
+        predictors = build_predictors(network)
 
     commodity = network.commodities[focused_commodity_index]
     if len(commodity.sources) != 1:
@@ -120,25 +123,14 @@ def evaluate_single_run(network: Network, focused_commodity_index: int, split: b
             flow_builder, flow_id, reroute_interval, horizon, new_commodities_indices, suppress_log)
 
         if flow_path is not None:
-            with open(flow_path, "wb") as file:
-                pickle.dump(
-                    {"flow": flow, "computation_time": computation_time}, file)
+            with StatusLogger("Writing flow to disk...", "Succesfully written flow to disk."):
+                with open(flow_path, "wb") as file:
+                    pickle.dump(
+                        {"flow": flow, "computation_time": computation_time}, file)
     else:
-        with open(flow_path, "rb") as file:
-            box = pickle.load(file)
-        if isinstance(box, DynamicFlow):  # produced by old version of this script
-            if not os.path.exists(json_eval_path):
-                raise ValueError(
-                    f"Box was a flow, but {json_eval_path} does not exist.")
-            flow = box
-            flow._network = network
-            with open(json_eval_path, "r") as file:
-                json_eval = json.load(file)
-            computation_time = json_eval["comp_time"] if "comp_time" in json_eval else json_eval["computation_time"]
-            with open(flow_path, "wb") as file:
-                pickle.dump(
-                    {"flow": flow, "computation_time": computation_time}, file)
-        else:
+        with StatusLogger("Flow already exists. Loading flow from disk...", "Succesfully loaded flow from disk."):
+            with open(flow_path, "rb") as file:
+                box = pickle.load(file)
             computation_time: float = box["computation_time"]
             flow: DynamicFlow = box["flow"]
             flow._network = network
@@ -146,6 +138,11 @@ def evaluate_single_run(network: Network, focused_commodity_index: int, split: b
     travel_times = [flow.avg_travel_time(i, horizon) for i in new_commodities_indices] + \
                    [calculate_optimal_average_travel_time(
                        flow, network, inflow_horizon, horizon, commodity)]
+
+    if not suppress_log:
+        print(
+            f"The following average travel times were computed for flow#{flow_id}:")
+        print(travel_times)
 
     mean_absolute_errors = evaluate_prediction_accuracy(
         flow, predictors, future_timesteps, reroute_interval, prediction_interval, horizon)
@@ -158,11 +155,6 @@ def evaluate_single_run(network: Network, focused_commodity_index: int, split: b
         "mean_absolute_errors": [mae for mae in mean_absolute_errors.values()]
     }
 
-    if not suppress_log:
-        print(
-            f"The following average travel times were computed for flow#{flow_id}:")
-        print(travel_times)
-
     if json_eval_path is not None:
         with open(json_eval_path, "w") as file:
             json.dump(save_dict, file)
@@ -171,49 +163,51 @@ def evaluate_single_run(network: Network, focused_commodity_index: int, split: b
 
 
 def evaluate_prediction_accuracy(flow: DynamicFlow, predictors: Dict[PredictorType, Predictor], future_timesteps: int, reroute_interval: float, prediction_interval: float, horizon: float):
-    eval_horizon = horizon - (future_timesteps + 1) * prediction_interval
-    predictions = {}
-    diffs = {}
-    pred_times = [
-        i*reroute_interval for i in range(0, floor(eval_horizon / reroute_interval) + 1)]
+    with StatusLogger("Evaluating prediction accuracy MAE...") as status:
+        eval_horizon = horizon - (future_timesteps + 1) * prediction_interval
+        predictions = {}
+        diffs = {}
+        pred_times = [
+            i*reroute_interval for i in range(0, floor(eval_horizon / reroute_interval) + 1)]
 
-    stride = round(prediction_interval / reroute_interval)
-    queue_values = np.array(
-        [
-            [queue(i*reroute_interval) for queue in flow.queues]
-            for i in range(0, floor(horizon / reroute_interval) + 1)
-        ]
-    )
-
-    for (predictor_type, predictor) in predictors.items():
-        predictor_predictions = predictor.batch_predict(pred_times, flow)
-
-        def to_samples(i, pred_time):
-            pred_queues = predictor_predictions[i]
-            return [
-                [
-                    pred_queue(pred_time + (k+1)*prediction_interval)
-                    for pred_queue in pred_queues
-                ]
-                for k in range(future_timesteps)
-            ]
-        predictions[predictor_type] = np.array(
-            [to_samples(i, pred_time)
-             for i, pred_time in enumerate(pred_times)]
-        )
-        diffs[predictor_type] = np.array(
+        stride = round(prediction_interval / reroute_interval)
+        queue_values = np.array(
             [
-                [
-                    predictions[predictor_type][pred_ind, k, :] -
-                    queue_values[pred_ind + (k+1)*stride, :]
-                    for k in range(future_timesteps)]
-                for pred_ind, _ in enumerate(pred_times)
+                [queue(i*reroute_interval) for queue in flow.queues]
+                for i in range(0, floor(horizon / reroute_interval) + 1)
             ]
         )
-    mean_absolute_errors = {
-        predictor_type: np.average(np.abs(diff))
-        for predictor_type, diff in diffs.items()
-    }
-    print(
-        "MAE. " + "; ".join([f"{predictor_type.name}: {round(mae, 4)}" for predictor_type, mae in mean_absolute_errors.items()]))
-    return mean_absolute_errors
+
+        for (predictor_type, predictor) in predictors.items():
+            predictor_predictions = predictor.batch_predict(pred_times, flow)
+
+            def to_samples(i, pred_time):
+                pred_queues = predictor_predictions[i]
+                return [
+                    [
+                        pred_queue(pred_time + (k+1)*prediction_interval)
+                        for pred_queue in pred_queues
+                    ]
+                    for k in range(future_timesteps)
+                ]
+            predictions[predictor_type] = np.array(
+                [to_samples(i, pred_time)
+                 for i, pred_time in enumerate(pred_times)]
+            )
+            diffs[predictor_type] = np.array(
+                [
+                    [
+                        predictions[predictor_type][pred_ind, k, :] -
+                        queue_values[pred_ind + (k+1)*stride, :]
+                        for k in range(future_timesteps)]
+                    for pred_ind, _ in enumerate(pred_times)
+                ]
+            )
+        mean_absolute_errors = {
+            predictor_type: np.average(np.abs(diff))
+            for predictor_type, diff in diffs.items()
+        }
+        status.finish_msg = "MAE. " + \
+            "; ".join([f"{predictor_type.name}: {round(mae, 4)}" for predictor_type,
+                      mae in mean_absolute_errors.items()])
+        return mean_absolute_errors
