@@ -374,7 +374,7 @@ class PiecewiseLinear:
         rnk = elem_rank(self.values, bound)
         return max(self.domain[0], self.inverse(bound, rnk))
 
-    def max_t_below(self, bound: float, default: Optional[float] = None):
+    def max_t_below(self, bound: float, default: Optional[float] = None) -> float:
         """
         Returns max t s.t. self(t) <= bound
         If such a t does not exist, we return default if is given.
@@ -418,11 +418,13 @@ class PiecewiseLinear:
         f = self
         g = other
 
-        if f.domain[1] < g.domain[1] - eps:
+        precision = eps * 1000
+
+        if f.domain[1] < g.domain[1] - precision:
             return False
 
         ind_f, ind_g = 0, 0
-        if f.values[0] > g.values[0] + eps:
+        if f.values[0] > g.values[0] + precision:
             return False
 
         while ind_f < len(f.times) - 1 or ind_g < len(g.times) - 1:
@@ -432,7 +434,7 @@ class PiecewiseLinear:
                                   1] if ind_g < len(g.times) - 1 else g.domain[1]
 
             next_time = min(next_time_f, next_time_g)
-            if f._eval_with_rank(next_time, ind_f) > g._eval_with_rank(next_time, ind_g) + eps:
+            if f._eval_with_rank(next_time, ind_f) > g._eval_with_rank(next_time, ind_g) + precision:
                 return False
             if next_time_f == next_time:
                 ind_f += 1
@@ -442,9 +444,9 @@ class PiecewiseLinear:
                 break
 
         if g.domain[1] < float('inf'):
-            return f(g.domain[1]) <= g(g.domain[1]) + eps
+            return f(g.domain[1]) <= g(g.domain[1]) + precision
         else:
-            return f.gradient(len(f.times) - 1) <= g.gradient(len(g.times) - 1) + eps
+            return f.gradient(len(f.times) - 1) <= g.gradient(len(g.times) - 1) + precision
 
     def extend_with_slope(self, time, slope):
         assert time >= self.times[-1] - eps
