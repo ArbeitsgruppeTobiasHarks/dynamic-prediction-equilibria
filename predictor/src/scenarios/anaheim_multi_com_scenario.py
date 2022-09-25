@@ -117,8 +117,8 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
             PredictorType.REGULARIZED_LINEAR: ("orange", "$\\hat q^{\\text{RL}}$"),
             PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{LR-neighboring}}$"),
             PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{NN-neighboring}}$"),
-
-        })
+        },
+        generate_flow_visualization=False)
 
     average_comp_times = []
     for file in os.listdir(eval_dir):

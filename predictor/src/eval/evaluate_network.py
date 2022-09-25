@@ -11,13 +11,14 @@ from eval.evaluate import COLORS, evaluate_single_run, PredictorBuilder
 from ml.build_test_flows import generate_network_demands
 from utilities.file_lock import wait_for_locks, with_file_lock
 from utilities.right_constant import RightConstant
+from utilities.status_logger import StatusLogger
 from visualization.to_json import merge_commodities, to_visualization_json
 
 
 def eval_network_demand(network_path: str, number_flows: int, out_dir: str, inflow_horizon: float,
                         future_timesteps: int, prediction_interval: float, reroute_interval: float,
                         horizon: float, build_predictors: PredictorBuilder, demand_sigma: Optional[float], visualization_config: Dict[PredictorType, Tuple[str, str]],
-                        split: bool = False, suppress_log=True, check_for_optimizations: bool = True):
+                        split: bool = False, suppress_log=True, check_for_optimizations: bool = True, generate_flow_visualization: bool = True):
     '''
     Evaluates a single (randomly chosen) commodity.
     '''
@@ -32,7 +33,10 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
         json_eval_path = os.path.join(
             out_dir, f"{str(flow_id).zfill(ceil(log10(number_flows)))}.json")
 
-        def handle(open_file):
+        visualization_json_path = os.path.join(
+            out_dir, "visualization", f"{str(flow_id).zfill(ceil(log10(number_flows)))}.vis.json")
+
+        def handle(_):
             network = Network.from_file(network_path)
             original_num_commodities = len(network.commodities)
             seed = -flow_id - 1
@@ -50,17 +54,19 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
                                              inflow_horizon=inflow_horizon, future_timesteps=future_timesteps, prediction_interval=prediction_interval,
                                              suppress_log=suppress_log, split=split, build_predictors=build_predictors)
 
-            visualization_json_path = os.path.join(
-                out_dir, "visualization", f"{str(flow_id).zfill(ceil(log10(number_flows)))}.vis.json")
+            if generate_flow_visualization:
+                with StatusLogger("Generating flow visualization..."):
+                    merged_flow = merge_commodities(
+                        flow, network, range(original_num_commodities))
+                    to_visualization_json(visualization_json_path, merged_flow, network, {
+                        id: COLORS[comm.predictor_type]
+                        for (id, comm) in enumerate(network.commodities)
+                    })
 
-            merged_flow = merge_commodities(
-                flow, network, range(original_num_commodities))
-            to_visualization_json(visualization_json_path, merged_flow, network, {
-                id: COLORS[comm.predictor_type]
-                for (id, comm) in enumerate(network.commodities)
-            })
-        with_file_lock(flow_path, handle, expect_exists=[
-                       flow_path, json_eval_path])
+        expect_exists = [flow_path, json_eval_path]
+        if generate_flow_visualization:
+            expect_exists.append(visualization_json_path)
+        with_file_lock(flow_path, handle, expect_exists)
 
     wait_for_locks(out_dir)
 
