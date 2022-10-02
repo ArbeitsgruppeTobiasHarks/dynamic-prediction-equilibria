@@ -58,6 +58,17 @@
             },
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: Nguyen Scenario",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/predictor/src/scenarios/nguyen_scenario.py",
+            "env": {
+                "PYTHONOPTIMIZE": "TRUE"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
