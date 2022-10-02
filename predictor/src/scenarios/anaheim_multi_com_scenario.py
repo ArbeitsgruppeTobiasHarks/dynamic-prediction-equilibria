@@ -87,15 +87,17 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
         network, sk_neighborhood_models_path, max_distance)
 
 
+    tf_predictor = build_tf_neighborhood_predictor(network)
+    sk_predictor = build_sk_neighborhood_predictor(network)
+
     def build_predictors(network: Network):
         return {
             PredictorType.ZERO: ZeroPredictor(network),
             PredictorType.CONSTANT: ConstantPredictor(network),
             PredictorType.LINEAR: LinearPredictor(network, pred_horizon),
             PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, pred_horizon, delta=1.),
-            PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: build_sk_neighborhood_predictor(
-                network),
-            PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: build_tf_neighborhood_predictor(network),
+            PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: sk_predictor,
+            PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: tf_predictor,
         }
 
     eval_network_demand(
