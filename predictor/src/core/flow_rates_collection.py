@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, Optional
 from utilities.arrays import merge_sorted
 from utilities.piecewise_linear import PiecewiseLinear
+from core.machine_precision import eps
 
 from utilities.right_constant import RightConstant
 
@@ -82,7 +83,7 @@ class FlowRatesCollection:
                 self._functions_dict[i] = FlowRatesCollection._new_flow_fn()
                 self._functions_dict[i].extend(time, value)
         else:
-            assert self._queue_tail.time <= time
+            assert self._queue_tail.time <= time + eps
             for i, value in values.items():
                 if i not in self._functions_dict:
                     self._functions_dict[i] = FlowRatesCollection._new_flow_fn(
