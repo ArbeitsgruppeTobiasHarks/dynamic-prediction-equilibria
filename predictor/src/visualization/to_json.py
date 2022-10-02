@@ -43,14 +43,13 @@ def merge_commodities(flow: DynamicFlow, network: Network, commodities: Collecti
     return merged_flow
 
 
-def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors):
+def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors: Dict[int, str]):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with gzip.open(path, "wt", encoding='UTF-8') as file:
         json.dump({
             "network": {
                 "nodes": [
-                    {"id": id, "x": network.graph.positions[id]
-                        [0], "y": network.graph.positions[id][1]}
+                    {"id": id, "x": network.graph.positions[id][0], "y": network.graph.positions[id][1]}
                     for (id, v) in network.graph.nodes.items()
                 ],
                 "edges": [
