@@ -194,7 +194,7 @@ class DynamicFlow:
             self.inflow[e].extend(self.phi, new_inflow[e], acc_in)
             if acc_in == 0.:
                 self._extend_case_i(e, cur_queue)
-            elif cur_queue == 0. or acc_in >= capacity[e]:
+            elif cur_queue == 0. or acc_in >= capacity[e] - eps:
                 self._extend_case_ii(e, new_inflow[e], cur_queue, acc_in)
             else:
                 self._extend_case_iii(e, new_inflow[e], cur_queue, acc_in)
