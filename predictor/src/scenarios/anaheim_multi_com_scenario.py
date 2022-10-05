@@ -87,10 +87,17 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
         network, sk_neighborhood_models_path, max_distance)
 
 
-    tf_predictor = build_tf_neighborhood_predictor(network)
-    sk_predictor = build_sk_neighborhood_predictor(network)
+    sk_predictor = None
+    tf_predictor = None
 
     def build_predictors(network: Network):
+        nonlocal sk_predictor
+        nonlocal tf_predictor
+        if sk_predictor is None:
+            sk_predictor = build_sk_neighborhood_predictor(network)
+        if tf_predictor is None:
+            tf_predictor = build_tf_neighborhood_predictor(network)
+
         return {
             PredictorType.ZERO: ZeroPredictor(network),
             PredictorType.CONSTANT: ConstantPredictor(network),
