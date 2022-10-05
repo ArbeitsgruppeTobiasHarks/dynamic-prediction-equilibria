@@ -79,22 +79,28 @@ def run_scenario(edges_tntp_path: str, geojson_path: str, scenario_dir: str):
     build_tf_neighborhood_predictor = train_tf_neighborhood_model(queues_dir, past_timesteps, future_timesteps,
                                                                   reroute_interval, prediction_interval, horizon, network, tf_neighborhood_models_path, max_distance)
 
-    build_sk_full_net_predictor = train_sk_full_net_model(queues_dir, past_timesteps, future_timesteps,
-                                                          reroute_interval, prediction_interval, horizon, network, sk_full_net_path)
-
     build_sk_neighborhood_predictor = train_sk_neighborhood_model(queues_dir, past_timesteps, future_timesteps,
                                                                   reroute_interval, prediction_interval, horizon, network, sk_neighborhood_models_path, max_distance)
 
-    def build_predictors(network): return {
-        PredictorType.ZERO: ZeroPredictor(network),
-        PredictorType.CONSTANT: ConstantPredictor(network),
-        PredictorType.LINEAR: LinearPredictor(network, pred_horizon),
-        PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, pred_horizon, delta=1.),
-        PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: build_tf_neighborhood_predictor(network),
-        PredictorType.MACHINE_LEARNING_SK_FULL_NET: build_sk_full_net_predictor(network),
-        PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: build_sk_neighborhood_predictor(
-            network)
-    }
+    sk_predictor = None
+    tf_predictor = None
+
+    def build_predictors(network: Network):
+        nonlocal sk_predictor
+        nonlocal tf_predictor
+        if sk_predictor is None:
+            sk_predictor = build_sk_neighborhood_predictor(network)
+        if tf_predictor is None:
+            tf_predictor = build_tf_neighborhood_predictor(network)
+        
+        return {
+            PredictorType.ZERO: ZeroPredictor(network),
+            PredictorType.CONSTANT: ConstantPredictor(network),
+            PredictorType.LINEAR: LinearPredictor(network, pred_horizon),
+            PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, pred_horizon, delta=1.),
+            PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: sk_predictor,
+            PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: tf_predictor,
+        }
 
     # shallow_evaluate_predictors(network_path, flows_dir, shallow_eval_dir, past_timesteps, future_timesteps,
     #                             horizon, reroute_interval, prediction_interval, build_predictors)
@@ -121,9 +127,8 @@ def run_scenario(edges_tntp_path: str, geojson_path: str, scenario_dir: str):
             PredictorType.CONSTANT: ("red", "$\\hat q^{\\text{C}}$"),
             PredictorType.LINEAR: ("{rgb,255:red,0; green,128; blue,0}", "$\\hat q^{\\text{L}}$"),
             PredictorType.REGULARIZED_LINEAR: ("orange", "$\\hat q^{\\text{RL}}$"),
-            PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{NN-neighboring}}$"),
-            PredictorType.MACHINE_LEARNING_SK_FULL_NET: ("black", "$\\hat q^{\\text{LR-full}}$"),
             PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{LR-neighboring}}$"),
+            PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{NN-neighboring}}$"),
         })
 
     average_comp_times = []
