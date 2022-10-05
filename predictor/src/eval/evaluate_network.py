@@ -1,9 +1,10 @@
+from dataclasses import dataclass
 import json
 from math import ceil, log10
 import numpy as np
 import os
 import random
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from core.network import Network, Commodity
 from core.predictors.predictor_type import PredictorType
@@ -12,6 +13,7 @@ from ml.build_test_flows import generate_network_demands
 from utilities.file_lock import wait_for_locks, with_file_lock
 from utilities.right_constant import RightConstant
 from utilities.status_logger import StatusLogger
+from visualization.make_tikz_boxplot import BoxPlot, make_tikz_boxplot
 from visualization.to_json import merge_commodities, to_visualization_json
 
 
@@ -70,7 +72,9 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
 
     wait_for_locks(out_dir)
 
-    eval_jsons_to_tikz_boxplot(out_dir, visualization_config)
+
+    generate_slowdown_boxplot(out_dir, visualization_config)
+    generate_mae_boxplot(out_dir, visualization_config)
     eval_jsons_to_avg_slowdowns(out_dir, visualization_config)
     compare_mae_with_perf(out_dir, visualization_config)
 
@@ -142,7 +146,9 @@ def eval_network_for_commodities(network_path: str, out_dir: str, inflow_horizon
 
     wait_for_locks(out_dir)
 
-    eval_jsons_to_tikz_boxplot(out_dir, visualization_config)
+    generate_slowdown_boxplot(out_dir, visualization_config)
+
+    generate_mae_boxplot(out_dir, visualization_config)
 
     eval_jsons_to_avg_slowdowns(out_dir, visualization_config)
 
@@ -187,65 +193,73 @@ def compare_mae_with_perf(dir: str, visualization_config):
         file.write(tikz)
 
 
-def eval_jsons_to_tikz_boxplot(dir: str, visualization_config):
+
+def generate_slowdown_boxplot(dir: str, visualization_config):
     files = [file for file in os.listdir(dir) if file.endswith(".json")]
 
     colors = [t[0] for t in visualization_config.values()]
     labels = [t[1] for t in visualization_config.values()]
 
-    times = [[] for _ in visualization_config]
+    slowdowns = [[] for _ in visualization_config]
     means = [0. for _ in visualization_config]
     for file_path in files:
         with open(os.path.join(dir, file_path), "r") as file:
             res_dict = json.load(file)
             travel_times = res_dict['avg_travel_times']
             if any(travel_times[j] != travel_times[0] for j in range(len(travel_times) - 1)):
-                for i in range(len(times)):
-                    times[i].append(travel_times[i] / travel_times[-1] - 1)
+                for i in range(len(slowdowns)):
+                    slowdowns[i].append(travel_times[i] / travel_times[-1] - 1)
                 for j in range(len(means)):
                     means[j] += travel_times[j]
 
-    tikz = """\\begin{tikzpicture}
-        \\begin{axis}
-  [
-  width=.5\\textwidth,
-  boxplot/draw direction = y,
-  ylabel = {\\begin{tabular}{c}Slowdown\\\\\\small$T_i^{\\mathrm{avg}} / T^{\\mathrm{avg}}_{\\text{OPT}} - 1$\\end{tabular} },
-  ymode = log,
-  log basis y={10},
-  ymajorgrids=true,
-  grid style=dashed,
-  xtick = {""" + ",".join(str(i) for i in range(1, len(times) + 1)) + """},
-  xticklabels = {""" + ",".join(labels) + """},
-  every axis plot/.append style = {fill, fill opacity = .1},
-  ]
-    """
-    for i in range(len(times)):
-        tikz += """\\addplot + [
-          mark = *,
-          boxplot,
-          solid,
-          color="""
-        tikz += colors[i]
-        tikz += """]
-          table [row sep = \\\\, y index = 0] {
-        data \\\\
-        """
-        for y in times[i]:
-            tikz += f"{y}\\\\\n"
-        tikz += "};\n"
+    tikz = make_tikz_boxplot(
+        ylabel=r"\begin{tabular}{c}Slowdown\\\small$T_i^{\mathrm{avg}} / T^{\mathrm{avg}}_{\text{OPT}} - 1$\end{tabular}",
+        plots=[
+            BoxPlot(
+                labels[i],
+                colors[i],
+                slowdowns[i]
+            ) for i in range(len(slowdowns))
+        ])
 
-    tikz += """\\end{axis}
-    \\end{tikzpicture}
-    """
-
-    with open(os.path.join(dir, "boxplot.tikz"), "w") as file:
+    with open(os.path.join(dir, "slowdown-boxplot.tikz"), "w") as file:
         file.write(tikz)
-    print("Successfully saved a tikz boxplot in the output directory.")
+    print("Successfully saved a Slowdown boxplot in the output directory.")
 
-    print("Means:")
+    print("Mean average travel time:")
     for j in range(len(means)):
         print(means[j] / len(files))
+
+
+def generate_mae_boxplot(dir: str, visualization_config):
+    files = [file for file in os.listdir(dir) if file.endswith(".json")]
+
+    colors = [t[0] for t in visualization_config.values()]
+    labels = [t[1] for t in visualization_config.values()]
+
+    maes = [[] for _ in visualization_config]
+    for file_path in files:
+        with open(os.path.join(dir, file_path), "r") as file:
+            res_dict = json.load(file)
+            mean_absolute_errors = res_dict['mean_absolute_errors']
+
+            for i in range(len(maes)):
+                maes[i].append(mean_absolute_errors[i])
+
+    tikz = make_tikz_boxplot(
+        ylabel=r"$\mathrm{MAE}_i$",
+        plots=[
+            BoxPlot(
+                labels[i],
+                colors[i],
+                maes[i]
+            ) for i in range(len(maes))
+        ])
+
+    with open(os.path.join(dir, "mae-boxplot.tikz"), "w") as file:
+        file.write(tikz)
+    print("Successfully saved a MAE boxplot in the output directory.")
+
 
 
 def eval_jsons_to_avg_slowdowns(dir: str, visualization_config):
