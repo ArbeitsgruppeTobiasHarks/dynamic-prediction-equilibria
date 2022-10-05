@@ -23,7 +23,7 @@ def build_with_times(
             f"Flow#{flow_id} built until phi={flow.phi}; Started At={start_date_time}")
         last_log_time = time()
     milestone_interval = reroute_interval
-    milestone = milestone_interval
+    milestone = flow.phi
     
     def log_time():
         nonlocal now
