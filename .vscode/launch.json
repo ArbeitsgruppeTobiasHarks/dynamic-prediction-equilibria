@@ -8,7 +8,7 @@
             "name": "Python: Sample Scenario",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/predictor/src/scenarios/sample_scenario.py",
+            "program": "${workspaceFolder}/src/scenarios/sample_scenario.py",
             "env": {
                 "PYTHONOPTIMIZE": "TRUE"
             },
@@ -19,7 +19,7 @@
             "name": "Python: Sioux Falls Scenario",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/predictor/src/scenarios/sioux_falls_scenario.py",
+            "program": "${workspaceFolder}/src/scenarios/sioux_falls_scenario.py",
             "env": {
                 "PYTHONOPTIMIZE": "TRUE"
             },
@@ -30,7 +30,7 @@
             "name": "Python: Sioux Falls MultiCom Scenario",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/predictor/src/scenarios/sioux_falls_multi_com_scenario.py",
+            "program": "${workspaceFolder}/src/scenarios/sioux_falls_multi_com_scenario.py",
             "env": {
                 "PYTHONOPTIMIZE": "TRUE"
             },
@@ -41,7 +41,7 @@
             "name": "Python: Anaheim Scenario",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/predictor/src/scenarios/anaheim_scenario.py",
+            "program": "${workspaceFolder}/src/scenarios/anaheim_scenario.py",
             "env": {
                 "PYTHONOPTIMIZE": "TRUE"
             },
@@ -52,7 +52,7 @@
             "name": "Python: Anaheim MultiCom Scenario",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/predictor/src/scenarios/anaheim_multi_com_scenario.py",
+            "program": "${workspaceFolder}/src/scenarios/anaheim_multi_com_scenario.py",
             "env": {
                 "PYTHONOPTIMIZE": "TRUE"
             },
@@ -63,7 +63,7 @@
             "name": "Python: Nguyen Scenario",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/predictor/src/scenarios/nguyen_scenario.py",
+            "program": "${workspaceFolder}/src/scenarios/nguyen_scenario.py",
             "env": {
                 "PYTHONOPTIMIZE": "TRUE"
             },
@@ -74,7 +74,7 @@
             "name": "Python: Berlin Friedrichshain Scenario",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/predictor/src/scenarios/berlin_friedrichshain_scenario.py",
+            "program": "${workspaceFolder}/src/scenarios/berlin_friedrichshain_scenario.py",
             "env": {
                 "PYTHONOPTIMIZE": "TRUE"
             },
