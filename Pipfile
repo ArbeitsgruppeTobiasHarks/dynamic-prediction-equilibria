@@ -4,14 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-matsim-tools = "*"
 click = "*"
 pylint = "*"
 matplotlib = "*"
 dgl = "*"
 torch = "*"
 numpy = "*"
-json-fix = "*"
 tensorflow = "*"
 autopep8 = "*"
 scikit-learn = "*"

@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 from typing import List, Tuple
-import json_fix
 
 from core.machine_precision import eps
 from utilities.arrays import elem_lrank, merge_sorted, merge_sorted_many
 from utilities.piecewise_linear import PiecewiseLinear
-
-json_fix.fix_it()
 
 
 class RightConstant:

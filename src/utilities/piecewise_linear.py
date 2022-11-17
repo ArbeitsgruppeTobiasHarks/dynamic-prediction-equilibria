@@ -2,12 +2,9 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import List, Tuple, Optional
-import json_fix
 
 from core.machine_precision import eps
 from utilities.arrays import elem_rank, elem_lrank, merge_sorted
-
-json_fix.fix_it()
 
 
 class PiecewiseLinear:

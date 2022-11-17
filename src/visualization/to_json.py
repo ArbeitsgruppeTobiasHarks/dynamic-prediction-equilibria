@@ -1,14 +1,11 @@
 import gzip
 import os
-import json
 from typing import Dict, Collection
-import json_fix
 
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.network import Network
+from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
-
-json_fix.fix_it()
 
 
 def merge_commodities(flow: DynamicFlow, network: Network, commodities: Collection[int]) -> DynamicFlow:
@@ -46,7 +43,7 @@ def merge_commodities(flow: DynamicFlow, network: Network, commodities: Collecti
 def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors: Dict[int, str]):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with gzip.open(path, "wt", encoding='UTF-8') as file:
-        json.dump({
+        JSONEncoder.dump({
             "network": {
                 "nodes": [
                     {"id": id, "x": network.graph.positions[id][0], "y": network.graph.positions[id][1]}
@@ -72,3 +69,4 @@ def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors
                 "outflow": [col._functions_dict for col in flow.outflow],
                 "queues": flow.queues
             }}, file)
+

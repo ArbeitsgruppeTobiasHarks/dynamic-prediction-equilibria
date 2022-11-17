@@ -14,6 +14,7 @@ from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
 from utilities.build_with_times import build_with_times
 from utilities.combine_commodities import combine_commodities_with_same_sink
+from utilities.json_encoder import JSONEncoder
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
 from utilities.status_logger import StatusLogger
@@ -157,7 +158,7 @@ def evaluate_single_run(network: Network, focused_commodity_index: int, split: b
 
     if json_eval_path is not None:
         with open(json_eval_path, "w") as file:
-            json.dump(save_dict, file)
+            JSONEncoder.dump(save_dict, file)
 
     return travel_times, computation_time, flow
 

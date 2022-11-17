@@ -11,6 +11,7 @@ from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate import COLORS, evaluate_single_run
 from test.sample_network import build_sample_network
+from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
 from visualization.to_json import to_visualization_json
 
@@ -61,7 +62,7 @@ def eval_sample():
     print(f"Average Computation Time: {avg_comp_time}")
 
     with open("./avg_times_sample.json", "w") as file:
-        json.dump(avg_times, file)
+        JSONEncoder.dump(avg_times, file)
 
     print("Successfully saved these travel times in ./avg_times_sample.json")
     print()
