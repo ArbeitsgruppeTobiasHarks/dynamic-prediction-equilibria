@@ -1,6 +1,6 @@
 # Prediction Equilibrium for Dynamic Traffic Assignment
 
-This file descibes how the results in the computational study can be reproduced.
+This file describes how the results in the computational study can be reproduced.
 
 ## Getting Started
 
@@ -75,7 +75,7 @@ in a network with total inflow `j*0.25`.
 
 ### Evaluating a Large Network
 
-This section explains how to reproduce the results for the tokyo network.
+This section explains how to reproduce the results for the Tokyo network.
 In this example, we measure the performance of the different predictors for each existing commodity.
 More specifically, for each commodity with source-sink-pair `(s, t)`, we introduce 
 additional commodities - one for each predictor - with the same source-sink-pair and
