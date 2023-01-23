@@ -17,6 +17,7 @@ from ml.SKNeighborhood import train_sk_neighborhood_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads, save_queues_and_edge_loads_for_flow
+from utilities.get_tn_path import get_tn_path
 
 
 def add_node_position_from_geojson(network: Network, geojson_path: str):
@@ -143,9 +144,10 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
 
 if __name__ == "__main__":
     def main():
-        edges_tntp_path = os.path.expanduser("~/git/TransportationNetworks/Anaheim/Anaheim_net.tntp")
-        geojson_path = os.path.expanduser("~/git/TransportationNetworks/Anaheim/anaheim_nodes.geojson")
-        trips_tntp_file_path = os.path.expanduser("~/git/TransportationNetworks/Anaheim/Anaheim_trips.tntp")
+        tn_path = get_tn_path()
+        edges_tntp_path = os.path.join(tn_path, "Anaheim/Anaheim_net.tntp")
+        geojson_path = os.path.join(tn_path, "Anaheim/anaheim_nodes.geojson")
+        trips_tntp_file_path = os.path.join(tn_path, "Anaheim/Anaheim_trips.tntp")
         run_scenario(edges_tntp_path, trips_tntp_file_path,
                      geojson_path, "./out/journal-anaheim-multi-com")
 

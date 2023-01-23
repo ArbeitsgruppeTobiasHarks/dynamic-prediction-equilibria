@@ -16,6 +16,7 @@ from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
+from utilities.get_tn_path import get_tn_path
 
 
 def add_node_position_from_geojson(network: Network, geojson_path: str):
@@ -145,10 +146,9 @@ def run_scenario(edges_tntp_path: str, geojson_path: str, scenario_dir: str):
 
 if __name__ == "__main__":
     def main():
-        edges_tntp_path = os.path.expanduser(
-            "~/git/TransportationNetworks/Anaheim/Anaheim_net.tntp")
-        geojson_path = os.path.expanduser(
-            "~/git/TransportationNetworks/Anaheim/anaheim_nodes.geojson")
+        tn_path = get_tn_path()
+        edges_tntp_path = os.path.join(tn_path, "Anaheim/Anaheim_net.tntp")
+        geojson_path = os.path.join(tn_path, "Anaheim/anaheim_nodes.geojson")
         run_scenario(edges_tntp_path, geojson_path, "./out/journal-anaheim")
 
     main()

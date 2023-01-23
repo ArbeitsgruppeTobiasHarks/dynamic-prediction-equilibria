@@ -14,12 +14,11 @@ from eval.evaluate_network import eval_network_demand
 from importer.sioux_falls_importer import import_sioux_falls
 from ml.SKFullNetworkModel import train_sk_full_net_model
 from ml.TFFullNetworkModel import train_tf_full_net_model
-from ml.SKNeighborhood import train_sk_neighborhood_model
-from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.file_lock import wait_for_locks, with_file_lock
+from utilities.get_tn_path import get_tn_path
 
 
 def shallow_evaluate_predictors(network_path: str, flows_dir: str, out_dir: str, past_timesteps: int, future_timesteps: int,
@@ -152,10 +151,9 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
 
 if __name__ == "__main__":
     def main():
-        edges_tntp_path = os.path.expanduser(
-            "~/git/TransportationNetworks/SiouxFalls/SiouxFalls_net.tntp")
-        nodes_tntp_path = os.path.expanduser(
-            "~/git/TransportationNetworks/SiouxFalls/SiouxFalls_node.tntp")
+        tn_path = get_tn_path()
+        edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
+        nodes_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_node.tntp")
         run_scenario(edges_tntp_path, nodes_tntp_path,
                      "./out/journal-sioux-falls")
 

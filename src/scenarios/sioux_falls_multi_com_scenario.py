@@ -16,6 +16,7 @@ from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads, save_queues_and_edge_loads_for_flow
+from utilities.get_tn_path import get_tn_path
 
 
 def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path: str, scenario_dir: str):
@@ -140,9 +141,10 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
 
 if __name__ == "__main__":
     def main():
-        edges_tntp_path = os.path.expanduser("~/git/TransportationNetworks/SiouxFalls/SiouxFalls_net.tntp")
-        nodes_tntp_path = os.path.expanduser("~/git/TransportationNetworks/SiouxFalls/SiouxFalls_node.tntp")
-        od_pairs_csv_path = os.path.expanduser("~/git/TransportationNetworks/SiouxFalls/CSV-data/SiouxFalls_od.csv")
+        tn_path = get_tn_path()
+        edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
+        nodes_tntp_path = os.path.expanduser(tn_path, "SiouxFalls/SiouxFalls_node.tntp")
+        od_pairs_csv_path = os.path.expanduser(tn_path, "SiouxFalls/CSV-data/SiouxFalls_od.csv")
         run_scenario(edges_tntp_path, nodes_tntp_path,
                      od_pairs_csv_path, "./out/journal-sioux-falls-multi-com")
 
