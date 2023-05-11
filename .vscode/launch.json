@@ -80,6 +80,18 @@
             },
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: Counter Example Uniqueness",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/predictor/src/scenarios/counter_example_uniqueness.py",
+            "env": {
+                "PYTHONOPTIMIZE": "TRUE",
+                "PYTHONPATH": "${workspaceFolder}/predictor/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

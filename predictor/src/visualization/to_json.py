@@ -1,14 +1,11 @@
 import gzip
 import os
 import json
-from typing import Dict, Collection
-import json_fix
+from typing import Any, Dict, Collection
 
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.network import Network
 from utilities.right_constant import RightConstant
-
-json_fix.fix_it()
 
 
 def merge_commodities(flow: DynamicFlow, network: Network, commodities: Collection[int]) -> DynamicFlow:
@@ -42,10 +39,20 @@ def merge_commodities(flow: DynamicFlow, network: Network, commodities: Collecti
     ]
     return merged_flow
 
+def json_default(obj: Any):
+    if hasattr(obj.__class__, "__json__"):
+        json_method = getattr(obj.__class__, "__json__")
+        if callable(json_method):
+            return json_method(obj)
+    raise TypeError()
 
-def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors: Dict[int, str]):
+
+def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors: Dict[int, str], should_gzip: bool = True):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with gzip.open(path, "wt", encoding='UTF-8') as file:
+
+    open_file = lambda path: gzip.open(path, "wt", encoding='UTF-8') if should_gzip else open(path, "wt")
+
+    with open(path, "wt") as file:
         json.dump({
             "network": {
                 "nodes": [
@@ -63,12 +70,12 @@ def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors
                     for (id, e) in enumerate(network.graph.edges)
                 ],
                 "commodities": [
-                    {"id": id, "color": colors[id]}
-                    for (id, comm) in enumerate(network.commodities)
+                    {"id": id, "color": color}
+                    for (id, color) in colors.items()
                 ]
             },
             "flow": {
                 "inflow": [col._functions_dict for col in flow.inflow],
                 "outflow": [col._functions_dict for col in flow.outflow],
                 "queues": flow.queues
-            }}, file)
+            }}, file, default=json_default)
