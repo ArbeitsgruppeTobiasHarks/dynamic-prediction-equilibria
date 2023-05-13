@@ -4,6 +4,7 @@ from core.network import Network
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType
 from core.predictors.zero_predictor import ZeroPredictor
+from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
 
 
@@ -32,7 +33,7 @@ def build_example3():
     
     with open("./slides/src/example3FlowData.js", "w") as file:
         file.write("export default ")
-        json.dump({
+        JSONEncoder.dump({
             "inflow": flow.inflow,
             "outflow": flow.outflow,
             "queues": flow.queues

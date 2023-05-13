@@ -1,53 +1,25 @@
 import json
 import os
-import pickle
+import numpy as np
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
-
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
-from eval.evaluate import evaluate_prediction_accuracy
 from eval.evaluate_network import eval_network_demand
-from importer.sioux_falls_importer import import_sioux_falls
+from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
 from ml.SKFullNetworkModel import train_sk_full_net_model
-from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.SKNeighborhood import train_sk_neighborhood_model
+from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
-from ml.generate_queues import generate_queues_and_edge_loads
-from scenarios.scenario_utils import get_demand_with_inflow_horizon
-from utilities.file_lock import wait_for_locks, with_file_lock
+from ml.generate_queues import generate_queues_and_edge_loads, save_queues_and_edge_loads_for_flow
+from utilities.get_tn_path import get_tn_path
 
 
-def shallow_evaluate_predictors(network_path: str, flows_dir: str, out_dir: str, past_timesteps: int, future_timesteps: int,
-                                horizon: float, reroute_interval: float, prediction_interval: float, build_predictors):
-    os.makedirs(out_dir, exist_ok=True)
-
-    files = sorted([
-        file for file in os.listdir(flows_dir) if file.endswith(".flow.pickle")
-    ])
-    for flow_filename in files:
-        flow_id = flow_filename[: len(flow_filename) - len(".flow.pickle")]
-        out_path = os.path.join(out_dir, f"{flow_id}-shallow-eval.pickle")
-
-        def handle(open_file):
-            print(f"Shallow evaluating Flow#{flow_id}...")
-            with open(os.path.join(flows_dir, flow_filename), "rb") as flow_file:
-                flow: DynamicFlow = pickle.load(flow_file)
-            network = Network.from_file(network_path)
-            diff = evaluate_prediction_accuracy(flow, build_predictors(
-                network), future_timesteps, reroute_interval, prediction_interval, horizon)
-            with open_file("wb") as file:
-                pickle.dump(diff, file)
-
-        with_file_lock(out_path, handle)
-    wait_for_locks(out_dir)
-
-
-def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
+def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path: str, scenario_dir: str):
     network_path = os.path.join(scenario_dir, "network.pickle")
     flows_dir = os.path.join(scenario_dir, "flows")
     tf_full_net_model_path = os.path.join(
@@ -57,7 +29,7 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     sk_full_net_model_path = os.path.join(scenario_dir, "sk-full-net-model")
     sk_neighborhood_models_path = os.path.join(
         scenario_dir, "sk-neighborhood-models")
-    queues_and_edge_loads_dir = os.path.join(scenario_dir, "queues")
+    queues_and_edge_loads_dir = os.path.join(scenario_dir, "queues-and-edge-loads")
     shallow_eval_dir = os.path.join(scenario_dir, "shallow-eval")
     eval_dir = os.path.join(scenario_dir, "eval")
 
@@ -69,43 +41,58 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     prediction_interval = 1.
     number_training_flows = 500
     number_eval_flows = 20
+    max_distance = 3
+
     pred_horizon = future_timesteps * prediction_interval
 
-    average_demand = 8000
-
     network = import_sioux_falls(edges_tntp_path, nodes_tntp_path)
-    network.add_commodity(
-        {1: get_demand_with_inflow_horizon(average_demand, inflow_horizon)},
-        14,
-        PredictorType.CONSTANT
-    )
+    add_od_pairs(network, od_pairs_file_path, inflow_horizon)
     os.makedirs(os.path.dirname(network_path), exist_ok=True)
     network.to_file(network_path)
 
-    demand_sigma = min(Network.from_file(network_path).capacity) / 2.
+    demand_sigma = min(Network.from_file(network_path).capacity) / 8.
 
     network.print_info()
 
+    def on_flow_computed(flow_id: str, flow: DynamicFlow):
+        out_path = os.path.join(
+            queues_and_edge_loads_dir, f"{flow_id}-queues-and-edge-loads.npy")
+        save_queues_and_edge_loads_for_flow(out_path, past_timesteps, horizon, reroute_interval, prediction_interval,
+                                            flow)
+
     build_flows(network_path, flows_dir, inflow_horizon,
-                number_training_flows, horizon, reroute_interval, demand_sigma)
+                number_training_flows, horizon, reroute_interval, demand_sigma, check_for_optimizations=False,
+                on_flow_computed=on_flow_computed)
 
     generate_queues_and_edge_loads(
         past_timesteps, flows_dir, queues_and_edge_loads_dir, horizon, reroute_interval, prediction_interval)
 
-    build_sk_full_net_predictor = train_sk_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
-                                                          reroute_interval, prediction_interval, horizon, network, sk_full_net_model_path)
-
     build_tf_full_net_predictor = train_tf_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
-                                                          reroute_interval, prediction_interval, horizon, network, tf_full_net_model_path)
+                                                          reroute_interval, prediction_interval, horizon, network,
+                                                          tf_full_net_model_path)
+    #build_tf_neighborhood_predictor = train_tf_neighborhood_model(queues_and_edge_loads_dir, past_timesteps,
+    #                                                              future_timesteps,
+    #                                                              reroute_interval, prediction_interval, horizon,
+    #                                                              network, tf_neighborhood_models_path, max_distance)
+    build_sk_full_net_predictor = train_sk_full_net_model(queues_and_edge_loads_dir, past_timesteps, future_timesteps,
+                                                          reroute_interval, prediction_interval, horizon, network,
+                                                          sk_full_net_model_path)
+    #build_sk_neighborhood_predictor = train_sk_neighborhood_model(queues_and_edge_loads_dir, past_timesteps,
+    #                                                              future_timesteps,
+    #                                                              reroute_interval, prediction_interval, horizon,
+    #                                                              network, sk_neighborhood_models_path, max_distance)
 
-    def build_predictors(network): return {
+    def build_predictors(network: Network):
+        return {
         PredictorType.ZERO: ZeroPredictor(network),
-        PredictorType.CONSTANT: ConstantPredictor(network),
-        PredictorType.LINEAR: LinearPredictor(network, pred_horizon),
-        PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, pred_horizon, delta=1.),
-        PredictorType.MACHINE_LEARNING_SK_FULL_NET: build_sk_full_net_predictor(network),
-        PredictorType.MACHINE_LEARNING_TF_FULL_NET: build_tf_full_net_predictor(network),
-    }
+            PredictorType.CONSTANT: ConstantPredictor(network),
+            PredictorType.LINEAR: LinearPredictor(network, pred_horizon),
+            PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, pred_horizon, delta=1.),
+            PredictorType.MACHINE_LEARNING_SK_FULL_NET: build_sk_full_net_predictor(network),
+            #PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: build_sk_neighborhood_predictor(network),
+            PredictorType.MACHINE_LEARNING_TF_FULL_NET: build_tf_full_net_predictor(network),
+            #PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: build_tf_neighborhood_predictor(network),
+        }
 
     # shallow_evaluate_predictors(network_path, flows_dir, shallow_eval_dir, past_timesteps, future_timesteps,
     #                             horizon, reroute_interval, prediction_interval, build_predictors)
@@ -133,7 +120,9 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
             PredictorType.LINEAR: ("{rgb,255:red,0; green,128; blue,0}", "$\\hat q^{\\text{L}}$"),
             PredictorType.REGULARIZED_LINEAR: ("orange", "$\\hat q^{\\text{RL}}$"),
             PredictorType.MACHINE_LEARNING_SK_FULL_NET: ("black", "$\\hat q^{\\text{LR-full}}$"),
+            #PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{LR-neighboring}}$"),
             PredictorType.MACHINE_LEARNING_TF_FULL_NET: ("black", "$\\hat q^{\\text{NN-full}}$"),
+            #PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{NN-neighboring}}$"),
         })
 
     average_comp_times = []
@@ -147,16 +136,17 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     avg_comp_time = sum(average_comp_times) / len(average_comp_times)
     print(f"Average computing time: {avg_comp_time}")
 
-    Network.from_file(network_path).print_info()
-
+    network = Network.from_file(network_path)
+    network.print_info()
 
 if __name__ == "__main__":
     def main():
-        edges_tntp_path = os.path.expanduser(
-            "~/git/TransportationNetworks/SiouxFalls/SiouxFalls_net.tntp")
-        nodes_tntp_path = os.path.expanduser(
-            "~/git/TransportationNetworks/SiouxFalls/SiouxFalls_node.tntp")
+        tn_path = get_tn_path()
+        edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
+        nodes_tntp_path = os.path.expanduser(tn_path, "SiouxFalls/SiouxFalls_node.tntp")
+        od_pairs_csv_path = os.path.expanduser(tn_path, "SiouxFalls/CSV-data/SiouxFalls_od.csv")
         run_scenario(edges_tntp_path, nodes_tntp_path,
-                     "./out/journal-sioux-falls")
+                     od_pairs_csv_path, "./out/journal-sioux-falls-multi-com")
+
 
     main()

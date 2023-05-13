@@ -11,6 +11,7 @@ from core.predictors.predictor_type import PredictorType
 from eval.evaluate import COLORS, evaluate_single_run, PredictorBuilder
 from ml.build_test_flows import generate_network_demands
 from utilities.file_lock import wait_for_locks, with_file_lock
+from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
 from utilities.status_logger import StatusLogger
 from visualization.make_tikz_boxplot import BoxPlot, make_tikz_boxplot
@@ -282,7 +283,7 @@ def eval_jsons_to_avg_slowdowns(dir: str, visualization_config):
         np.average(slowdowns) for slowdowns in slowdowns_by_predictor
     ]
     with open(os.path.join(dir, "../average_slowdowns.json"), "w") as file:
-        json.dump(avg_slowdowns_by_predictor, file)
+        JSONEncoder.dump(avg_slowdowns_by_predictor, file)
 
 
 if __name__ == '__main__':

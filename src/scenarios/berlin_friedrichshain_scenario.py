@@ -18,6 +18,7 @@ from ml.SKNeighborhood import train_sk_neighborhood_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads, save_queues_and_edge_loads_for_flow
+from utilities.get_tn_path import get_tn_path
 from visualization.to_json import to_visualization_json
 
 
@@ -141,9 +142,10 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, node_tntp_file_
 
 if __name__ == "__main__":
     def main():
-        edges_tntp_path = os.path.expanduser("~/git/TransportationNetworks/Berlin-Friedrichshain/friedrichshain-center_net.tntp")
-        nodes_tntp_file_path = os.path.expanduser("~/git/TransportationNetworks/Berlin-Friedrichshain/friedrichshain-center_node.tntp")
-        trips_tntp_file_path = os.path.expanduser("~/git/TransportationNetworks/Berlin-Friedrichshain/friedrichshain-center_trips.tntp")
+        tn_path = get_tn_path()
+        edges_tntp_path = os.path.join(tn_path, "Berlin-Friedrichshain/friedrichshain-center_net.tntp")
+        nodes_tntp_file_path = os.path.join(tn_path, "Berlin-Friedrichshain/friedrichshain-center_node.tntp")
+        trips_tntp_file_path = os.path.join(tn_path, "Berlin-Friedrichshain/friedrichshain-center_trips.tntp")
         run_scenario(edges_tntp_path, trips_tntp_file_path,
                      nodes_tntp_file_path, "./out/berlin-friedrichshain")
 

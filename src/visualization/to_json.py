@@ -1,10 +1,10 @@
 import gzip
 import os
-import json
 from typing import Any, Dict, Collection
 
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.network import Network
+from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
 
 
@@ -53,7 +53,7 @@ def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors
     open_file = lambda path: gzip.open(path, "wt", encoding='UTF-8') if should_gzip else open(path, "wt")
 
     with open(path, "wt") as file:
-        json.dump({
+        JSONEncoder.dump({
             "network": {
                 "nodes": [
                     {"id": id, "x": network.graph.positions[id][0], "y": network.graph.positions[id][1]}
@@ -79,3 +79,4 @@ def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors
                 "outflow": [col._functions_dict for col in flow.outflow],
                 "queues": flow.queues
             }}, file, default=json_default)
+
