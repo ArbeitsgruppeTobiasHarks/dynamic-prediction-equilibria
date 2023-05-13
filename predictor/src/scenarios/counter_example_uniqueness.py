@@ -6,7 +6,6 @@ from visualization.to_json import to_visualization_json
 
 
 def run_scenario():
-    print("Starting up.")
     '''
     We confirm the counter-example of uniqueness of (multi-commodity!) dynamic nash equilibria outlined in
     https://link.springer.com/article/10.1007/s11067-013-9206-6
@@ -14,7 +13,6 @@ def run_scenario():
     # We map the nodes a,b,c,d in the paper to 0,1,2,3.
     # We map the edges 1,2,3,4,5,6 in the paper to 0,1,2,3,4,5.
 
-    print("Starting up.")
     network = Network()
     infinite_capacity = 40
     # Link 1: a -> b; transit time 10; capacity 10
@@ -38,7 +36,7 @@ def run_scenario():
     }
 
     # There are two OD-pairs, OD pair 1 from a to d, and OD pair 2 from c to b.
-    # Both have a demand of 20.
+    # Both have a demand of 20 on the interval [0, 15].
 
     edges = network.graph.edges
 
@@ -69,5 +67,4 @@ def run_scenario():
 
 
 if __name__ == "__main__":
-    print("Running scenario.")
     run_scenario()

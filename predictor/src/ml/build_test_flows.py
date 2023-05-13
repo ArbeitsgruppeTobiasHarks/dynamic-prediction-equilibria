@@ -6,7 +6,7 @@ import pickle
 import random
 from typing import Callable, Optional
 
-from core.flow_builder import FlowBuilder
+from core.dpe_flow_builder import FlowBuilder
 from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.predictor_type import PredictorType

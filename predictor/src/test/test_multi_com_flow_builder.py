@@ -3,7 +3,7 @@ import unittest
 import matplotlib.pyplot as plt
 import numpy as np
 
-from core.flow_builder import FlowBuilder
+from core.dpe_flow_builder import FlowBuilder
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.waterfilling_distributor import WaterfillingDistributor
 from test.sample_network import build_sample_network

@@ -47,7 +47,7 @@ def json_default(obj: Any):
     raise TypeError()
 
 
-def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors: Dict[int, str], should_gzip: bool = True):
+def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors: Dict[int, str], should_gzip: bool = False):
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
     open_file = lambda path: gzip.open(path, "wt", encoding='UTF-8') if should_gzip else open(path, "wt")

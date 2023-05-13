@@ -1,5 +1,5 @@
 import json
-from core.flow_builder import FlowBuilder
+from core.dpe_flow_builder import FlowBuilder
 from core.network import Network
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType

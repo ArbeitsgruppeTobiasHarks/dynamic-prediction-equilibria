@@ -4,7 +4,7 @@ from time import time
 from typing import Optional, Iterable, Tuple
 
 from core.dynamic_flow import DynamicFlow
-from core.flow_builder import FlowBuilder
+from core.dpe_flow_builder import FlowBuilder
 
 
 def build_with_times(

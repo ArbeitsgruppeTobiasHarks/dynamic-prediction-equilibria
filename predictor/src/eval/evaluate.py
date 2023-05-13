@@ -8,7 +8,7 @@ import numpy as np
 
 from core.bellman_ford import bellman_ford
 from core.dynamic_flow import DynamicFlow
-from core.flow_builder import FlowBuilder
+from core.dpe_flow_builder import FlowBuilder
 from core.network import Network, Commodity
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
