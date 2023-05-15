@@ -105,17 +105,17 @@ class NashFlowBuilder:
             Returns the shortest paths from source to sink in the network
             over time.
         '''
-        dep_time = 0
-        identity = PiecewiseLinear([dep_time], [dep_time], 1., 1., (dep_time, float('inf')))
+        shortest_paths_computed_until = 0
+        identity = PiecewiseLinear([shortest_paths_computed_until], [shortest_paths_computed_until], 1., 1., (shortest_paths_computed_until, float('inf')))
         edge_exit_times: Dict[Edge, PiecewiseLinear] = {}
         
         paths_over_time: PathsOverTime = PathsOverTime()
 
-        while dep_time < float('inf'):
+        while shortest_paths_computed_until < float('inf'):
             v = source
             labelled_path: List[LabelledPathEntry] = []
 
-
+            departure = shortest_paths_computed_until
             while v != sink:
                 best_edge = None
                 best_edge_active_until = None
@@ -124,18 +124,18 @@ class NashFlowBuilder:
                     edge_exit_times[edge] = identity.plus(edge_costs[edge.id]).ensure_monotone(True)
                     edge_delay = earliest_arrival_fcts[edge.node_to].compose(edge_exit_times[edge]) - earliest_arrival_fcts[v]
                     # edge_delay is (close to) zero at times when the edge is active; otherwise it is positive.
-                    if edge_delay(dep_time) > eps:
+                    if edge_delay(departure) > eps:
                         continue
 
-                    active_until = edge_delay.next_change_time(dep_time)
+                    active_until = edge_delay.next_change_time(departure)
                     if best_edge is None or active_until > best_edge_active_until:
                         best_edge = edge
                         best_edge_active_until = active_until
                 
                 assert edge is not None
-                labelled_path.append(LabelledPathEntry(best_edge, dep_time, best_edge_active_until))
+                labelled_path.append(LabelledPathEntry(best_edge, departure, best_edge_active_until))
                 v = best_edge.node_to
-                dep_time = edge_exit_times[best_edge](dep_time)
+                departure = edge_exit_times[best_edge](departure)
                 
             
             # Compute path_active_until
@@ -145,11 +145,14 @@ class NashFlowBuilder:
                 rest_of_path_active_until = min(last_enter_time_st_rest_path_active, labelled_edge.active_until)
 
             paths_over_time.add_path(rest_of_path_active_until, [label.edge for label in labelled_path])
-            dep_time = rest_of_path_active_until
+
+            assert shortest_paths_computed_until < rest_of_path_active_until
+
+            shortest_paths_computed_until = rest_of_path_active_until
         return paths_over_time
 
 
-    def compute_delay(self, flow: DynamicFlow, paths: List[Path]) -> List[Tuple[Path, PathsOverTime, PiecewiseLinear]]:
+    def compute_delay(self, flow: DynamicFlow, path_dist: List[List[PathInflow]]) -> List[List[Tuple[Path, PathsOverTime, PiecewiseLinear]]]:
         '''
             Assumes that the paths have the same source and sink.
         '''
@@ -157,42 +160,47 @@ class NashFlowBuilder:
         cur_earliest_arrival_fcts = None
         cur_best_paths = None
 
-        result: List[Tuple[Path, PathsOverTime, PiecewiseLinear]] = [] # (path, paths_over_time, delay)
+        results = []
 
-        for path in paths:
-            od_pair = path[0].node_from, path[-1].node_to
-            if od_pair != cur_od_pair:
-                # Recompute earliest arrival times
-                costs = [
-                    PiecewiseLinear(
-                        flow.queues[e].times,
-                        [flow._network.travel_time[e] + v / flow._network.capacity[e]
-                         for v in flow.queues[e].values],
-                        flow.queues[e].first_slope / flow._network.capacity[e],
-                        flow.queues[e].last_slope / flow._network.capacity[e],
-                        domain=(0., float('inf'))
-                    ).simplify() for e in range(len(flow.queues))
-                ]
-                cur_earliest_arrival_fcts = bellman_ford(
-                    od_pair[1],
-                    costs,
-                    flow._network.graph.get_nodes_reaching(od_pair[1]).intersection(
-                        flow._network.graph.get_reachable_nodes(od_pair[0])),
-                    0.,
-                    float('inf')
-                )
+        for path_inflows in path_dist:
+                
+            result: List[Tuple[Path, PathsOverTime, PiecewiseLinear]] = [] # (path, paths_over_time, delay)
+            for (path, _) in path_inflows:
+                od_pair = path[0].node_from, path[-1].node_to
 
-                cur_best_paths = self.compute_shortest_paths_over_time(cur_earliest_arrival_fcts, costs, od_pair[0], od_pair[1])
+                if cur_od_pair is None or od_pair[1] != cur_od_pair[1]:
+                    # Recompute earliest arrival times
+                    costs = [
+                        PiecewiseLinear(
+                            flow.queues[e].times,
+                            [flow._network.travel_time[e] + v / flow._network.capacity[e]
+                            for v in flow.queues[e].values],
+                            flow.queues[e].first_slope / flow._network.capacity[e],
+                            flow.queues[e].last_slope / flow._network.capacity[e],
+                            domain=(0., float('inf'))
+                        ).simplify() for e in range(len(flow.queues))
+                    ]
+                    cur_earliest_arrival_fcts = bellman_ford(
+                        od_pair[1],
+                        costs,
+                        flow._network.graph.get_nodes_reaching(od_pair[1]),
+                        0.,
+                        float('inf')
+                    )
 
-            identity = PiecewiseLinear([0.], [0.], first_slope=1, last_slope=1, domain=(0, float('inf')))
-            path_exit_time = identity
-            for edge in path:
-                path_exit_time = path_exit_time.compose(identity.plus(costs[edge.id]).ensure_monotone(True))
+                if od_pair != cur_od_pair:
+                    cur_best_paths = self.compute_shortest_paths_over_time(cur_earliest_arrival_fcts, costs, od_pair[0], od_pair[1])
 
-            path_delay = path_exit_time - cur_earliest_arrival_fcts[path[0].node_from]
+                identity = PiecewiseLinear([0.], [0.], first_slope=1, last_slope=1, domain=(0, float('inf')))
+                path_exit_time = identity
+                for edge in path:
+                    path_exit_time = path_exit_time.compose(identity.plus(costs[edge.id]).ensure_monotone(True))
 
-            result.append((path, cur_best_paths, path_delay))
-        return result
+                path_delay = path_exit_time - cur_earliest_arrival_fcts[path[0].node_from]
+
+                result.append((path, cur_best_paths, path_delay))
+            results.append(result)
+        return results
 
 
     def iterate(self, iteration: int, prev_flow: DynamicFlow, prev_path_dist: List[List[PathInflow]]) -> Tuple[DynamicFlow, List[List[PathInflow]]]:
@@ -200,9 +208,10 @@ class NashFlowBuilder:
 
         fraction = 2 / (iteration + 1)
         new_path_dist: List[List[PathInflow]] = []
+        results = self.compute_delay(prev_flow, prev_path_dist)
         for i, _ in enumerate(self.network.commodities):
             new_path_inflows = PathInflows()
-            result = self.compute_delay(prev_flow, [path for (path, _) in prev_path_dist[i]])
+            result = results[i]
             for path_idx, (path, shortest_paths_over_time, delay) in enumerate(result):
                 prev_inflow = prev_path_dist[i][path_idx][1]
                 delayed_inflow = (prev_inflow * RightConstant.characteristic_of(delay))
@@ -278,7 +287,7 @@ class NashFlowBuilder:
             flow = next(builder)
 
         iteration = 1
-        while iteration < 500:
+        while iteration < 10:
             flow, path_dist = self.iterate(iteration, flow, path_dist)
             iteration += 1
         return flow, path_dist

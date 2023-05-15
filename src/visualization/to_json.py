@@ -39,14 +39,6 @@ def merge_commodities(flow: DynamicFlow, network: Network, commodities: Collecti
     ]
     return merged_flow
 
-def json_default(obj: Any):
-    if hasattr(obj.__class__, "__json__"):
-        json_method = getattr(obj.__class__, "__json__")
-        if callable(json_method):
-            return json_method(obj)
-    raise TypeError()
-
-
 def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors: Dict[int, str], should_gzip: bool = False):
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -78,5 +70,5 @@ def to_visualization_json(path: str, flow: DynamicFlow, network: Network, colors
                 "inflow": [col._functions_dict for col in flow.inflow],
                 "outflow": [col._functions_dict for col in flow.outflow],
                 "queues": flow.queues
-            }}, file, default=json_default)
+            }}, file)
 
