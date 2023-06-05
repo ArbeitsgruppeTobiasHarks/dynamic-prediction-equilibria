@@ -8,6 +8,7 @@ from core.network import Network
 from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear
 
+from core.machine_precision import eps
 
 class RegularizedLinearPredictor(Predictor):
     horizon: float
@@ -28,10 +29,15 @@ class RegularizedLinearPredictor(Predictor):
         for i, old_queue in enumerate(flow.queues):
             queue_at_phi = max(0., old_queue(prediction_time))
             queue_at_phi_minus_delta = max(0., old_queue(phi_minus_delta))
-            new_queue = queue_at_phi + self.horizon * \
-                (queue_at_phi - queue_at_phi_minus_delta) / self.delta
-            queues[i] = PiecewiseLinear(
-                times, [queue_at_phi, new_queue], 0., 0.)
+            gradient = (queue_at_phi - queue_at_phi_minus_delta) / self.delta
+            new_queue = queue_at_phi + self.horizon * gradient
+            
+            if new_queue < 0 and queue_at_phi > eps:
+                new_time = prediction_time - queue_at_phi / gradient
+                queues[i] = PiecewiseLinear([prediction_time, new_time], [queue_at_phi, 0.], 0., 0.)
+            else:
+                queues[i] = PiecewiseLinear(times, [queue_at_phi, new_queue], 0., 0.)
+
 
         return queues
 
