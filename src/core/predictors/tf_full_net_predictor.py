@@ -31,8 +31,10 @@ class TFFullNetPredictor(Predictor):
         return False
 
     def predict(self, prediction_time: float, flow: DynamicFlow) -> List[PiecewiseLinear]:
-        times = [prediction_time +
-                 t for t in range(0, self._future_timesteps + 1)]
+        times = [
+            prediction_time + t * self._prediction_interval
+            for t in range(0, self._future_timesteps + 1)
+        ]
         edges = self.network.graph.edges
         zero_fct = PiecewiseLinear([prediction_time], [0.], 0., 0.)
         assert len(edges) == len(flow.queues)
@@ -68,7 +70,8 @@ class TFFullNetPredictor(Predictor):
             new_values = [
                 old_queue(prediction_time),
                 *future_queues_raw[
-                 masked_id * self._future_timesteps: (masked_id + 1) * self._future_timesteps]
+                    masked_id * self._future_timesteps: (masked_id + 1) * self._future_timesteps
+                ]
             ]
 
             for i in range(1, len(new_values)):
@@ -84,14 +87,12 @@ class TFFullNetPredictor(Predictor):
 
         evaluated_queues = {}
         evaluated_loads = {}
-        number_input_masked_ids = np.count_nonzero(self._input_mask)
 
         for e_id, queue in enumerate(flow.queues):
             if not self._input_mask[e_id]:
                 continue
-            masked_id = np.count_nonzero(self._input_mask[:e_id])
-            evaluated_queues[masked_id] = {}
-            evaluated_loads[masked_id] = {}
+            evaluated_queues[e_id] = {}
+            evaluated_loads[e_id] = {}
 
             evaluation_times = list(set(
                 prediction_time + t * self._prediction_interval
@@ -100,9 +101,9 @@ class TFFullNetPredictor(Predictor):
             ))
             evaluation_times.sort()
             for i, value in enumerate(queue.eval_sorted_array(evaluation_times)):
-                evaluated_queues[masked_id][evaluation_times[i]] = value
+                evaluated_queues[e_id][evaluation_times[i]] = value
             for i, value in enumerate(edge_loads[e_id].eval_sorted_array(evaluation_times)):
-                evaluated_loads[masked_id][evaluation_times[i]] = value
+                evaluated_loads[e_id][evaluation_times[i]] = value
 
         edges = self.network.graph.edges
         zero_fct = PiecewiseLinear([0.], [0.], 0., 0.)
@@ -114,15 +115,17 @@ class TFFullNetPredictor(Predictor):
             [
                 prediction_time,
                 *[
-                    evaluated_queues[masked_id][prediction_time +
-                                                t * self._prediction_interval]
-                    for masked_id in range(number_input_masked_ids)
+                    evaluated_queues[edge_id][prediction_time +
+                                              t * self._prediction_interval]
+                    for edge_id in range(len(flow.queues))
+                    if self._input_mask[edge_id]
                     for t in range(-self._past_timesteps + 1, 1)
                 ],
                 *[
-                    evaluated_loads[masked_id][prediction_time +
-                                               t * self._prediction_interval]
-                    for masked_id in range(number_input_masked_ids)
+                    evaluated_loads[edge_id][prediction_time +
+                                             t * self._prediction_interval]
+                    for edge_id in range(len(flow.queues))
+                    if self._input_mask[edge_id]
                     for t in range(-self._past_timesteps + 1, 1)
                 ]
             ]
@@ -136,19 +139,21 @@ class TFFullNetPredictor(Predictor):
         for prediction_ind, prediction_time in enumerate(prediction_times):
             queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
 
-            masked_id = -1
-            times = [prediction_time + t *
-                     self._prediction_interval for t in range(0, self._future_timesteps + 1)]
+            id_in_output_mask = -1
+            times = [
+                prediction_time + t * self._prediction_interval
+                for t in range(0, self._future_timesteps + 1)
+            ]
             for e_id, queue in enumerate(flow.queues):
                 if not self._output_mask[e_id]:
                     queues[e_id] = zero_fct
                     continue
-                masked_id += 1
+                id_in_output_mask += 1
 
                 new_values = [
-                    evaluated_queues[masked_id][prediction_time],
+                    evaluated_queues[e_id][prediction_time],
                     *future_queues_raw[prediction_ind,
-                     masked_id * self._future_timesteps: (masked_id + 1) * self._future_timesteps]
+                                       id_in_output_mask * self._future_timesteps: (id_in_output_mask + 1) * self._future_timesteps]
                 ]
 
                 for i in range(1, len(new_values)):
