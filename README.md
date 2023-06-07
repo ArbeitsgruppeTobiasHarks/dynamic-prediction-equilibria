@@ -68,3 +68,10 @@ To format files automatically on commit, install the pre-commit hook:
 ```sh
 ln -s pre-commit.sh .git/hooks/pre-commit
 ```
+
+### Linting
+
+We use [pylint](https://github.com/pylint-dev/pylint) to lint our code. However, because there is currently a lot of noise, we only report errors:
+```sh
+pylint src --errors-only
+```

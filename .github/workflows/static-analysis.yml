@@ -18,7 +18,8 @@ jobs:
         run: |
           poetry env use python3.11
           poetry install
-      - name: Lint & Format
+      - name: Format & Lint
         run: |
           poetry run black src --check
           poetry run isort src --profile black --check
+          poetry run pylint src --errors-only
