@@ -4,9 +4,10 @@
 
 To start working:
 
-* Install Python 3.10 (if not already)
+* Install Python 3.11 (if not already)
 * Install [poetry](https://python-poetry.org/) (if not already)
 * Run `poetry config virtualenvs.in-project true`
+* Depending on your system, run `poetry env use python3.11` 
 * Run `poetry install`
 * Run `poetry shell` to activate the created virtual environment
 
