@@ -2,6 +2,8 @@ import json
 from math import pi
 import os
 
+import numpy as np
+
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
 
@@ -17,6 +19,7 @@ from ml.SKNeighborhood import train_sk_neighborhood_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads, save_queues_and_edge_loads_for_flow
+from ml.neighboring_edges import get_neighboring_edges_undirected
 from utilities.get_tn_path import get_tn_path
 
 
@@ -71,6 +74,13 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
             queues_and_edge_loads_dir, f"{flow_id}-queues-and-edge-loads.npy")
         save_queues_and_edge_loads_for_flow(out_path, past_timesteps, horizon, reroute_interval, prediction_interval,
                                             flow)
+
+    avg_neighborhood_size = np.average([
+        len(get_neighboring_edges_undirected(e, max_distance))
+        for e in network.graph.edges
+    ])
+    print(
+        f"Avg neighborhood size: {avg_neighborhood_size/len(network.graph.edges)*100}%")
 
     build_flows(network_path, flows_dir, inflow_horizon,
                 number_training_flows, horizon, reroute_interval, demand_sigma, check_for_optimizations=False,

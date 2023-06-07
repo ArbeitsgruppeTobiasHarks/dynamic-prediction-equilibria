@@ -14,13 +14,14 @@ from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads
+from ml.neighboring_edges import get_neighboring_edges_undirected
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from test.sample_network import build_sample_network
 import numpy as np
 
 
 def build_nguyen_network():
-    path = "./predictor/src/scenarios/nguyen_network.csv"
+    path = "./src/scenarios/nguyen_network.csv"
     np_data = np.genfromtxt(path, delimiter=',', skip_header=1)
     # rows are structured as:
     # from_node to_node capacity, free_flow_travel_time
@@ -77,10 +78,17 @@ def run_scenario(scenario_dir: str):
     number_eval_flows = 20
     max_distance = 3
 
+
     network = build_nguyen_network()
     for (s, t) in [(1,2), (1,3), (4,2), (4,3)]:
         network.add_commodity({s: get_demand_with_inflow_horizon(
             demand, inflow_horizon)}, t, PredictorType.CONSTANT)
+    
+    avg_neighborhood_size = np.average([
+        len(get_neighboring_edges_undirected(e, max_distance))
+        for e in network.graph.edges
+    ])
+    print(f"Avg neighborhood size: {avg_neighborhood_size/len(network.graph.edges)*100}%")
     network.to_file(network_path)
     build_flows(network_path, flows_dir, inflow_horizon=inflow_horizon, number_flows=number_training_flows, horizon=horizon, reroute_interval=reroute_interval,
                 check_for_optimizations=False)

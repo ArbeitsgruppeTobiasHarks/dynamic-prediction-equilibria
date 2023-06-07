@@ -1,6 +1,8 @@
 import json
 import os
 import pickle
+
+import numpy as np
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
 
@@ -9,13 +11,14 @@ from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
-from eval.evaluate import evaluate_prediction_accuracy
+from eval.evaluate import evaluate_mean_absolute_error
 from eval.evaluate_network import eval_network_demand
 from importer.sioux_falls_importer import import_sioux_falls
 from ml.SKFullNetworkModel import train_sk_full_net_model
 from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads
+from ml.neighboring_edges import get_neighboring_edges_undirected
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.file_lock import wait_for_locks, with_file_lock
 from utilities.get_tn_path import get_tn_path
@@ -37,7 +40,7 @@ def shallow_evaluate_predictors(network_path: str, flows_dir: str, out_dir: str,
             with open(os.path.join(flows_dir, flow_filename), "rb") as flow_file:
                 flow: DynamicFlow = pickle.load(flow_file)
             network = Network.from_file(network_path)
-            diff = evaluate_prediction_accuracy(flow, build_predictors(
+            diff = evaluate_mean_absolute_error(flow, build_predictors(
                 network), future_timesteps, reroute_interval, prediction_interval, horizon)
             with open_file("wb") as file:
                 pickle.dump(diff, file)
@@ -84,6 +87,12 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, scenario_dir: str):
     demand_sigma = min(Network.from_file(network_path).capacity) / 2.
 
     network.print_info()
+
+    avg_neighborhood_size = np.average([
+        len(get_neighboring_edges_undirected(e, 3))
+        for e in network.graph.edges
+    ])
+    print(f"Avg neighborhood size: {avg_neighborhood_size/len(network.graph.edges)*100}%")
 
     build_flows(network_path, flows_dir, inflow_horizon,
                 number_training_flows, horizon, reroute_interval, demand_sigma)
