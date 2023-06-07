@@ -64,12 +64,9 @@ def merge_sorted_many(arrays: List[List[float]]) -> List[float]:
     indices = [0 for _ in arrays]
     while True:  # any(indices[i] < len(arrays[i]) for i in range(num_arrays))
         i = min(
-            (
-                j for j in range(num_arrays)
-                if indices[j] < len(arrays[j])
-            ),
+            (j for j in range(num_arrays) if indices[j] < len(arrays[j])),
             key=lambda j: arrays[j][indices[j]],
-            default=None
+            default=None,
         )
         if i is None:
             break

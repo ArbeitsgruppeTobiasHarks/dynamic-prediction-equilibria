@@ -41,5 +41,7 @@ class TimedStatusLogger:
             if self.finish_msg is None:
                 sys.stdout.write("\r\033[K\r")
             else:
-                sys.stdout.write("\r" + f"Took {elapsed_secs :.1}s: " + self.finish_msg + os.linesep)
+                sys.stdout.write(
+                    "\r" + f"Took {elapsed_secs :.1}s: " + self.finish_msg + os.linesep
+                )
             sys.stdout.flush()

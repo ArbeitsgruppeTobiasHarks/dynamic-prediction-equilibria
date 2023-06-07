@@ -9,9 +9,7 @@ class Edge:
     _graph: DirectedGraph
     id: int
 
-    def __init__(
-            self, node_from: Node, node_to: Node, id: int, graph: DirectedGraph
-    ):
+    def __init__(self, node_from: Node, node_to: Node, id: int, graph: DirectedGraph):
         self._node_from = node_from
         self._node_to = node_to
         self.id = id
@@ -43,7 +41,9 @@ class Node:
 
     @property
     def incoming_edges(self):
-        return self._incoming_edges if not self._graph.reversed else self._outgoing_edges
+        return (
+            self._incoming_edges if not self._graph.reversed else self._outgoing_edges
+        )
 
     @incoming_edges.setter
     def incoming_edges(self, value: List[Edge]):
@@ -54,7 +54,9 @@ class Node:
 
     @property
     def outgoing_edges(self):
-        return self._outgoing_edges if not self._graph.reversed else self._incoming_edges
+        return (
+            self._outgoing_edges if not self._graph.reversed else self._incoming_edges
+        )
 
     @outgoing_edges.setter
     def outgoing_edges(self, value: List[Edge]):
@@ -89,11 +91,9 @@ class DirectedGraph:
 
     def __getstate__(self):
         return {
-            "edges": [
-                [e.node_from.id, e.node_to.id] for e in self.edges
-            ],
+            "edges": [[e.node_from.id, e.node_to.id] for e in self.edges],
             "positions": self.positions,
-            "reversed": self.reversed
+            "reversed": self.reversed,
         }
 
     def add_edge(self, node_from: int, node_to: int):

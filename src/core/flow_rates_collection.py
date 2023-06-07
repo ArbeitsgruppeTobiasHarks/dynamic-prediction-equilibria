@@ -28,19 +28,23 @@ class FlowRatesCollection:
 
     def __init__(self, functions_dict: Optional[Dict[int, RightConstant]] = None):
         self._functions_dict = {} if functions_dict is None else functions_dict
-        self._queue_head = FlowRatesCollectionItem(0., {})
+        self._queue_head = FlowRatesCollectionItem(0.0, {})
         self._queue_tail = self._queue_head
         self.accumulative = RightConstant.sum(
-            list(self._functions_dict.values())).integral()
+            list(self._functions_dict.values())
+        ).integral()
         times = []
         for fun in self._functions_dict.values():
             times = merge_sorted(times, fun.times)
         for time in times:
-            item = FlowRatesCollectionItem(time, {
-                i: fun(time)
-                for i, fun in self._functions_dict.items()
-                if fun(time) > 0.
-            })
+            item = FlowRatesCollectionItem(
+                time,
+                {
+                    i: fun(time)
+                    for i, fun in self._functions_dict.items()
+                    if fun(time) > 0.0
+                },
+            )
             self._queue_tail.next_item = item
             self._queue_tail = item
 
@@ -67,10 +71,14 @@ class FlowRatesCollection:
             self._queue_head = None
             self._queue_tail = None
         else:
-            self._queue_head = FlowRatesCollectionItem(queue[0]["time"], queue[0]["values"])
+            self._queue_head = FlowRatesCollectionItem(
+                queue[0]["time"], queue[0]["values"]
+            )
             self._queue_tail = self._queue_head
             for i in range(1, len(queue)):
-                next_item = FlowRatesCollectionItem(queue[i]["time"], queue[i]["values"])
+                next_item = FlowRatesCollectionItem(
+                    queue[i]["time"], queue[i]["values"]
+                )
                 self._queue_tail.next_item = next_item
                 self._queue_tail = next_item
 
@@ -86,12 +94,11 @@ class FlowRatesCollection:
             assert self._queue_tail.time <= time + eps
             for i, value in values.items():
                 if i not in self._functions_dict:
-                    self._functions_dict[i] = FlowRatesCollection._new_flow_fn(
-                    )
+                    self._functions_dict[i] = FlowRatesCollection._new_flow_fn()
                 self._functions_dict[i].extend(time, value)
             for i in self._queue_tail.values:
                 if i not in values:
-                    self._functions_dict[i].extend(time, 0.)
+                    self._functions_dict[i].extend(time, 0.0)
             self._queue_tail.next_item = item
             self._queue_tail = item
         self.accumulative.extend_with_slope(time, values_sum)
@@ -102,10 +109,13 @@ class FlowRatesCollection:
         elif self._queue_head.time > time:
             raise ValueError("The desired time is not available anymore.")
         else:
-            while self._queue_head.next_item is not None and self._queue_head.next_item.time <= time:
+            while (
+                self._queue_head.next_item is not None
+                and self._queue_head.next_item.time <= time
+            ):
                 self._queue_head = self._queue_head.next_item
             return self._queue_head.values
 
     @staticmethod
     def _new_flow_fn():
-        return RightConstant([0.], [0.], (0., float('inf')))
+        return RightConstant([0.0], [0.0], (0.0, float("inf")))

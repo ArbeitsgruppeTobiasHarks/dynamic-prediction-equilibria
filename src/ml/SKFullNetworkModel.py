@@ -15,14 +15,28 @@ from utilities.file_lock import wait_for_locks, with_file_lock
 
 
 def train_sk_full_net_model(
-        queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval: float,
-        prediction_interval: float, horizon: float, network: Network, full_net_path: str):
+    queues_and_edge_loads_dir,
+    past_timesteps,
+    future_timesteps,
+    reroute_interval: float,
+    prediction_interval: float,
+    horizon: float,
+    network: Network,
+    full_net_path: str,
+):
     input_mask = None
     output_mask = None
 
     def handle(_):
-        dataset = QueueAndEdgeLoadDataset(queues_and_edge_loads_dir, past_timesteps,
-                                          future_timesteps, reroute_interval, prediction_interval, horizon, network)
+        dataset = QueueAndEdgeLoadDataset(
+            queues_and_edge_loads_dir,
+            past_timesteps,
+            future_timesteps,
+            reroute_interval,
+            prediction_interval,
+            horizon,
+            network,
+        )
         nonlocal input_mask, output_mask
         input_mask = dataset.input_mask
         output_mask = dataset.output_mask
@@ -30,7 +44,9 @@ def train_sk_full_net_model(
         X, Y = zip(*dataset)
         X, Y = np.array(X), np.array(Y)
 
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.1, shuffle=False)
+        X_train, X_test, Y_train, Y_test = train_test_split(
+            X, Y, test_size=0.1, shuffle=False
+        )
 
         ridge = Ridge()
         pipe = make_pipeline(MinMaxScaler(), ridge)
@@ -43,19 +59,33 @@ def train_sk_full_net_model(
 
         with open(full_net_path, "wb") as file:
             pickle.dump(pipe, file)
-        
+
         print(f"Learned model with score {score}, MAE={mae}")
 
-        highest = sorted(enumerate(np.mean(np.absolute(ridge.coef_), axis=0)), key=lambda x: x[1], reverse=True) 
+        highest = sorted(
+            enumerate(np.mean(np.absolute(ridge.coef_), axis=0)),
+            key=lambda x: x[1],
+            reverse=True,
+        )
         print(f"Highest (mean absolute) 10 Ridge coefficient indices: {highest[:10]}")
 
     with_file_lock(full_net_path, handle)
 
     wait_for_locks(os.path.dirname(full_net_path))
     if input_mask is None or output_mask is None:
-        input_mask, output_mask = QueueAndEdgeLoadDataset.load_mask(queues_and_edge_loads_dir)
-    
+        input_mask, output_mask = QueueAndEdgeLoadDataset.load_mask(
+            queues_and_edge_loads_dir
+        )
+
     def build_sk_full_net_predictor(network: Network) -> SKFullNetPredictor:
-        return SKFullNetPredictor.from_model(network, full_net_path, input_mask, output_mask, past_timesteps, future_timesteps, prediction_interval)
-    
+        return SKFullNetPredictor.from_model(
+            network,
+            full_net_path,
+            input_mask,
+            output_mask,
+            past_timesteps,
+            future_timesteps,
+            prediction_interval,
+        )
+
     return build_sk_full_net_predictor

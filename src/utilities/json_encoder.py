@@ -2,6 +2,7 @@ from abc import abstractmethod
 import json
 from typing import Any
 
+
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj: Any) -> Any:
         if hasattr(obj.__class__, "__json__"):

@@ -14,7 +14,7 @@ class TestDynamicFlow(unittest.TestCase):
         Test whether the queues are calculated correctly.
         """
         network = build_sample_network()
-        network.add_commodity(0, 2, 3.)
+        network.add_commodity(0, 2, 3.0)
 
         m = len(network.graph.edges)
         n = 1
@@ -24,19 +24,21 @@ class TestDynamicFlow(unittest.TestCase):
             self.assertTrue(flow.queues[i].equals(zero))
             self.assertTrue(flow.inflow[i][0].equals(RightConstant([-1], [0])))
 
-        edges_changed = flow.extend({0: np.array([2.]), 1: np.array([1.])}, 10)
+        edges_changed = flow.extend({0: np.array([2.0]), 1: np.array([1.0])}, 10)
         self.assertEqual(edges_changed, {0})
         self.assertEqual(flow.phi, 1)
         for i in range(2, m):
             self.assertTrue(flow.queues[i].equals(zero))
             self.assertTrue(flow.inflow[i][0].equals(RightConstant([-1], [0])))
 
-        edges_changed = flow.extend({1: np.array([0.]), 2: np.array([2.]), 4: np.array([4.])}, 10)
-        self.assertEqual(flow.phi, 2.)
+        edges_changed = flow.extend(
+            {1: np.array([0.0]), 2: np.array([2.0]), 4: np.array([4.0])}, 10
+        )
+        self.assertEqual(flow.phi, 2.0)
         self.assertEqual(edges_changed, {2, 4})
 
-        edges_changed = flow.extend({2: np.array([2.]), 4: np.array([4.])}, 10)
-        self.assertEqual(flow.phi, 3.)
+        edges_changed = flow.extend({2: np.array([2.0]), 4: np.array([4.0])}, 10)
+        self.assertEqual(flow.phi, 3.0)
         self.assertEqual(edges_changed, {1})
 
         # assert_array_equal(flow.queues[1], np.zeros(m), f"Queues don't match at time {time1}!")
@@ -58,5 +60,5 @@ class TestDynamicFlow(unittest.TestCase):
         # self.assertEqual(flow.change_events.sorted(), [OutflowChangeEvent(1, 4, np.array([0]))])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

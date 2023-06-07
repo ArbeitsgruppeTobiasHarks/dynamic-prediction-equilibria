@@ -8,23 +8,30 @@ from core.flow_builder import FlowBuilder
 
 
 def build_with_times(
-        flow_builder: FlowBuilder, flow_id: int, reroute_interval: float, horizon: float,
-        observe_commodities_indices: Optional[Iterable[int]] = None, suppress_log: bool = False
+    flow_builder: FlowBuilder,
+    flow_id: int,
+    reroute_interval: float,
+    horizon: float,
+    observe_commodities_indices: Optional[Iterable[int]] = None,
+    suppress_log: bool = False,
 ) -> Tuple[DynamicFlow, float]:
     generator = flow_builder.build_flow()
     start_time = last_milestone_time = time()
     flow = next(generator)
     start_date_time = (
-        datetime(1970, 1, 1) +
-        timedelta(seconds=round(start_time))
-    ).replace(tzinfo=timezone.utc).astimezone(tz=None).time()
+        (datetime(1970, 1, 1) + timedelta(seconds=round(start_time)))
+        .replace(tzinfo=timezone.utc)
+        .astimezone(tz=None)
+        .time()
+    )
     if not suppress_log:
         print(
-            f"Flow#{flow_id} built until phi={flow.phi}; Started At={start_date_time}")
+            f"Flow#{flow_id} built until phi={flow.phi}; Started At={start_date_time}"
+        )
         last_log_time = time()
     milestone_interval = reroute_interval
     milestone = flow.phi
-    
+
     def log_time():
         nonlocal now
         nonlocal last_log_time
@@ -50,18 +57,26 @@ def build_with_times(
         flow = next(generator)
         if flow.phi >= milestone:
             new_milestone_time = time()
-            remaining_time = (horizon - flow.phi) * (new_milestone_time -
-                                                     last_milestone_time) / milestone_interval
+            remaining_time = (
+                (horizon - flow.phi)
+                * (new_milestone_time - last_milestone_time)
+                / milestone_interval
+            )
             finish_time = (
-                datetime(1970, 1, 1) +
-                timedelta(seconds=round(new_milestone_time + remaining_time))
-            ).replace(tzinfo=timezone.utc).astimezone(tz=None).time()
+                (
+                    datetime(1970, 1, 1)
+                    + timedelta(seconds=round(new_milestone_time + remaining_time))
+                )
+                .replace(tzinfo=timezone.utc)
+                .astimezone(tz=None)
+                .time()
+            )
             milestone += milestone_interval
             last_milestone_time = new_milestone_time
         now = time()
         if not suppress_log and now - last_log_time >= 1:
             log_time()
-    
+
     if not suppress_log:
         log_time()
 

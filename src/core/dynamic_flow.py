@@ -24,7 +24,9 @@ class DepletionQueue:
         self.change_times = PriorityQueue()
         self.new_outflow = {}
 
-    def set(self, edge: int, depletion_time: float, change_event: ChangeEvent = None) -> None:
+    def set(
+        self, edge: int, depletion_time: float, change_event: ChangeEvent = None
+    ) -> None:
         assert depletion_time > float("-inf")
         self.depletions.set(edge, depletion_time)
 
@@ -64,7 +66,7 @@ class DepletionQueue:
 
 class DynamicFlow:
     """
-        This is a representation of a flow with right-constant edge inflow rates on intervals.
+    This is a representation of a flow with right-constant edge inflow rates on intervals.
     """
 
     phi: float
@@ -80,15 +82,12 @@ class DynamicFlow:
 
     def __init__(self, network: Network):
         self._network = network
-        self.phi = 0.
-        self.inflow = [FlowRatesCollection()
-                       for _ in network.graph.edges]
+        self.phi = 0.0
+        self.inflow = [FlowRatesCollection() for _ in network.graph.edges]
         self.queues = [
-            PiecewiseLinear([self.phi], [0.], 0., 0.)
-            for _ in network.graph.edges
+            PiecewiseLinear([self.phi], [0.0], 0.0, 0.0) for _ in network.graph.edges
         ]
-        self.outflow = [FlowRatesCollection()
-                        for _ in network.graph.edges]
+        self.outflow = [FlowRatesCollection() for _ in network.graph.edges]
         self.outflow_changes = PriorityQueue()
         self.depletions = DepletionQueue()
 
@@ -107,11 +106,11 @@ class DynamicFlow:
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
-        self.outflow[e].extend(arrival, {}, 0.)
+        self.outflow[e].extend(arrival, {}, 0.0)
 
         self.outflow_changes.set((e, arrival), arrival)
 
-        queue_slope = 0. if cur_queue == 0. else -capacity
+        queue_slope = 0.0 if cur_queue == 0.0 else -capacity
         self.queues[e].extend_with_slope(self.phi, queue_slope)
         if cur_queue > 0:
             depl_time = self.phi + cur_queue / capacity
@@ -120,36 +119,34 @@ class DynamicFlow:
         elif e in self.depletions:
             self.depletions.remove(e)
 
-    def _extend_case_ii(self, e: int, new_inflow: Dict[int, float], cur_queue: float, acc_in: float):
+    def _extend_case_ii(
+        self, e: int, new_inflow: Dict[int, float], cur_queue: float, acc_in: float
+    ):
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
         acc_out = min(capacity, acc_in)
         factor = acc_out / acc_in
 
-        new_outflow = {
-            i: factor * value
-            for i, value in new_inflow.items()
-        }
+        new_outflow = {i: factor * value for i, value in new_inflow.items()}
         self.outflow[e].extend(arrival, new_outflow, acc_out)
 
         self.outflow_changes.set((e, arrival), arrival)
 
-        queue_slope = max(acc_in - capacity, 0.)
+        queue_slope = max(acc_in - capacity, 0.0)
         self.queues[e].extend_with_slope(self.phi, queue_slope)
         if e in self.depletions:
             self.depletions.remove(e)
 
-    def _extend_case_iii(self, e: int, new_inflow: Dict[int, float], cur_queue: float, acc_in: float):
+    def _extend_case_iii(
+        self, e: int, new_inflow: Dict[int, float], cur_queue: float, acc_in: float
+    ):
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
         factor = capacity / acc_in
 
-        new_outflow = {
-            i: factor * value
-            for i, value in new_inflow.items()
-        }
+        new_outflow = {i: factor * value for i, value in new_inflow.items()}
         self.outflow[e].extend(arrival, new_outflow, capacity)
 
         self.outflow_changes.set((e, arrival), arrival)
@@ -167,15 +164,17 @@ class DynamicFlow:
     def _process_depletions(self):
         while self.depletions.min_depletion() <= self.phi:
             (e, depl_time, change_event) = self.depletions.pop_by_depletion()
-            self.queues[e].extend_with_slope(depl_time, 0.)
+            self.queues[e].extend_with_slope(depl_time, 0.0)
             assert abs(self.queues[e].values[-1]) < 1000 * eps
-            self.queues[e].values[-1] = 0.
+            self.queues[e].values[-1] = 0.0
             if change_event is not None:
                 (change_time, (new_outflow, new_outflow_sum)) = change_event
                 self.outflow_changes.set((e, change_time), change_time)
                 self.outflow[e].extend(change_time, new_outflow, new_outflow_sum)
 
-    def extend(self, new_inflow: Dict[int, Dict[int, float]], max_extension_time: float) -> Set[int]:
+    def extend(
+        self, new_inflow: Dict[int, Dict[int, float]], max_extension_time: float
+    ) -> Set[int]:
         """
         Extends the flow with constant inflows new_inflow until some edge outflow changes.
         Edge inflows not in new_inflow are extended with their previous values.
@@ -189,12 +188,12 @@ class DynamicFlow:
             if self.inflow[e].get_values_at_time(self.phi) == new_inflow[e]:
                 continue
             acc_in = sum(new_inflow[e].values())
-            cur_queue = max(self.queues[e].eval_from_end(self.phi), 0.)
+            cur_queue = max(self.queues[e].eval_from_end(self.phi), 0.0)
 
             self.inflow[e].extend(self.phi, new_inflow[e], acc_in)
-            if acc_in == 0.:
+            if acc_in == 0.0:
                 self._extend_case_i(e, cur_queue)
-            elif cur_queue == 0. or acc_in >= capacity[e] - eps:
+            elif cur_queue == 0.0 or acc_in >= capacity[e] - eps:
                 self._extend_case_ii(e, new_inflow[e], cur_queue, acc_in)
             else:
                 self._extend_case_iii(e, new_inflow[e], cur_queue, acc_in)
@@ -202,7 +201,7 @@ class DynamicFlow:
         self.phi = min(
             self.depletions.min_change_time(),
             self.outflow_changes.min_key(),
-            max_extension_time
+            max_extension_time,
         )
 
         self._process_depletions()
@@ -215,21 +214,24 @@ class DynamicFlow:
     def avg_travel_time(self, i: int, horizon: float) -> float:
         commodity = self._network.commodities[i]
         net_outflow: RightConstant = sum(
-            (self.outflow[e.id]._functions_dict[i]
-             for e in commodity.sink.incoming_edges
-             if i in self.outflow[e.id]._functions_dict),
-            start=RightConstant([0.], [0.], (0, float('inf')))
+            (
+                self.outflow[e.id]._functions_dict[i]
+                for e in commodity.sink.incoming_edges
+                if i in self.outflow[e.id]._functions_dict
+            ),
+            start=RightConstant([0.0], [0.0], (0, float("inf"))),
         )
         accum_net_outflow = net_outflow.integral()
         net_inflow: RightConstant = sum(
             (inflow for inflow in commodity.sources.values()),
-            start=RightConstant([0.], [0.], (0, float('inf')))
+            start=RightConstant([0.0], [0.0], (0, float("inf"))),
         )
         accum_net_inflow = net_inflow.integral()
 
-        avg_travel_time = \
-            (accum_net_inflow.integrate(0., horizon) - accum_net_outflow.integrate(0., horizon)) / accum_net_inflow(
-                horizon)
+        avg_travel_time = (
+            accum_net_inflow.integrate(0.0, horizon)
+            - accum_net_outflow.integrate(0.0, horizon)
+        ) / accum_net_inflow(horizon)
         return avg_travel_time
 
     @lru_cache()
@@ -238,13 +240,13 @@ class DynamicFlow:
             self.inflow[e].accumulative - self.outflow[e].accumulative
             for e in range(len(self.inflow))
         ]
-        assert all(edge_load.domain[0] == 0. for edge_load in edge_loads)
-        assert all(abs(edge_load(0.)) < 1e-10 for edge_load in edge_loads)
+        assert all(edge_load.domain[0] == 0.0 for edge_load in edge_loads)
+        assert all(abs(edge_load(0.0)) < 1e-10 for edge_load in edge_loads)
         for edge_load in edge_loads:
-            if edge_load.values[0] != 0.:
-                edge_load.times.insert(0, 0.)
-                edge_load.values.insert(0, 0.)
-            edge_load.first_slope = 0.
+            if edge_load.values[0] != 0.0:
+                edge_load.times.insert(0, 0.0)
+                edge_load.values.insert(0, 0.0)
+            edge_load.first_slope = 0.0
             edge_load.domain = (float("-inf"), edge_load.domain[1])
 
         return edge_loads

@@ -17,56 +17,59 @@ class RightConstant:
 
     times: List[float]
     values: List[float]
-    domain: Tuple[float, float] = (float('-inf'), float('inf'))
+    domain: Tuple[float, float] = (float("-inf"), float("inf"))
 
     def __json__(self):
         return {
             "times": self.times,
             "values": self.values,
             "domain": [
-                '-Infinity' if self.domain[0] == float(
-                    '-inf') else self.domain[0],
-                'Infinity' if self.domain[1] == float(
-                    'inf') else self.domain[1]
-            ]
+                "-Infinity" if self.domain[0] == float("-inf") else self.domain[0],
+                "Infinity" if self.domain[1] == float("inf") else self.domain[1],
+            ],
         }
 
-    def __init__(self, times: List[float], values: List[float],
-                 domain: Tuple[float, float] = (float('-inf'), float('inf'))):
+    def __init__(
+        self,
+        times: List[float],
+        values: List[float],
+        domain: Tuple[float, float] = (float("-inf"), float("inf")),
+    ):
         self.times = times
         self.values = values
         self.domain = domain
         assert len(self.values) == len(self.times)
         assert all(
-            float('-inf') < self.values[i] < float('inf') for i in range(len(self.times)))
-        assert all(self.domain[0] <= self.times[i] <=
-                   self.domain[1] for i in range(len(self.times)))
+            float("-inf") < self.values[i] < float("inf")
+            for i in range(len(self.times))
+        )
+        assert all(
+            self.domain[0] <= self.times[i] <= self.domain[1]
+            for i in range(len(self.times))
+        )
 
     def __call__(self, at: float) -> float:
         return self.eval(at)
 
     def eval_from_end(self, at: float) -> float:
-        '''
+        """
         Searches the lower rank of the element x in arr by going backwards from the last entry.
         The lower rank is the minimal number i in -1, ..., len(arr)-1,
         such that arr[i] <= x < arr[i+1] (with the interpretation arr[-1] = -inf and arr[len(arr)] = inf)
-        '''
-        assert self.domain[0] <= at <= self.domain[
-            1], f"Function not defined at {at}."
+        """
+        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         rnk = len(self.times) - 1
         while rnk >= 0 and self.times[rnk] > at:
             rnk -= 1
         return self._eval_with_lrank(at, rnk)
 
     def eval(self, at: float) -> float:
-        assert self.domain[0] <= at <= self.domain[
-            1], f"Function not defined at {at}."
+        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         rnk = elem_lrank(self.times, at)
         return self._eval_with_lrank(at, rnk)
 
     def _eval_with_lrank(self, at: float, rnk: int):
-        assert self.domain[0] <= at <= self.domain[
-            1], f"Function not defined at {at}."
+        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         assert -1 <= rnk <= len(self.times)
         assert rnk == elem_lrank(self.times, at)
 
@@ -89,7 +92,11 @@ class RightConstant:
     def equals(self, other):
         if not isinstance(other, RightConstant):
             return False
-        return self.values == other.values and self.times == other.times and self.domain == other.domain
+        return (
+            self.values == other.values
+            and self.times == other.times
+            and self.domain == other.domain
+        )
 
     def __radd__(self, other):
         if other == 0:
@@ -100,7 +107,7 @@ class RightConstant:
 
         new_times = merge_sorted(self.times, other.times)
 
-        new_values = [0.] * len(new_times)
+        new_values = [0.0] * len(new_times)
 
         lptr = 0
         rptr = 0
@@ -114,19 +121,23 @@ class RightConstant:
         return RightConstant(new_times, new_values, self.domain)
 
     @staticmethod
-    def sum(functions: List[RightConstant], domain=(0, float('inf'))) -> RightConstant:
+    def sum(functions: List[RightConstant], domain=(0, float("inf"))) -> RightConstant:
         if len(functions) == 0:
-            return RightConstant([0.], [0.], domain)
+            return RightConstant([0.0], [0.0], domain)
         new_times = merge_sorted_many([f.times for f in functions])
-        new_values = [0.] * len(new_times)
+        new_values = [0.0] * len(new_times)
         ptrs = [0 for _ in functions]
 
         for i, time in enumerate(new_times):
             for j in range(len(ptrs)):
-                while ptrs[j] < len(functions[j].times) - 1 and functions[j].times[ptrs[j] + 1] <= time:
+                while (
+                    ptrs[j] < len(functions[j].times) - 1
+                    and functions[j].times[ptrs[j] + 1] <= time
+                ):
                     ptrs[j] += 1
-            new_values[i] = sum(functions[j].values[ptrs[j]]
-                                for j in range(len(functions)))
+            new_values[i] = sum(
+                functions[j].values[ptrs[j]] for j in range(len(functions))
+            )
         return RightConstant(new_times, new_values, domain)
 
     def __add__(self, other):
@@ -148,7 +159,7 @@ class RightConstant:
         new_values = [self.values[0]]
         for i in range(0, len(self.times) - 1):
             # Add i+1, if it's necessary.
-            if abs(self.values[i] - self.values[i + 1]) >= 1000*eps:
+            if abs(self.values[i] - self.values[i + 1]) >= 1000 * eps:
                 new_times.append(self.times[i + 1])
                 new_values.append(self.values[i + 1])
         return RightConstant(new_times, new_values, self.domain)
@@ -159,8 +170,9 @@ class RightConstant:
         """
         assert self.times[0] == self.domain[0] and self.domain[1] >= self.times[-1] + 1
         times = self.times
-        values = [0.] * len(times)
+        values = [0.0] * len(times)
         for i in range(len(times) - 1):
-            values[i + 1] = values[i] + \
-                self.values[i] * (times[i + 1] - times[i])
-        return PiecewiseLinear(times, values, self.values[0], self.values[-1], self.domain)
+            values[i + 1] = values[i] + self.values[i] * (times[i + 1] - times[i])
+        return PiecewiseLinear(
+            times, values, self.values[0], self.values[-1], self.domain
+        )

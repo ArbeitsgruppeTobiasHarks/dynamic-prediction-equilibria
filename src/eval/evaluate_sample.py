@@ -15,28 +15,34 @@ from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
 from visualization.to_json import to_visualization_json
 
+
 def build_predictors(network: Network) -> Dict[PredictorType, Predictor]:
-    prediction_horizon = 10.
+    prediction_horizon = 10.0
     return {
         PredictorType.ZERO: ZeroPredictor(network),
         PredictorType.CONSTANT: ConstantPredictor(network),
         PredictorType.LINEAR: LinearPredictor(network, prediction_horizon),
-        PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, prediction_horizon, delta=5.),
+        PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(
+            network, prediction_horizon, delta=5.0
+        ),
         PredictorType.MACHINE_LEARNING_SK_FULL_NET: LinearRegressionPredictor(network),
     }
 
+
 def eval_sample():
-    max_demand = 30.
+    max_demand = 30.0
     step_size = 0.25
-    inflow_horizon = 25.
+    inflow_horizon = 25.0
     reroute_interval = 0.25
-    horizon = 500.
-    demand = 0. + step_size
+    horizon = 500.0
+    demand = 0.0 + step_size
     avg_times = [[], [], [], [], [], []]
     comp_times = []
     while demand <= max_demand:
         network = build_sample_network()
-        net_inflow = RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf')))
+        net_inflow = RightConstant(
+            [0.0, inflow_horizon], [demand, 0.0], (0, float("inf"))
+        )
         network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
         times, comp_time = evaluate_single_run(
             network,
@@ -48,7 +54,7 @@ def eval_sample():
             suppress_log=True,
             inflow_horizon=inflow_horizon,
             out_dir=None,
-            build_predictors=build_predictors
+            build_predictors=build_predictors,
         )
         for i, val in enumerate(times):
             avg_times[i].append(val)
@@ -75,7 +81,10 @@ def sample_from_file_to_tikz():
     configs = [
         {"label": "$\\hat q^{\\text{Z}}$", "color": "blue"},
         {"label": "$\\hat q^{\\text{C}}$", "color": "red"},
-        {"label": "$\\hat q^{\\text{L}}$", "color": "{rgb,255:red,0; green,128; blue,0}"},
+        {
+            "label": "$\\hat q^{\\text{L}}$",
+            "color": "{rgb,255:red,0; green,128; blue,0}",
+        },
         {"label": "$\\hat q^{\\text{RL}}$", "color": "orange"},
         {"label": "$\\hat q^{\\text{ML}}$", "color": "black"},
         {"label": "$\\text{OPT}$", "color": "purple", "dashed": True},
@@ -117,9 +126,12 @@ def sample_regrets_from_file_to_tikz():
     configs = [
         {"label": "$\\hat q^{\\text{Z}}$", "color": "blue"},
         {"label": "$\\hat q^{\\text{C}}$", "color": "red"},
-        {"label": "$\\hat q^{\\text{L}}$", "color": "{rgb,255:red,0; green,128; blue,0}"},
+        {
+            "label": "$\\hat q^{\\text{L}}$",
+            "color": "{rgb,255:red,0; green,128; blue,0}",
+        },
         {"label": "$\\hat q^{\\text{RL}}$", "color": "orange"},
-        {"label": "$\\hat q^{\\text{ML}}$", "color": "black"}
+        {"label": "$\\hat q^{\\text{ML}}$", "color": "black"},
     ]
     with open("./avg_times_sample.json", "r") as file:
         avg_times = json.load(file)
@@ -137,7 +149,7 @@ def sample_regrets_from_file_to_tikz():
     """
 
     for c, values in enumerate(avg_times):
-        if c == len(avg_times) -1:
+        if c == len(avg_times) - 1:
             break
         tikz += "\n\\addplot[color=" + configs[c]["color"]
         if "dashed" in configs[c]:
@@ -158,11 +170,11 @@ def sample_regrets_from_file_to_tikz():
 
 def compute_sample_flow_for_visualization():
     demand = 2.5
-    inflow_horizon = 10.
+    inflow_horizon = 10.0
     reroute_interval = 1 / 64
-    horizon = 500.
+    horizon = 500.0
     network = build_sample_network()
-    net_inflow = RightConstant([0., inflow_horizon], [demand, 0.], (0, float('inf')))
+    net_inflow = RightConstant([0.0, inflow_horizon], [demand, 0.0], (0, float("inf")))
     network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
     times, comp_time, flow = evaluate_single_run(
         network,
@@ -173,11 +185,16 @@ def compute_sample_flow_for_visualization():
         reroute_interval=reroute_interval,
         suppress_log=True,
         inflow_horizon=inflow_horizon,
-        out_dir=None
+        out_dir=None,
     )
     print(f"Calculated for demand={demand}. times={times}")
-    to_visualization_json("./visualization/src/sampleFlowData.json", flow, network, { comm: COLORS[comm.predictor_type] for comm in network.commodities })
+    to_visualization_json(
+        "./visualization/src/sampleFlowData.json",
+        flow,
+        network,
+        {comm: COLORS[comm.predictor_type] for comm in network.commodities},
+    )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     compute_sample_flow_for_visualization()
-

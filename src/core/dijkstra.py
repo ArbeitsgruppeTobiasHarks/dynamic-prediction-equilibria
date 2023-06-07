@@ -7,9 +7,7 @@ from utilities.queues import PriorityQueue
 
 
 def reverse_dijkstra(
-        sink: Node,
-        costs: List[float],
-        nodes: Set[Node]
+    sink: Node, costs: List[float], nodes: Set[Node]
 ) -> Dict[Node, float]:
     dist: Dict[Node, float] = {sink: 0}
     queue = PriorityQueue([(sink, dist[sink])])
@@ -37,7 +35,11 @@ def reverse_dijkstra(
 
 
 def dynamic_dijkstra(
-        phi: float, source: Node, sink: Node, relevant_nodes: Set[Node], costs: List[Callable[[float], float]]
+    phi: float,
+    source: Node,
+    sink: Node,
+    relevant_nodes: Set[Node],
+    costs: List[Callable[[float], float]],
 ) -> Tuple[Dict[Node, float], Dict[Edge, float]]:
     """
     Assumes costs to follow the FIFO rule and relevant_nodes to contain
