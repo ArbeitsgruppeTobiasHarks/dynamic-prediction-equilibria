@@ -50,3 +50,20 @@ The processes will communicate with each other and only perform tasks that have 
 All of these steps save their output to the `./out` folder.
 Once all steps are executed, the results of step 4 (e.g. tikz plots, visualization files, etc.) are generated into the `out/{experiment}/eval` folder.
 You can open files ending in `.vis.json` in a dynamic flow visualization tool available at https://arbeitsgruppetobiasharks.github.io/dynamic-flow-visualization.
+
+
+## Development
+
+
+### Formatting
+
+We use [black](https://github.com/psf/black) as our Python code formatter together with [isort](https://github.com/PyCQA/isort) to sort imports.
+In a poetry shell, run
+```sh
+black src
+isort src --profile black
+```
+To format files automatically on commit, install the pre-commit hook:
+```sh
+ln -s pre-commit.sh .git/hooks/pre-commit
+```
