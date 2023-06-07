@@ -193,8 +193,7 @@ class FlowBuilder:
                 for e in v.incoming_edges
             }
 
-            net_inflow_by_com = self._net_inflow_by_node[v].get_values_at_time(
-                self._flow.phi)
+            net_inflow_by_com = self._net_inflow_by_node[v].get_values_at_time(self._flow.phi)
 
             used_commodities = set(
                 key

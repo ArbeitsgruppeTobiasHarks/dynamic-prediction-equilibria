@@ -46,10 +46,8 @@ def eval_network_demand(network_path: str, number_flows: int, out_dir: str, infl
             print()
             print(
                 f"Building Evaluation Flow#{flow_id} with seed {seed}...")
-            generate_network_demands(
-                network, seed, inflow_horizon, demand_sigma)
-            focused_commodity_index = random.randrange(
-                0, len(network.commodities))
+            generate_network_demands(network, seed, inflow_horizon, demand_sigma)
+            focused_commodity_index = random.randrange(0, len(network.commodities))
             print(
                 f"Focused Commodity {focused_commodity_index} with source {next(iter(network.commodities[focused_commodity_index].sources))} and sink {network.commodities[focused_commodity_index].sink}.")
             _, _, flow = evaluate_single_run(network, flow_id=flow_id, focused_commodity_index=focused_commodity_index,
