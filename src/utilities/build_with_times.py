@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta, timezone
 import sys
+from datetime import datetime, timedelta, timezone
 from time import time
-from typing import Optional, Iterable, Tuple
+from typing import Iterable, Optional, Tuple
 
 from core.dynamic_flow import DynamicFlow
 from core.flow_builder import FlowBuilder
@@ -9,12 +9,15 @@ from core.flow_builder import FlowBuilder
 
 def build_with_times(
     flow_builder: FlowBuilder,
-    flow_id: int,
+    flow_id: Optional[int],
     reroute_interval: float,
     horizon: float,
     observe_commodities_indices: Optional[Iterable[int]] = None,
     suppress_log: bool = False,
 ) -> Tuple[DynamicFlow, float]:
+    """
+    @param flow_id: The id of the flow being built. Used only for logging.
+    """
     generator = flow_builder.build_flow()
     start_time = last_milestone_time = time()
     flow = next(generator)
@@ -24,6 +27,8 @@ def build_with_times(
         .astimezone(tz=None)
         .time()
     )
+
+    last_log_time = float("NaN")
     if not suppress_log:
         print(
             f"Flow#{flow_id} built until phi={flow.phi}; Started At={start_date_time}"

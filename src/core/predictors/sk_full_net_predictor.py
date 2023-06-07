@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 import os
 import pickle
-from sklearn.pipeline import Pipeline
 from typing import List, Optional
 
 import numpy as np
-from core.dynamic_flow import DynamicFlow
+from sklearn.pipeline import Pipeline
 
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear

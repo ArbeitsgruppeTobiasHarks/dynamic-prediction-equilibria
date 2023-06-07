@@ -1,14 +1,14 @@
 import datetime
 import os
+
 import numpy as np
 import tensorflow as tf
-
 from sklearn.model_selection import train_test_split
 
 from core.network import Network
 from core.predictors.tf_neighborhood_predictor import TFNeighborhoodPredictor
-from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 from ml.neighboring_edges import get_neighboring_edges_mask_undirected
+from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 from utilities.file_lock import wait_for_locks, with_file_lock
 
 

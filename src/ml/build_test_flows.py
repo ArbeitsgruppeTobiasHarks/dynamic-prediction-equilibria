@@ -1,11 +1,11 @@
 import gzip
-import warnings
-from math import ceil, log10
 import os
 import pickle
 import random
+from math import ceil, log10
 from typing import Callable, Optional
 
+from core.dynamic_flow import DynamicFlow
 from core.flow_builder import FlowBuilder
 from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
@@ -13,9 +13,8 @@ from core.predictors.predictor_type import PredictorType
 from eval.evaluate import COLORS
 from utilities.build_with_times import build_with_times
 from utilities.combine_commodities import combine_commodities_with_same_sink
-from utilities.right_constant import RightConstant
 from utilities.file_lock import no_op, wait_for_locks, with_file_lock
-from core.dynamic_flow import DynamicFlow
+from utilities.right_constant import RightConstant
 from visualization.to_json import merge_commodities, to_visualization_json
 
 

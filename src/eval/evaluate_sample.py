@@ -1,16 +1,16 @@
 import json
+from test.sample_network import build_sample_network
 from typing import Dict
+
 from core.network import Network
 from core.predictor import Predictor
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.linear_regression_predictor import LinearRegressionPredictor
-
 from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate import COLORS, evaluate_single_run
-from test.sample_network import build_sample_network
 from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
 from visualization.to_json import to_visualization_json
@@ -43,17 +43,19 @@ def eval_sample():
         net_inflow = RightConstant(
             [0.0, inflow_horizon], [demand, 0.0], (0, float("inf"))
         )
-        network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
-        times, comp_time = evaluate_single_run(
+        network.add_commodity({0: net_inflow}, 2, PredictorType.ZERO)
+        times, comp_time, flow = evaluate_single_run(
             network,
             flow_id=None,
             focused_commodity_index=0,
             split=True,
             horizon=horizon,
+            future_timesteps=1,
+            prediction_interval=1.0,
             reroute_interval=reroute_interval,
             suppress_log=True,
             inflow_horizon=inflow_horizon,
-            out_dir=None,
+            json_eval_path=None,
             build_predictors=build_predictors,
         )
         for i, val in enumerate(times):
@@ -68,7 +70,7 @@ def eval_sample():
     print(f"Average Computation Time: {avg_comp_time}")
 
     with open("./avg_times_sample.json", "w") as file:
-        JSONEncoder.dump(avg_times, file)
+        JSONEncoder().dump(avg_times, file)
 
     print("Successfully saved these travel times in ./avg_times_sample.json")
     print()
@@ -166,35 +168,3 @@ def sample_regrets_from_file_to_tikz():
 
     with open("./regrets_sample.tikz", "w") as file:
         file.write(tikz)
-
-
-def compute_sample_flow_for_visualization():
-    demand = 2.5
-    inflow_horizon = 10.0
-    reroute_interval = 1 / 64
-    horizon = 500.0
-    network = build_sample_network()
-    net_inflow = RightConstant([0.0, inflow_horizon], [demand, 0.0], (0, float("inf")))
-    network.add_commodity(0, 2, net_inflow, PredictorType.ZERO)
-    times, comp_time, flow = evaluate_single_run(
-        network,
-        flow_id=None,
-        focused_commodity_index=0,
-        split=True,
-        horizon=horizon,
-        reroute_interval=reroute_interval,
-        suppress_log=True,
-        inflow_horizon=inflow_horizon,
-        out_dir=None,
-    )
-    print(f"Calculated for demand={demand}. times={times}")
-    to_visualization_json(
-        "./visualization/src/sampleFlowData.json",
-        flow,
-        network,
-        {comm: COLORS[comm.predictor_type] for comm in network.commodities},
-    )
-
-
-if __name__ == "__main__":
-    compute_sample_flow_for_visualization()

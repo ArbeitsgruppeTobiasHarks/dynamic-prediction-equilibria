@@ -2,11 +2,11 @@ import gzip
 import os
 import pickle
 from datetime import timedelta
+from math import floor
 from time import time
 
 import numpy as np
 import pandas as pd
-from math import floor
 
 from core.dynamic_flow import DynamicFlow
 from core.network import Network

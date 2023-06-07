@@ -1,4 +1,3 @@
-from tkinter import N
 from core.flow_builder import FlowBuilder
 from core.network import Network
 from core.predictors.predictor_type import PredictorType

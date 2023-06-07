@@ -1,6 +1,6 @@
 import json
 import os
-import numpy as np
+
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
@@ -10,15 +10,15 @@ from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate_network import eval_network_demand
 from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
-from ml.SKFullNetworkModel import train_sk_full_net_model
-from ml.SKNeighborhood import train_sk_neighborhood_model
-from ml.TFFullNetworkModel import train_tf_full_net_model
-from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import (
     generate_queues_and_edge_loads,
     save_queues_and_edge_loads_for_flow,
 )
+from ml.SKFullNetworkModel import train_sk_full_net_model
+from ml.SKNeighborhood import train_sk_neighborhood_model
+from ml.TFFullNetworkModel import train_tf_full_net_model
+from ml.TFNeighborhood import train_tf_neighborhood_model
 from utilities.get_tn_path import get_tn_path
 
 
@@ -201,8 +201,8 @@ if __name__ == "__main__":
     def main():
         tn_path = get_tn_path()
         edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
-        nodes_tntp_path = os.path.expanduser(tn_path, "SiouxFalls/SiouxFalls_node.tntp")
-        od_pairs_csv_path = os.path.expanduser(
+        nodes_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_node.tntp")
+        od_pairs_csv_path = os.path.join(
             tn_path, "SiouxFalls/CSV-data/SiouxFalls_od.csv"
         )
         run_scenario(

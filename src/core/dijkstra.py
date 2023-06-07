@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Set, Tuple
-from core.graph import Node, Edge
+from typing import Callable, Dict, FrozenSet, List, Set, Tuple
+
+from core.graph import Edge, Node
 from core.machine_precision import eps
 from utilities.queues import PriorityQueue
 
@@ -38,7 +39,7 @@ def dynamic_dijkstra(
     phi: float,
     source: Node,
     sink: Node,
-    relevant_nodes: Set[Node],
+    relevant_nodes: FrozenSet[Node],
     costs: List[Callable[[float], float]],
 ) -> Tuple[Dict[Node, float], Dict[Edge, float]]:
     """
@@ -57,7 +58,7 @@ def dynamic_dijkstra(
             break
         for e in v.outgoing_edges:
             w = e.node_to
-            if w in arrival_times.keys() or w not in relevant_nodes:
+            if w in arrival_times or w not in relevant_nodes:
                 continue
             realized_cost[e] = costs[e.id](arrival_times[v])
             relaxation = arrival_times[v] + realized_cost[e]

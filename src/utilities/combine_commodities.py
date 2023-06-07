@@ -1,7 +1,7 @@
 from typing import Dict, Set, Tuple
+
 from core.graph import Node
 from core.network import Commodity, Network
-
 from core.predictors.predictor_type import PredictorType
 
 

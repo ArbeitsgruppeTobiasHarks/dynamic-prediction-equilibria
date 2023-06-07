@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from typing import Dict, Optional
+
+from core.machine_precision import eps
 from utilities.arrays import merge_sorted
 from utilities.piecewise_linear import PiecewiseLinear
-from core.machine_precision import eps
-
 from utilities.right_constant import RightConstant
 
 

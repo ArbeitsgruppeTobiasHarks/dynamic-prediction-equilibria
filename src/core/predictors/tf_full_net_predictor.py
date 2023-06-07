@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import List, Optional
 
 import numpy as np
-from core.dynamic_flow import DynamicFlow
 import tensorflow as tf
 
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear

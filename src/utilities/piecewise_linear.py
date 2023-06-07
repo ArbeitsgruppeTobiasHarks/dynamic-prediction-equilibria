@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from core.machine_precision import eps
-from utilities.arrays import elem_rank, elem_lrank, merge_sorted
+from utilities.arrays import elem_lrank, elem_rank, merge_sorted
 
 
 class PiecewiseLinear:
@@ -420,7 +420,9 @@ class PiecewiseLinear:
         rnk = elem_rank(self.values, bound)
         return max(self.domain[0], self.inverse(bound, rnk))
 
-    def max_t_below(self, bound: float, default: Optional[float] = None) -> float:
+    def max_t_below(
+        self, bound: float, default: Optional[float] = None
+    ) -> float | None:
         """
         Returns max t s.t. self(t) <= bound
         If such a t does not exist, we return default if is given.
@@ -516,10 +518,14 @@ class PiecewiseLinear:
             self.values.append(val)
             self.times.append(time)
         self.last_slope = slope
+
         #  Empty caches
+
+        # pylint: disable=no-member
         self.gradient.cache_clear()
         self._eval_with_rank.cache_clear()
         self.compose.cache_clear()
+        # pylint: enable=no-member
 
     def restrict(self, domain: Tuple[float, float]):
         assert self.domain[0] <= domain[0] <= domain[1] <= self.domain[1]
@@ -535,7 +541,7 @@ class PiecewiseLinear:
             values = self.values[first_ind : last_ind + 1]
         else:
             times = [domain[0]]
-            values = self(times[0])
+            values = [self(domain[0])]
         return PiecewiseLinear(times, values, first_slope, last_slope, domain)
 
     def equals(self, other):

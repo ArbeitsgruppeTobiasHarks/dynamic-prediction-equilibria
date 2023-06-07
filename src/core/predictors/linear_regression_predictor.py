@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import List, Optional
 
 from core.dynamic_flow import DynamicFlow
-
 from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear
 

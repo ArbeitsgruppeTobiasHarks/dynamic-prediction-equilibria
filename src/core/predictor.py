@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import List
-from core.dynamic_flow import DynamicFlow
 
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from utilities.piecewise_linear import PiecewiseLinear
 

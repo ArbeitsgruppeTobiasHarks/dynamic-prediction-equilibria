@@ -3,12 +3,11 @@ from __future__ import annotations
 from typing import List, Optional
 
 from core.dynamic_flow import DynamicFlow
-
+from core.machine_precision import eps
 from core.network import Network
 from core.predictor import Predictor
 from utilities.arrays import elem_rank
 from utilities.piecewise_linear import PiecewiseLinear
-from core.machine_precision import eps
 
 
 class LinearPredictor(Predictor):
@@ -41,4 +40,4 @@ class LinearPredictor(Predictor):
             else:
                 queues[i] = PiecewiseLinear(times, [curr_queue, new_queue], 0.0, 0.0)
 
-        return queues
+        return queues  # type: ignore

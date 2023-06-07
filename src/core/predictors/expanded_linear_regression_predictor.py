@@ -3,11 +3,11 @@ from __future__ import annotations
 import os
 import pickle
 import re
-from typing import List, Optional, Dict, Callable
+from typing import Callable, Dict, List, Optional
 
 from sklearn.linear_model import LinearRegression
-from core.dynamic_flow import DynamicFlow
 
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear

@@ -1,13 +1,13 @@
 from __future__ import annotations
+
 from functools import lru_cache
+from typing import Dict, Generator, List, Optional, Set, Tuple
 
-from typing import Generator, Optional, Dict, List, Set, Tuple
-
-from core.dijkstra import reverse_dijkstra, dynamic_dijkstra
-from core.graph import Node, Edge
-from core.machine_precision import eps
+from core.dijkstra import dynamic_dijkstra, reverse_dijkstra
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
-from core.network import Network, Commodity
+from core.graph import Edge, Node
+from core.machine_precision import eps
+from core.network import Commodity, Network
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
 from utilities.piecewise_linear import PiecewiseLinear

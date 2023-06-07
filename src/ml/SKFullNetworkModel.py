@@ -1,15 +1,15 @@
 import os
 import pickle
-import numpy as np
 
+import numpy as np
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
-from core.predictors.sk_full_net_predictor import SKFullNetPredictor
 
 from core.network import Network
+from core.predictors.sk_full_net_predictor import SKFullNetPredictor
 from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 from utilities.file_lock import wait_for_locks, with_file_lock
 

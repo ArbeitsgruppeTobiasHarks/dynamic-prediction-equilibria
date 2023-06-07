@@ -1,9 +1,9 @@
 from __future__ import annotations
+
 from functools import lru_cache
+from typing import Dict, List, Optional, Set, Tuple
 
-from typing import List, Dict, Set, Tuple, Optional
 from core.flow_rates_collection import FlowRatesCollection
-
 from core.machine_precision import eps
 from core.network import Network
 from utilities.piecewise_linear import PiecewiseLinear

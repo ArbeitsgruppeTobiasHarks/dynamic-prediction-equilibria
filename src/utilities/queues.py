@@ -1,5 +1,5 @@
 import heapq
-from typing import Optional, List, TypeVar, Generic, Tuple, Dict, Hashable
+from typing import Dict, Generic, Hashable, List, Optional, Tuple, TypeVar
 
 T = TypeVar("T", bound=Hashable)
 

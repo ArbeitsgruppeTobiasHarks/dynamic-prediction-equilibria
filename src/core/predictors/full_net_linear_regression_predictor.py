@@ -5,8 +5,8 @@ from typing import List, Optional
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from core.dynamic_flow import DynamicFlow
 
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from core.predictor import Predictor
 from utilities.piecewise_linear import PiecewiseLinear

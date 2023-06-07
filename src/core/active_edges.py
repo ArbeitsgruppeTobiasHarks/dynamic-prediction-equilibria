@@ -1,7 +1,7 @@
-from typing import Callable, Dict, List, Set
+from typing import Callable, Dict, FrozenSet, List, Set
+
 from core.dijkstra import dynamic_dijkstra
 from core.graph import DirectedGraph, Edge, Node
-
 from utilities.piecewise_linear import PiecewiseLinear
 
 identity = PiecewiseLinear([0.0], [0.0], 1.0, 1.0)
@@ -36,12 +36,12 @@ def get_active_edges(
     theta: float,
     source: Node,
     sink: Node,
-    relevant_nodes: Set[Node],
+    relevant_nodes: FrozenSet[Node],
     graph: DirectedGraph,
     strong_fifo: bool,
 ) -> Set[Edge]:
     if len([e for e in source.outgoing_edges if e.node_to in relevant_nodes]) <= 1:
-        return source.outgoing_edges
+        return set(source.outgoing_edges)
     arrivals, _ = dynamic_dijkstra(theta, source, sink, relevant_nodes, costs)
     if strong_fifo:
         return backward_search(costs, arrivals, source, sink)

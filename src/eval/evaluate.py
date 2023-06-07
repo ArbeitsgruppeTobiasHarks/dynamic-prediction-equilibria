@@ -1,19 +1,18 @@
-from functools import cache
-from math import floor
 import os
 import pickle
-from typing import List, Optional, Dict, Callable, Set, TypeVar
+from functools import cache
+from math import floor
+from typing import Callable, Dict, FrozenSet, List, Optional, Set, TypeVar
 
 import numpy as np
-from core.dijkstra import dynamic_dijkstra
-from core.graph import Edge, Node
-
-from core.machine_precision import eps
 
 from core.bellman_ford import bellman_ford
+from core.dijkstra import dynamic_dijkstra
 from core.dynamic_flow import DynamicFlow
 from core.flow_builder import FlowBuilder
-from core.network import Network, Commodity
+from core.graph import Edge, Node
+from core.machine_precision import eps
+from core.network import Commodity, Network
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
 from utilities.arrays import elem_lrank, elem_rank
@@ -104,16 +103,18 @@ def evaluate_single_run(
     horizon: float,
     reroute_interval: float,
     inflow_horizon: float,
-    future_timesteps: float,
+    future_timesteps: int,
     prediction_interval: float,
     build_predictors: PredictorBuilder,
     flow_path: Optional[str] = None,
     json_eval_path: Optional[str] = None,
-    flow_id: Optional[str] = None,
+    flow_id: Optional[int] = None,
     suppress_log: bool = False,
 ):
-    os.makedirs(os.path.dirname(flow_path), exist_ok=True)
-    os.makedirs(os.path.dirname(json_eval_path), exist_ok=True)
+    if flow_path is not None:
+        os.makedirs(os.path.dirname(flow_path), exist_ok=True)
+    if json_eval_path is not None:
+        os.makedirs(os.path.dirname(json_eval_path), exist_ok=True)
 
     with StatusLogger("Building predictors..."):
         predictors = build_predictors(network)
@@ -219,7 +220,7 @@ def evaluate_single_run(
 
     if json_eval_path is not None:
         with open(json_eval_path, "w") as file:
-            JSONEncoder.dump(save_dict, file)
+            JSONEncoder().dump(save_dict, file)
 
     return travel_times, computation_time, flow
 
@@ -238,14 +239,14 @@ T = TypeVar("T")
 
 def lazy(fun: Callable[[], T]) -> Callable[[], T]:
     evaluated = False
-    value = None
+    value: None | T = None
 
-    def wrapper():
+    def wrapper() -> T:
         nonlocal evaluated, value
         if not evaluated:
             value = fun()
             evaluated = True
-        return value
+        return value  # type: ignore
 
     return wrapper
 
@@ -299,7 +300,7 @@ def get_pred_edge_delay(
     edge_idx: int,
     network: Network,
     sink: Node,
-    com_nodes: Set[Node],
+    com_nodes: FrozenSet[Node],
     costs: List[PiecewiseLinear],
 ):
     edge = network.graph.edges[edge_idx]
@@ -360,7 +361,7 @@ def evaluate_max_pred_delay(
             costs_at_start = costs_from_preds(
                 network, predictor_predictions[0], interval_start
             )
-            delays_at_start: Dict[Edge] = {}
+            delays_at_start: Dict[int, float] = {}
             for k in range(len(pred_times) - 1):
                 interval_start = pred_times[k]
                 interval_end = pred_times[k + 1]

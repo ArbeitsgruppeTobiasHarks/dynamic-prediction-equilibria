@@ -3,9 +3,9 @@ import os
 import pickle
 
 import numpy as np
+
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
-
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType
@@ -14,11 +14,11 @@ from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate import evaluate_mean_absolute_error
 from eval.evaluate_network import eval_network_demand
 from importer.sioux_falls_importer import import_sioux_falls
-from ml.SKFullNetworkModel import train_sk_full_net_model
-from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import generate_queues_and_edge_loads
 from ml.neighboring_edges import get_neighboring_edges_undirected
+from ml.SKFullNetworkModel import train_sk_full_net_model
+from ml.TFFullNetworkModel import train_tf_full_net_model
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.file_lock import wait_for_locks, with_file_lock
 from utilities.get_tn_path import get_tn_path

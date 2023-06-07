@@ -1,10 +1,10 @@
 import unittest
+from test.test_interpolate import plot as plot_pw_linear
 from typing import List
 
 import matplotlib.pyplot as plt
 
 from core.machine_precision import eps
-from test.test_interpolate import plot as plot_pw_linear
 from utilities.right_constant import RightConstant
 
 

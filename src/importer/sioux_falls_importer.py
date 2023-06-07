@@ -1,10 +1,10 @@
 import random
-from typing import Tuple, Callable
 from math import pi
+from typing import Callable, Tuple
 
 import pandas as pd
 
-from core.network import Network, Commodity
+from core.network import Commodity, Network
 from core.predictors.predictor_type import PredictorType
 from importer.tntp_importer import import_network, natural_earth_projection
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
@@ -28,16 +28,18 @@ def _generate_commodities(
         demand = random.uniform(*demands_range)
         if inflow_horizon < float("inf"):
             commodity = Commodity(
-                source,
+                {
+                    source: RightConstant(
+                        [0.0, inflow_horizon], [demand, 0.0], (0, float("inf"))
+                    )
+                },
                 sink,
-                RightConstant([0.0, inflow_horizon], [demand, 0.0], (0, float("inf"))),
                 PredictorType.CONSTANT,
             )
         else:
             commodity = Commodity(
-                source,
+                {source: RightConstant([0.0], [demand], (0, float("inf")))},
                 sink,
-                RightConstant([0.0], [demand], (0, float("inf"))),
                 PredictorType.CONSTANT,
             )
         network.commodities.append(commodity)
@@ -74,6 +76,4 @@ if __name__ == "__main__":
     import_sioux_falls(
         "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/SiouxFalls_net.tntp",
         "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/random-demands.pickle",
-        float("inf"),
-        demands_range_builder=lambda net: (min(net.capacity), max(net.capacity)),
     )

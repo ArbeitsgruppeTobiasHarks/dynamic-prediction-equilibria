@@ -1,23 +1,24 @@
 import json
 import os
-from core.network import Network
+from test.sample_network import build_sample_network
 
+import numpy as np
+
+from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate_network import eval_network_demand
+from ml.build_test_flows import build_flows
+from ml.generate_queues import generate_queues_and_edge_loads
+from ml.neighboring_edges import get_neighboring_edges_undirected
 from ml.SKFullNetworkModel import train_sk_full_net_model
 from ml.SKNeighborhood import train_sk_neighborhood_model
 from ml.TFFullNetworkModel import train_tf_full_net_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
-from ml.build_test_flows import build_flows
-from ml.generate_queues import generate_queues_and_edge_loads
-from ml.neighboring_edges import get_neighboring_edges_undirected
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
-from test.sample_network import build_sample_network
-import numpy as np
 
 
 def build_nguyen_network():

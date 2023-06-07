@@ -1,5 +1,5 @@
 import random
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 from numpy import genfromtxt
 

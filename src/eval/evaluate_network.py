@@ -1,14 +1,15 @@
-from dataclasses import dataclass
 import json
-from math import ceil, log10
-import numpy as np
 import os
 import random
+from dataclasses import dataclass
+from math import ceil, log10
 from typing import Dict, List, Optional, Tuple
 
-from core.network import Network, Commodity
+import numpy as np
+
+from core.network import Commodity, Network
 from core.predictors.predictor_type import PredictorType
-from eval.evaluate import COLORS, evaluate_single_run, PredictorBuilder
+from eval.evaluate import COLORS, PredictorBuilder, evaluate_single_run
 from ml.build_test_flows import generate_network_demands
 from utilities.file_lock import wait_for_locks, with_file_lock
 from utilities.json_encoder import JSONEncoder
@@ -119,10 +120,10 @@ def eval_network_for_commodities(
     prediction_interval: float,
     reroute_interval: float,
     horizon: float,
+    build_predictors: PredictorBuilder,
     split: bool = False,
     random_commodities: bool = False,
     suppress_log=True,
-    build_predictors: Optional[PredictorBuilder] = None,
     check_for_optimizations: bool = True,
     visualization_config: Optional[Dict[PredictorType, Tuple[str, str]]] = None,
 ):
@@ -139,7 +140,7 @@ def eval_network_for_commodities(
     print()
     print(
         "You can start multiple processes with this command to speed up the evaluation. "
-        + "Make sure to delete the output folder if you want to do another round of evaluations."
+        + "Delete the output folder if you want to do another round of evaluations."
     )
     print()
     num_commodities = len(Network.from_file(network_path).commodities)
@@ -170,11 +171,8 @@ def eval_network_for_commodities(
                 if sink in network.graph.get_reachable_nodes(source):
                     break
             commodity = Commodity(
-                source,
+                {source: RightConstant([0, inflow_horizon], [1, 0], (0, float("inf")))},
                 sink,
-                net_inflow=RightConstant(
-                    [0, inflow_horizon], [1, 0], (0, float("inf"))
-                ),
                 predictor_type=PredictorType.CONSTANT,
             )
             network.commodities.append(commodity)
@@ -183,6 +181,7 @@ def eval_network_for_commodities(
             )
         else:
             selected_commodity = network.remove_unnecessary_commodities(k)
+
         _, _, flow = evaluate_single_run(
             network,
             flow_id=k,
@@ -194,7 +193,7 @@ def eval_network_for_commodities(
             prediction_interval=prediction_interval,
             suppress_log=suppress_log,
             split=split,
-            out_dir=out_dir,
+            json_eval_path=eval_path,
             build_predictors=build_predictors,
         )
 
@@ -346,7 +345,7 @@ def eval_jsons_to_avg_slowdowns(dir: str, visualization_config):
         np.average(slowdowns) for slowdowns in slowdowns_by_predictor
     ]
     with open(os.path.join(dir, "../average_slowdowns.json"), "w") as file:
-        JSONEncoder.dump(avg_slowdowns_by_predictor, file)
+        JSONEncoder().dump(avg_slowdowns_by_predictor, file)
 
 
 if __name__ == "__main__":

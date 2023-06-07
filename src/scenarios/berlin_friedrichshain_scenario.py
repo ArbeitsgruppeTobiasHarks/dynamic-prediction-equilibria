@@ -1,11 +1,10 @@
-from curses import nonl
 import json
-from math import pi
 import os
+from curses import nonl
+from math import pi
 
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
-
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType
@@ -18,14 +17,14 @@ from importer.tntp_importer import (
     import_network,
     natural_earth_projection,
 )
-from ml.SKFullNetworkModel import train_sk_full_net_model
-from ml.SKNeighborhood import train_sk_neighborhood_model
-from ml.TFNeighborhood import train_tf_neighborhood_model
 from ml.build_test_flows import build_flows
 from ml.generate_queues import (
     generate_queues_and_edge_loads,
     save_queues_and_edge_loads_for_flow,
 )
+from ml.SKFullNetworkModel import train_sk_full_net_model
+from ml.SKNeighborhood import train_sk_neighborhood_model
+from ml.TFNeighborhood import train_tf_neighborhood_model
 from utilities.get_tn_path import get_tn_path
 from visualization.to_json import to_visualization_json
 

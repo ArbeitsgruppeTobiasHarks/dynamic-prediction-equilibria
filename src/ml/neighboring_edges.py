@@ -1,5 +1,7 @@
-import numpy as np
 from typing import Set
+
+import numpy as np
+
 from core.graph import Edge, Node
 from core.network import Network
 

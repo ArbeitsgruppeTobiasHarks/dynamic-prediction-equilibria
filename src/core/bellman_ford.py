@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Dict, Set
+from typing import Dict, List, Set
 
 from core.graph import Node
 from core.machine_precision import eps
@@ -64,7 +64,7 @@ def bellman_ford(
                 )
                 if restr_domain[0] is None or restr_domain[1] is None:
                     continue
-                relaxation = g[w].compose(T.restrict(restr_domain))
+                relaxation = g[w].compose(T.restrict(restr_domain))  # type: ignore
                 if v not in g.keys():
                     node_distance[v] = node_distance[w] + 1
                     if v not in changes_detected_at:

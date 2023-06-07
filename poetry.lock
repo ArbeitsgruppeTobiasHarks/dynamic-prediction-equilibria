@@ -48,7 +48,7 @@ wheel = ">=0.23.0,<1.0"
 name = "black"
 version = "23.3.0"
 description = "The uncompromising code formatter."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -938,7 +938,7 @@ tests = ["pytest (>=4.6)"]
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 files = [
@@ -1103,7 +1103,7 @@ test = ["hypothesis (>=5.5.3)", "pytest (>=6.0)", "pytest-xdist (>=1.31)"]
 name = "pathspec"
 version = "0.11.1"
 description = "Utility library for gitignore style pattern matching of file paths."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1868,4 +1868,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "3.11.2"
-content-hash = "31dccc1f77431e540fbeb0f8d32364235b1ea02612f719b757c9883917f3bde7"
+content-hash = "40f61ccc73191b9372844631db188a9fb399f7b8de82c2765b5ad9d7c1142e99"

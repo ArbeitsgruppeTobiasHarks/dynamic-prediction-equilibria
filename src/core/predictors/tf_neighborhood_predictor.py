@@ -1,12 +1,12 @@
 from __future__ import annotations
-import os
 
+import os
 from typing import Dict, List, Optional
 
 import numpy as np
-from core.dynamic_flow import DynamicFlow
 import tensorflow as tf
 
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from core.predictor import Predictor
 from ml.neighboring_edges import get_neighboring_edges_mask_undirected

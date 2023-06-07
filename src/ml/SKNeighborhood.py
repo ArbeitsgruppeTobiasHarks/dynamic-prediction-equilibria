@@ -1,5 +1,6 @@
 import os
 import pickle
+
 import numpy as np
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error
@@ -9,8 +10,8 @@ from sklearn.preprocessing import MinMaxScaler
 
 from core.network import Network
 from core.predictors.sk_neighborhood_predictor import SKNeighborhoodPredictor
-from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 from ml.neighboring_edges import get_neighboring_edges_mask_undirected
+from ml.QueueAndEdgeLoadsDataset import QueueAndEdgeLoadDataset
 from utilities.file_lock import wait_for_locks, with_file_lock
 
 

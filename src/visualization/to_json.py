@@ -1,6 +1,6 @@
 import gzip
 import os
-from typing import Dict, Collection
+from typing import Collection, Dict
 
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.network import Network
@@ -41,7 +41,7 @@ def to_visualization_json(
 ):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with gzip.open(path, "wt", encoding="UTF-8") as file:
-        JSONEncoder.dump(
+        JSONEncoder().dump(
             {
                 "network": {
                     "nodes": [

@@ -1,12 +1,11 @@
-from typing import Tuple, Callable
 from math import pi
+from typing import Callable, Tuple
 
 import pandas as pd
 
 from core.network import Network
 from core.predictors.predictor_type import PredictorType
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
-
 
 DemandsRangeBuilder = Callable[[Network], Tuple[float, float]]
 

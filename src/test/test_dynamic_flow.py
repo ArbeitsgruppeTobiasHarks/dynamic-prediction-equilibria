@@ -1,9 +1,9 @@
 import unittest
+from test.sample_network import build_sample_network
 
 import numpy as np
 
 from core.dynamic_flow import DynamicFlow
-from test.sample_network import build_sample_network
 from utilities.piecewise_linear import zero
 from utilities.right_constant import RightConstant
 

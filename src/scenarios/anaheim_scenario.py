@@ -1,8 +1,8 @@
 import json
-from math import pi
 import os
-from core.network import Network
+from math import pi
 
+from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType
@@ -10,11 +10,11 @@ from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate_network import eval_network_demand
 from importer.tntp_importer import import_network, natural_earth_projection
+from ml.build_test_flows import build_flows
+from ml.generate_queues import generate_queues_and_edge_loads
 from ml.SKFullNetworkModel import train_sk_full_net_model
 from ml.SKNeighborhood import train_sk_neighborhood_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
-from ml.build_test_flows import build_flows
-from ml.generate_queues import generate_queues_and_edge_loads
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.get_tn_path import get_tn_path
 
