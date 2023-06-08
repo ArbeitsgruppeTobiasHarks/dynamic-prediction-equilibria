@@ -66,7 +66,7 @@ isort src --profile black
 ```
 To format files automatically on commit, install the pre-commit hook:
 ```sh
-ln -s pre-commit.sh .git/hooks/pre-commit
+ln -s ../../pre-commit.sh .git/hooks/pre-commit
 ```
 
 ### Linting
