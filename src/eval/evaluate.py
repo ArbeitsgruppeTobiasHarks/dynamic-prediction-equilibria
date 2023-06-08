@@ -1,7 +1,7 @@
 import os
 import pickle
 from math import floor
-from typing import Callable, Dict, Optional,  TypeVar
+from typing import Callable, Dict, Optional, TypeVar
 
 import numpy as np
 
@@ -198,7 +198,7 @@ def evaluate_single_run(
         future_timesteps,
         reroute_interval,
         prediction_interval,
-        horizon
+        horizon,
     )
     mean_absolute_errors = evaluate_mean_absolute_error(
         flow,

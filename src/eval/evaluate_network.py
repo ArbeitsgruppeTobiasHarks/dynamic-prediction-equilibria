@@ -345,6 +345,7 @@ def eval_jsons_to_avg_slowdowns(dir: str, visualization_config):
     with open(os.path.join(dir, "../average_slowdowns.json"), "w") as file:
         JSONEncoder().dump(avg_slowdowns_by_predictor, file)
 
+
 def eval_jsons_to_avg_eps(dir: str, visualization_config):
     files = [file for file in os.listdir(dir) if file.endswith(".json")]
     slowdowns_by_predictor = [[] for _ in visualization_config]
