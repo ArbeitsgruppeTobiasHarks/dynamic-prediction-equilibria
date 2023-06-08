@@ -1,13 +1,11 @@
 import os
 import pickle
-from functools import cache
 from math import floor
-from typing import Callable, Dict, FrozenSet, List, Optional, Set, TypeVar
+from typing import Callable, Dict, Optional,  TypeVar
 
 import numpy as np
 
 from core.bellman_ford import bellman_ford
-from core.dijkstra import dynamic_dijkstra
 from core.dynamic_flow import DynamicFlow
 from core.flow_builder import FlowBuilder
 from core.graph import Edge, Node
@@ -15,13 +13,14 @@ from core.machine_precision import eps
 from core.network import Commodity, Network
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
+from eval.predicted_delay import approximate_max_predicted_delay
 from utilities.arrays import elem_lrank, elem_rank
 from utilities.build_with_times import build_with_times
 from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.json_encoder import JSONEncoder
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
-from utilities.status_logger import StatusLogger, TimedStatusLogger
+from utilities.status_logger import StatusLogger
 
 COLORS = {
     PredictorType.ZERO: "blue",
@@ -191,14 +190,15 @@ def evaluate_single_run(
         print(f"The following average travel times were computed for flow#{flow_id}:")
         print(travel_times)
 
-    max_pred_delays = evaluate_max_pred_delay(
+    max_pred_delays = approximate_max_predicted_delay(
         flow,
         network,
         predictors,
+        new_commodities_indices,
         future_timesteps,
         reroute_interval,
         prediction_interval,
-        horizon,
+        horizon
     )
     mean_absolute_errors = evaluate_mean_absolute_error(
         flow,
@@ -223,199 +223,6 @@ def evaluate_single_run(
             JSONEncoder().dump(save_dict, file)
 
     return travel_times, computation_time, flow
-
-
-def is_positive_during(f: RightConstant, start: float, end: float):
-    """
-    Returns true, if f is postive at any point during the interval [start, end).
-    """
-    start_rank = elem_lrank(f.times, start)
-    end_rank = elem_rank(f.times, end)
-    return any(f.values[max(0, rank)] > eps for rank in range(start_rank, end_rank + 1))
-
-
-T = TypeVar("T")
-
-
-def lazy(fun: Callable[[], T]) -> Callable[[], T]:
-    evaluated = False
-    value: None | T = None
-
-    def wrapper() -> T:
-        nonlocal evaluated, value
-        if not evaluated:
-            value = fun()
-            evaluated = True
-        return value  # type: ignore
-
-    return wrapper
-
-
-def costs_from_preds(
-    network: Network, predictions: List[PiecewiseLinear], at: float
-) -> List[PiecewiseLinear]:
-    travel_time = network.travel_time
-    capacity = network.capacity
-
-    return [
-        PiecewiseLinear(
-            predictions[e].times,
-            [travel_time[e] + value / capacity[e] for value in predictions[e].values],
-            predictions[e].first_slope / capacity[e],
-            predictions[e].last_slope / capacity[e],
-            (at, float("inf")),
-        )
-        for e in range(len(network.graph.edges))
-    ]
-
-
-def get_active_edges_from_dijkstra(
-    arrival_times: Dict[Node, float],
-    realised_cost: Dict[Edge, float],
-    source: Node,
-    sink: Node,
-) -> List[Edge]:
-    active_edges = []
-    touched_nodes = {sink}
-    queue: List[Node] = [sink]
-    while queue:
-        w = queue.pop()
-        for e in w.incoming_edges:
-            if e not in realised_cost.keys():
-                continue
-            v: Node = e.node_from
-            if arrival_times[v] + realised_cost[e] <= arrival_times[w] + eps:
-                if v == source:
-                    active_edges.append(e)
-                if v not in touched_nodes:
-                    touched_nodes.add(v)
-                    queue.append(v)
-
-    assert len(active_edges) > 0
-    return active_edges
-
-
-def get_pred_edge_delay(
-    at: float,
-    edge_idx: int,
-    network: Network,
-    sink: Node,
-    com_nodes: FrozenSet[Node],
-    costs: List[PiecewiseLinear],
-):
-    edge = network.graph.edges[edge_idx]
-    arrival_times, realised_cost = dynamic_dijkstra(
-        at, edge.node_from, sink, com_nodes, costs
-    )
-    active_edges = get_active_edges_from_dijkstra(
-        arrival_times, realised_cost, edge.node_from, sink
-    )
-    if edge in active_edges:
-        return 0.0
-    else:
-        arrival_times_using_e, _ = dynamic_dijkstra(
-            at + costs[edge_idx](at), edge.node_to, sink, com_nodes, costs
-        )
-        return arrival_times_using_e[sink] - arrival_times[sink]
-
-
-def evaluate_max_pred_delay(
-    flow: DynamicFlow,
-    network: Network,
-    predictors: Dict[PredictorType, Predictor],
-    future_timesteps: int,
-    reroute_interval: float,
-    prediction_interval: float,
-    horizon: float,
-):
-    with TimedStatusLogger("Evaluating prediction accuracy eps...") as status:
-        eps_by_comm = {}
-
-        for comm_idx in range(len(network.commodities)):
-            max_eps = 0.0
-            witness = None
-            commodity = network.commodities[comm_idx]
-            predictor = predictors[commodity.predictor_type]
-
-            com_nodes = frozenset(
-                network.graph.get_nodes_reaching(commodity.sink).intersection(
-                    set(
-                        node
-                        for source in commodity.sources
-                        for node in network.graph.get_reachable_nodes(source)
-                    )
-                )
-            )
-
-            eval_horizon = horizon - (future_timesteps + 1) * prediction_interval
-
-            measurement_interval = reroute_interval / 2
-            pred_times = [
-                i * measurement_interval
-                for i in range(0, floor(eval_horizon / measurement_interval) + 1)
-            ]
-
-            predictor_predictions = predictor.batch_predict(pred_times, flow)
-
-            interval_start = pred_times[0]
-            costs_at_start = costs_from_preds(
-                network, predictor_predictions[0], interval_start
-            )
-            delays_at_start: Dict[int, float] = {}
-            for k in range(len(pred_times) - 1):
-                interval_start = pred_times[k]
-                interval_end = pred_times[k + 1]
-
-                costs_at_end = costs_from_preds(
-                    network, predictor_predictions[k + 1], interval_end
-                )
-                delays_at_end = {}
-
-                for edge_idx, edge_inflow in enumerate(flow.inflow):
-                    if comm_idx in edge_inflow._functions_dict:
-                        inflow = edge_inflow._functions_dict[comm_idx]
-                        if is_positive_during(inflow, interval_start, interval_end):
-                            if edge_idx not in delays_at_start:
-                                delays_at_start[edge_idx] = get_pred_edge_delay(
-                                    interval_start,
-                                    edge_idx,
-                                    network,
-                                    commodity.sink,
-                                    com_nodes,
-                                    costs_at_start,
-                                )
-                            if delays_at_start[edge_idx] > max_eps:
-                                max_eps = delays_at_start[edge_idx]
-                                witness = (
-                                    interval_start,
-                                    interval_end,
-                                    "start",
-                                    edge_idx,
-                                )
-                            delays_at_end[edge_idx] = get_pred_edge_delay(
-                                interval_end,
-                                edge_idx,
-                                network,
-                                commodity.sink,
-                                com_nodes,
-                                costs_at_end,
-                            )
-                            if delays_at_end[edge_idx] > max_eps:
-                                max_eps = delays_at_end[edge_idx]
-                                witness = (
-                                    interval_start,
-                                    interval_end,
-                                    "end",
-                                    edge_idx,
-                                )
-
-                costs_at_start = costs_at_end
-                delays_at_start = delays_at_end
-
-            eps_by_comm[comm_idx] = (max_eps, witness)
-
-        status.finish_msg = f"Max eps: {eps_by_comm}"
-        return eps_by_comm
 
 
 def evaluate_mean_absolute_error(

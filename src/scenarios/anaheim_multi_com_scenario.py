@@ -59,7 +59,7 @@ def run_scenario(
     past_timesteps = 20
     future_timesteps = 20
     prediction_interval = 1.0
-    number_training_flows = 500
+    number_training_flows = 200
     number_eval_flows = 20
     pred_horizon = future_timesteps * prediction_interval
     max_distance = 3

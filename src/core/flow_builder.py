@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Dict, Generator, List, Optional, Set, Tuple
 
-from core.dijkstra import dynamic_dijkstra, reverse_dijkstra
+from core.dijkstra import dynamic_dijkstra, get_active_edges_from_dijkstra, reverse_dijkstra
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.graph import Edge, Node
 from core.machine_precision import eps
@@ -169,33 +169,14 @@ class FlowBuilder:
                         self._active_edges[j][v] = active_edges
         else:
             # Do Time-Dependent dijkstra from s to t to find active outgoing edges of s
-            arrival_times, realised_cost = dynamic_dijkstra(
+            result = dynamic_dijkstra(
                 self._route_time,
                 s,
                 sink,
                 com_nodes,
                 self._get_costs(commodity.predictor_type),
             )
-
-            # Dijkstra done. Now searching all active edges leading to t.
-            active_edges = []
-            touched_nodes = {sink}
-            queue: List[Node] = [sink]
-            while queue:
-                w = queue.pop()
-                for e in w.incoming_edges:
-                    if e not in realised_cost.keys():
-                        continue
-                    v: Node = e.node_from
-                    if arrival_times[v] + realised_cost[e] <= arrival_times[w] + eps:
-                        if v == s:
-                            active_edges.append(e)
-                        if v not in touched_nodes:
-                            touched_nodes.add(v)
-                            queue.append(v)
-
-            assert len(active_edges) > 0
-            self._active_edges[i][s] = active_edges
+            self._active_edges[i][s] = get_active_edges_from_dijkstra(result, s, sink)
         return self._active_edges[i][s]
 
     def _determine_new_inflow(self) -> Dict[int, Dict[int, float]]:
