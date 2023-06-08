@@ -37,7 +37,7 @@ def merge_commodities(
 
 
 def to_visualization_json(
-    path: str, flow: DynamicFlow, network: Network, colors: Dict[int, str]
+    path: str, flow: DynamicFlow, network: Network, color_by_comm_idx: Dict[int, str]
 ):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with gzip.open(path, "wt", encoding="UTF-8") as file:
@@ -63,7 +63,7 @@ def to_visualization_json(
                         for (id, e) in enumerate(network.graph.edges)
                     ],
                     "commodities": [
-                        {"id": id, "color": colors[id]}
+                        {"id": id, "color": color_by_comm_idx[id]}
                         for (id, comm) in enumerate(network.commodities)
                     ],
                 },

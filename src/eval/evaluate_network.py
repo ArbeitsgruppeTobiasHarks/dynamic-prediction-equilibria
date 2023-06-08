@@ -1,9 +1,8 @@
 import json
 import os
 import random
-from dataclasses import dataclass
 from math import ceil, log10
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 
@@ -202,8 +201,8 @@ def eval_network_for_commodities(
             flow,
             network,
             {
-                id: visualization_config[comm.predictor_type][0]
-                for (id, comm) in enumerate(network.commodities)
+                comm_idx: visualization_config[comm.predictor_type][0]
+                for (comm_idx, comm) in enumerate(network.commodities)
             },
         )
         os.remove(lock_path)
