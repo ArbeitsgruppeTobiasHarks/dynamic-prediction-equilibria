@@ -39,6 +39,7 @@ class DynamicDijkstraResult(NamedTuple):
     arrival_times: Dict[Node, float]
     realized_cost: Dict[Edge, float]
 
+
 def dynamic_dijkstra(
     phi: float,
     source: Node,
@@ -71,7 +72,6 @@ def dynamic_dijkstra(
             elif relaxation < queue.key_of(w):
                 queue.decrease_key(w, relaxation)
     return DynamicDijkstraResult(arrival_times, realized_cost)
-
 
 
 def get_active_edges_from_dijkstra(

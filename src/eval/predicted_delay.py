@@ -1,16 +1,14 @@
-
-
 from dataclasses import dataclass
 from math import floor
 from typing import Dict, Iterable, List, Literal, Optional, Set
+
 from core.dijkstra import dynamic_dijkstra, get_active_edges_from_dijkstra
 from core.dynamic_flow import DynamicFlow
 from core.graph import Node
+from core.machine_precision import eps
 from core.network import Network
 from core.predictor import Predictor
-
 from core.predictors.predictor_type import PredictorType
-from core.machine_precision import eps
 from utilities.arrays import elem_lrank, elem_rank
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
@@ -21,8 +19,9 @@ from utilities.status_logger import TimedStatusLogger
 class DelayWitness:
     interval_start: float
     interval_end: float
-    occured_at: Literal['start', 'end']
+    occured_at: Literal["start", "end"]
     edge_idx: int
+
 
 @dataclass
 class Delay:
@@ -31,7 +30,9 @@ class Delay:
     predictor_type: PredictorType
     is_eval_commodity: bool
 
+
 DelayByCommodity = Dict[int, Delay]
+
 
 def approximate_max_predicted_delay(
     flow: DynamicFlow,
@@ -127,11 +128,15 @@ def approximate_max_predicted_delay(
                 costs_at_start = costs_at_end
                 delays_at_start = delays_at_end
 
-            eps_by_comm[comm_idx] = Delay(max_eps, witness, commodity.predictor_type, comm_idx in new_commodities_indices)
+            eps_by_comm[comm_idx] = Delay(
+                max_eps,
+                witness,
+                commodity.predictor_type,
+                comm_idx in new_commodities_indices,
+            )
 
         status.finish_msg = f"Max eps: {eps_by_comm}"
         return eps_by_comm
-
 
 
 def costs_from_preds(
@@ -151,6 +156,7 @@ def costs_from_preds(
         for e in range(len(network.graph.edges))
     ]
 
+
 def get_pred_edge_delay(
     at: float,
     edge_idx: int,
@@ -160,10 +166,10 @@ def get_pred_edge_delay(
     costs: List[PiecewiseLinear],
 ):
     edge = network.graph.edges[edge_idx]
-    result_from_sink = dynamic_dijkstra(
-        at, edge.node_from, sink, com_nodes, costs
+    result_from_sink = dynamic_dijkstra(at, edge.node_from, sink, com_nodes, costs)
+    active_edges = get_active_edges_from_dijkstra(
+        result_from_sink, edge.node_from, sink
     )
-    active_edges = get_active_edges_from_dijkstra(result_from_sink, edge.node_from, sink)
     if edge in active_edges:
         return 0.0
     else:
@@ -171,7 +177,6 @@ def get_pred_edge_delay(
             at + costs[edge_idx](at), edge.node_to, sink, com_nodes, costs
         )
         return arrival_times_using_e[sink] - result_from_sink.arrival_times[sink]
-
 
 
 def is_positive_during(f: RightConstant, start: float, end: float):

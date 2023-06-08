@@ -3,7 +3,11 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Dict, Generator, List, Optional, Set, Tuple
 
-from core.dijkstra import dynamic_dijkstra, get_active_edges_from_dijkstra, reverse_dijkstra
+from core.dijkstra import (
+    dynamic_dijkstra,
+    get_active_edges_from_dijkstra,
+    reverse_dijkstra,
+)
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.graph import Edge, Node
 from core.machine_precision import eps

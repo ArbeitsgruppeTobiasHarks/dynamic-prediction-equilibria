@@ -85,6 +85,23 @@ def run_scenario(arcs_path: str, demands_path: str, scenario_dir: str):
                 future_timesteps,
             ),
         },
+        visualization_config={
+            PredictorType.ZERO: ("blue", "$\\hat q^{\\text{Z}}$"),
+            PredictorType.CONSTANT: ("red", "$\\hat q^{\\text{C}}$"),
+            PredictorType.LINEAR: (
+                "{rgb,255:red,0; green,128; blue,0}",
+                "$\\hat q^{\\text{L}}$",
+            ),
+            PredictorType.REGULARIZED_LINEAR: ("orange", "$\\hat q^{\\text{RL}}$"),
+            PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: (
+                "black",
+                "$\\hat q^{\\text{LR-neighboring}}$",
+            ),
+            PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: (
+                "black",
+                "$\\hat q^{\\text{NN-neighboring}}$",
+            ),
+        },
     )
 
 

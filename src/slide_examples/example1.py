@@ -33,7 +33,7 @@ def build_example1():
         3: (200 - 141.421356237, 141.421356237),
     }
 
-    colors = {0: "red", 1: "blue"}
+    color_by_comm_idx = {0: "red", 1: "blue"}
 
     horizon = 2000
     predictors = {PredictorType.ZERO: ZeroPredictor(network)}
@@ -44,7 +44,7 @@ def build_example1():
     while flow.phi < horizon:
         flow = next(generator)
 
-    to_visualization_json("./example1.vis.json", flow, network, colors)
+    to_visualization_json("./example1.vis.json", flow, network, color_by_comm_idx)
 
 
 if __name__ == "__main__":

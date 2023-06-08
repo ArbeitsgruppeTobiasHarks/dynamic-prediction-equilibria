@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Install this using:
-# ln -s pre-commit.sh .git/hooks/pre-commit
+# ln -s ../../pre-commit.sh .git/hooks/pre-commit
 
 PY_FILES=$(git diff --cached --name-only --diff-filter=ACMR "*.py" | sed 's| |\\ |g')
 
