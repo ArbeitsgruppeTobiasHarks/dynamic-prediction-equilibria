@@ -82,16 +82,14 @@ class TFNeighborhoodPredictor(Predictor):
                 queues[e_id] = zero_fct
                 continue
 
-            future_queues_raw = self._models[e_id].predict(
+            future_queues_raw = self._models[e_id](
                 np.array(
                     [
-                        [
-                            prediction_time,
-                            *(data[:, self._edge_input_masks[e_id], :].flatten()),
-                        ]
+                        prediction_time,
+                        *(data[:, self._edge_input_masks[e_id], :].flatten()),
                     ]
                 ),
-                verbose=0,
+                training=False,
             )[0]
             future_queues_raw = np.maximum(
                 future_queues_raw, np.zeros_like(future_queues_raw)
