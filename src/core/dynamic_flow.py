@@ -128,7 +128,10 @@ class DynamicFlow:
         acc_out = min(capacity, acc_in)
         factor = acc_out / acc_in
 
-        new_outflow = {i: factor * value for i, value in new_inflow.items()}
+        new_outflow = new_inflow
+        for i in new_outflow:
+            new_outflow[i] *= factor
+
         self.outflow[e].extend(arrival, new_outflow, acc_out)
 
         self.outflow_changes.set((e, arrival), arrival)
@@ -146,7 +149,10 @@ class DynamicFlow:
 
         factor = capacity / acc_in
 
-        new_outflow = {i: factor * value for i, value in new_inflow.items()}
+        new_outflow = new_inflow
+        for i in new_outflow:
+            new_outflow[i] *= factor
+
         self.outflow[e].extend(arrival, new_outflow, capacity)
 
         self.outflow_changes.set((e, arrival), arrival)
@@ -179,6 +185,7 @@ class DynamicFlow:
         Extends the flow with constant inflows new_inflow until some edge outflow changes.
         Edge inflows not in new_inflow are extended with their previous values.
         The user can also specify a maximum extension length using max_extension_length.
+        @param new_inflow: dictionary of edge inflows (indexed by edge, commodity). Will be mutated and re-used to preserve memory.
         :returns set of edges where the outflow has changed at the new time self.phi
         """
         self.get_edge_loads.cache_clear()
