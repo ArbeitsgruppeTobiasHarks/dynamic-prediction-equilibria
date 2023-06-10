@@ -65,7 +65,7 @@ cdef class PiecewiseLinear:
     def __call__(self, at: float) -> float:
         return self.eval(at)
 
-    @cython.cfunc
+    @cython.ccall
     def eval(self, at: cython.double) -> cython.double:
         assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         rnk: cython.Py_ssize_t = elem_rank(self.times, at)
@@ -273,14 +273,14 @@ cdef class PiecewiseLinear:
                 min_time_idx = rnk + 1
                 times = times[rnk + 1 :]
             else:
-                times = [new_domain[0]] + times[rnk + 1 :]
+                times = array.array("d", (new_domain[0], )) + times[rnk + 1 :]
         if times[-1] > new_domain[1]:
             # cut times above new_domain[1]
             rnk = elem_rank(times, new_domain[1])  # => rnk <= len(times) - 1
             if times[rnk + 1] == new_domain[1]:
                 times = times[: rnk + 2]
             else:
-                times = times[: rnk + 1] + [new_domain[1]]
+                times = times[: rnk + 1] + array.array("d", (new_domain[1],))
 
         values: array.array = array.clone(self.values, len(times), zero=False)
 

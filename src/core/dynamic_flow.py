@@ -214,18 +214,18 @@ class DynamicFlow:
 
     def avg_travel_time(self, i: int, horizon: float) -> float:
         commodity = self._network.commodities[i]
-        net_outflow: RightConstant = sum(
-            (
+        net_outflow: RightConstant = RightConstant.sum(
+            [
                 self.outflow[e.id]._functions_dict[i]
                 for e in commodity.sink.incoming_edges
                 if i in self.outflow[e.id]._functions_dict
-            ),
-            start=RightConstant(array.array("d", [0.0]), array.array("d", [0.0]), (0, float("inf"))),
+            ]
         )
         accum_net_outflow = net_outflow.integral()
-        net_inflow: RightConstant = sum(
-            (inflow for inflow in commodity.sources.values()),
-            start=RightConstant(array.array("d", [0.0]), array.array("d", [0.0]), (0, float("inf"))),
+        net_inflow: RightConstant = RightConstant.sum(
+            [
+                inflow for inflow in commodity.sources.values()
+            ]
         )
         accum_net_inflow = net_inflow.integral()
 

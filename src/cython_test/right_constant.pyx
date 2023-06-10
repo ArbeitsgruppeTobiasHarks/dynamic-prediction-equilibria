@@ -16,6 +16,10 @@ import cython
 
 cdef double eps = 1e-10
 
+cdef double inf = float("inf")
+cdef double neg_inf = float("-inf")
+
+
 cdef class RightConstant:
     """
     This class defines right-continuous functions with finitely many break points (xᵢ, yᵢ).
@@ -32,7 +36,7 @@ cdef class RightConstant:
         self,
         times: array.array,
         values: array.array,
-        domain: cython.ctuple[cython.double, cython.double] = (float("-inf"), float("inf")),
+        domain: cython.ctuple[cython.double, cython.double] = (neg_inf, inf),
     ):
         assert times.typecode == "d" == values.typecode
 
@@ -84,15 +88,19 @@ cdef class RightConstant:
         else:
             return self.values.data.as_doubles[rnk]
 
+    @cython.ccall
     def extend(self, start_time: cython.double, value: cython.double):
         assert start_time >= self.times[-1] - eps
-        last_index: cython.Py_ssize_t = len(self.times) - 1
-        last_value: cython.double = self.values.data.as_doubles[last_index]
+        cdef double* values_p = self.values.data.as_doubles
+        cdef double* times_p = self.times.data.as_doubles
+    
+        last_index: cython.Py_ssize_t = self.times.ob_size - 1
+        last_value: cython.double = values_p[last_index]
         if fabs(last_value - value) <= eps:
             return
-        if fabs(start_time - self.times.data.as_doubles[last_index]) <= eps:
+        if fabs(start_time - times_p[last_index]) <= eps:
             #  Simply replace the last value
-            self.values.data.as_doubles[last_index] = value
+            values_p[last_index] = value
         else:
             array.resize_smart(self.times, last_index + 2)
             array.resize_smart(self.values, last_index + 2)
@@ -108,27 +116,39 @@ cdef class RightConstant:
             and self.domain == other.domain
         )
 
+    @cython.cfunc
+    def plus(self, other: RightConstant) -> RightConstant:
+        assert self.domain == other.domain
+
+        self_times_p = self.times.data.as_doubles
+        self_values_p = self.values.data.as_doubles
+        other_times_p = other.times.data.as_doubles
+        other_values_p = other.values.data.as_doubles
+
+        new_times: array.array = merge_sorted(self.times, other.times)
+        new_values: array.array = array.clone(new_times, new_times.ob_size, zero=True)
+        new_values_p = new_values.data.as_doubles
+
+        lptr: cython.Py_ssize_t = 0
+        rptr: cython.Py_ssize_t = 0
+        for i in range(new_times.ob_size):
+            time: cython.double = new_times.data.as_doubles[i]
+
+            while lptr < self.times.ob_size - 1 and self_times_p[lptr + 1] <= time:
+                lptr += 1
+            while rptr < other.times.ob_size - 1 and other_times_p[rptr + 1] <= time:
+                rptr += 1
+            new_values_p[i] = self_values_p[lptr] + other_values_p[rptr]
+
+        return RightConstant(new_times, new_values, self.domain)
+
     def __radd__(self, other):
         if other == 0:
             return self
         if not isinstance(other, RightConstant):
             raise TypeError("Can only add a RightConstantFunction.")
         assert self.domain == other.domain
-
-        new_times = merge_sorted(self.times, other.times)
-
-        new_values = array.clone(new_times, len(new_times), zero=True)
-
-        lptr = 0
-        rptr = 0
-        for i, time in enumerate(new_times):
-            while lptr < len(self.times) - 1 and self.times[lptr + 1] <= time:
-                lptr += 1
-            while rptr < len(other.times) - 1 and other.times[rptr + 1] <= time:
-                rptr += 1
-            new_values[i] = self.values[lptr] + other.values[rptr]
-
-        return RightConstant(new_times, new_values, self.domain)
+        return self.plus(other)
 
     @staticmethod
     def sum(functions: List[RightConstant], domain=(0, float("inf"))) -> RightConstant:

@@ -92,45 +92,48 @@ cdef array.array merge_sorted_many(list arrays):
     array.resize_smart(merged, merged_size)
     return merged
 
-
 cdef array.array merge_sorted(array.array arr1, array.array arr2):
     """
     Merge two sorted arrays into a sorted array without duplicates (up to eps)
     """
-    merged = array.clone(arr1, length=len(arr1) + len(arr2), zero=False)
+    merged = array.clone(arr1, length=arr1.ob_size + arr2.ob_size, zero=False)
     merged_size: cython.Py_ssize_t = 0
 
     ind1: cython.Py_ssize_t = 0
     ind2: cython.Py_ssize_t = 0
-    while ind1 < len(arr1) and ind2 < len(arr2):
-        if arr1[ind1] < arr2[ind2]:
-            if merged_size == 0 or merged[merged_size-1] < arr1[ind1] - eps:
-                merged[merged_size] = arr1[ind1]
+
+    cdef double* arr1_p = arr1.data.as_doubles 
+    cdef double* arr2_p = arr2.data.as_doubles
+    cdef double* merged_p = merged.data.as_doubles
+    while ind1 < arr1.ob_size and ind2 < arr2.ob_size:
+        if arr1_p[ind1] < arr2_p[ind2]:
+            if merged_size == 0 or merged_p[merged_size - 1] < arr1_p[ind1] - eps:
+                merged_p[merged_size] = arr1_p[ind1]
                 merged_size += 1
-            elif merged_size > 0 and arr1[ind1] - eps <= merged[merged_size-1] < arr1[ind1]:
-                merged[merged_size - 1] = arr1[ind1]
+            elif merged_size > 0 and arr1_p[ind1] - eps <= merged_p[merged_size-1] < arr1_p[ind1]:
+                merged_p[merged_size - 1] = arr1_p[ind1]
             ind1 += 1
         else:
-            if merged_size == 0 or merged[merged_size-1] < arr2[ind2] - eps:
-                merged[merged_size] = arr2[ind2]
+            if merged_size == 0 or merged_p[merged_size - 1] < arr2_p[ind2] - eps:
+                merged_p[merged_size] = arr2_p[ind2]
                 merged_size += 1
-            elif merged_size > 0 and arr2[ind2] - eps <= merged[merged_size-1] < arr2[ind2]:
-                merged[merged_size-1] = arr2[ind2]
+            elif merged_size > 0 and arr2_p[ind2] - eps <= merged_p[merged_size-1] < arr2_p[ind2]:
+                merged_p[merged_size-1] = arr2_p[ind2]
             ind2 += 1
 
-    while ind1 < len(arr1):
-        if merged_size == 0 or merged[merged_size-1] < arr1[ind1] - eps:
-            merged[merged_size] = arr1[ind1]
+    while ind1 < arr1.ob_size:
+        if merged_size == 0 or merged_p[merged_size-1] < arr1_p[ind1] - eps:
+            merged_p[merged_size] = arr1_p[ind1]
             merged_size += 1
-        elif merged_size > 0 and arr1[ind1] - eps <= merged[merged_size - 1] < arr1[ind1]:
-            merged[merged_size - 1] = arr1[ind1]
+        elif merged_size > 0 and arr1_p[ind1] - eps <= merged_p[merged_size - 1] < arr1_p[ind1]:
+            merged_p[merged_size - 1] = arr1_p[ind1]
         ind1 += 1
-    while ind2 < len(arr2):
-        if merged_size == 0 or merged[merged_size - 1] < arr2[ind2] - eps:
-            merged[merged_size] = arr2[ind2]
+    while ind2 < arr2.ob_size:
+        if merged_size == 0 or merged_p[merged_size - 1] < arr2_p[ind2] - eps:
+            merged_p[merged_size] = arr2_p[ind2]
             merged_size += 1
-        elif merged_size > 0 and arr2[ind2] - eps <= merged[merged_size - 1] < arr2[ind2]:
-            merged[merged_size - 1] = arr2[ind2]
+        elif merged_size > 0 and arr2_p[ind2] - eps <= merged_p[merged_size - 1] < arr2_p[ind2]:
+            merged_p[merged_size - 1] = arr2_p[ind2]
         ind2 += 1
 
     array.resize_smart(merged, merged_size) 
