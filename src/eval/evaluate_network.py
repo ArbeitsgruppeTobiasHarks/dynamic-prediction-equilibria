@@ -12,7 +12,7 @@ from eval.evaluate import COLORS, PredictorBuilder, evaluate_single_run
 from ml.build_test_flows import generate_network_demands
 from utilities.file_lock import wait_for_locks, with_file_lock
 from utilities.json_encoder import JSONEncoder
-from utilities.right_constant import RightConstant
+from cython_test.right_constant import RightConstant
 from utilities.status_logger import StatusLogger
 from visualization.make_tikz_boxplot import BoxPlot, make_tikz_boxplot
 from visualization.to_json import merge_commodities, to_visualization_json

@@ -1,3 +1,4 @@
+import array
 import os
 import pickle
 from math import floor
@@ -18,8 +19,8 @@ from utilities.arrays import elem_lrank, elem_rank
 from utilities.build_with_times import build_with_times
 from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.json_encoder import JSONEncoder
-from utilities.piecewise_linear import PiecewiseLinear
-from utilities.right_constant import RightConstant
+from src.cython_test.piecewise_linear import PiecewiseLinear
+from cython_test.right_constant import RightConstant
 from utilities.status_logger import StatusLogger
 
 COLORS = {
@@ -51,10 +52,10 @@ def calculate_optimal_average_travel_time(
         costs = [
             PiecewiseLinear(
                 flow.queues[e].times,
-                [
+                array.array("d", (
                     network.travel_time[e] + v / network.capacity[e]
                     for v in flow.queues[e].values
-                ],
+                )),
                 flow.queues[e].first_slope / network.capacity[e],
                 flow.queues[e].last_slope / network.capacity[e],
                 domain=(0.0, horizon),
@@ -73,7 +74,7 @@ def calculate_optimal_average_travel_time(
 
         def integrate_opt(label: PiecewiseLinear) -> float:
             assert label.is_monotone()
-            travel_time = label.plus(PiecewiseLinear([0], [0.0], -1, -1))
+            travel_time = label.plus(PiecewiseLinear(array.array("d", (0.0, )), array.array("d", (0.0, )), -1, -1))
             # Last time h for starting at source to arrive at sink before horizon.
             if inflow_horizon < float("inf"):
                 h = min(inflow_horizon, label.max_t_below(horizon))
@@ -135,7 +136,7 @@ def evaluate_single_run(
             min(network.capacity) / 256, focused_inflow.values[0] / 16 / len(predictors)
         )
         demand_per_comm = RightConstant(
-            [0.0, inflow_horizon], [test_demand, 0.0], (0.0, float("inf"))
+            array.array("d", [0.0, inflow_horizon]), array.array("d", [test_demand, 0.0]), (0.0, float("inf"))
         )
 
     combine_commodities_with_same_sink(network)

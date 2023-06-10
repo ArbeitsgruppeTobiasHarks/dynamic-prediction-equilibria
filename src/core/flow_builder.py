@@ -1,4 +1,5 @@
 from __future__ import annotations
+import array
 
 from functools import lru_cache
 from typing import Dict, Generator, List, Optional, Set, Tuple
@@ -14,7 +15,7 @@ from core.machine_precision import eps
 from core.network import Commodity, Network
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
 
 
@@ -97,10 +98,10 @@ class FlowBuilder:
         costs = [
             PiecewiseLinear(
                 predictions[e].times,
-                [
+                array.array("d", (
                     travel_time[e] + value / capacity[e]
                     for value in predictions[e].values
-                ],
+                )),
                 predictions[e].first_slope / capacity[e],
                 predictions[e].last_slope / capacity[e],
                 (prediction_time, float("inf")),

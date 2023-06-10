@@ -1,3 +1,4 @@
+import array
 import gzip
 import os
 import pickle
@@ -14,7 +15,7 @@ from eval.evaluate import COLORS
 from utilities.build_with_times import build_with_times
 from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.file_lock import no_op, wait_for_locks, with_file_lock
-from utilities.right_constant import RightConstant
+from cython_test.right_constant import RightConstant
 from visualization.to_json import merge_commodities, to_visualization_json
 
 
@@ -35,7 +36,7 @@ def generate_network_demands(
                 zero_demand_commodities.append(index)
             if inflow_horizon < float("inf"):
                 commodity.sources[s] = RightConstant(
-                    [0.0, inflow_horizon], [demand, 0.0], (0.0, float("inf"))
+                    array.array("d", [0.0, inflow_horizon]), array.array("d", [demand, 0.0]), (0.0, float("inf"))
                 )
             else:
                 commodity.sources[s] = RightConstant(

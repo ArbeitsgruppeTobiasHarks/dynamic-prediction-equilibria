@@ -2,7 +2,7 @@ import unittest
 from test.sample_network import build_sample_network
 
 from core.bellman_ford import bellman_ford
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 
 
 class TestBellmanFord(unittest.TestCase):

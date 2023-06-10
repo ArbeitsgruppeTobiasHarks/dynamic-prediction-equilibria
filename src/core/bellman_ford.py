@@ -1,10 +1,11 @@
 from __future__ import annotations
+import array
 
 from typing import Dict, List, Set
 
 from core.graph import Node
 from core.machine_precision import eps
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
 
 
@@ -18,32 +19,25 @@ def bellman_ford(
     """
     Calculates the earliest arrival time at `sink` as functions (l_v).
     """
-    identity = PiecewiseLinear([phi], [phi], 1.0, 1.0, (phi, horizon))
+    identity = PiecewiseLinear(array.array("d", (phi,)), array.array("d", (phi,)), 1.0, 1.0, (phi, horizon))
     # g_v(t) = earliest arrival at sink when starting in v at time t
     g: Dict[Node, PiecewiseLinear] = {sink: identity}
     node_distance: Dict[Node, int] = {sink: 0}
 
-    def get_fifo_arrival_time(traversal: PiecewiseLinear):
-        new_values = traversal.values.copy()
+    def make_fifo(traversal: PiecewiseLinear):
+        new_values = traversal.values
         for i in range(len(new_values) - 1):
             assert new_values[i] <= new_values[i + 1] + eps
             new_values[i + 1] = max(
                 new_values[i], new_values[i + 1], traversal.times[i + 1]
             )
 
-        new_traversal = PiecewiseLinear(
-            traversal.times,
-            new_values,
-            traversal.first_slope,
-            traversal.last_slope,
-            traversal.domain,
-        )
-        if new_traversal.last_slope < 1:
-            new_traversal.last_slope = 1
-        return new_traversal
+        if traversal.last_slope < 1:
+            traversal.last_slope = 1
+        return traversal
 
     edge_arrival_times = [
-        get_fifo_arrival_time(identity.plus(cost)).simplify() for cost in costs
+        make_fifo(identity.plus(cost)).simplify() for cost in costs
     ]
 
     changes_detected_at = PriorityQueue([(sink, 0.0)])

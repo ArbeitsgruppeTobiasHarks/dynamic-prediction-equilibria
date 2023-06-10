@@ -1,3 +1,4 @@
+import array
 import gzip
 import os
 import pickle
@@ -63,13 +64,13 @@ def save_queues_and_edge_loads_for_flow(
         > 1e-14
     ):
         raise ValueError("Prediction interval is not a multiple of reroute interval.")
-    times = [
+    times = array.array("d", (
         i * reroute_interval
         for i in range(
             -(past_timesteps - 1) * reroute_intervals_in_prediction_interval,
             floor(horizon / reroute_interval) + 1,
         )
-    ]
+    ))
     edge_loads = flow.get_edge_loads()
     edge_load_samples = np.asarray(
         [load.eval_sorted_array(times) for load in edge_loads]

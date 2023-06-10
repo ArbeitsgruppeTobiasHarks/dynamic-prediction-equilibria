@@ -1,4 +1,5 @@
 from __future__ import annotations
+import array
 
 from functools import lru_cache
 from typing import Dict, List, Optional, Set, Tuple
@@ -6,9 +7,9 @@ from typing import Dict, List, Optional, Set, Tuple
 from core.flow_rates_collection import FlowRatesCollection
 from core.machine_precision import eps
 from core.network import Network
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
-from utilities.right_constant import RightConstant
+from cython_test.right_constant import RightConstant
 
 ChangeEventValue = Tuple[Dict[int, float], float]
 ChangeEvent = Optional[Tuple[float, ChangeEventValue]]
@@ -85,7 +86,7 @@ class DynamicFlow:
         self.phi = 0.0
         self.inflow = [FlowRatesCollection() for _ in network.graph.edges]
         self.queues = [
-            PiecewiseLinear([self.phi], [0.0], 0.0, 0.0) for _ in network.graph.edges
+            PiecewiseLinear(array.array("d", [self.phi]), array.array("d", [0.0]), 0.0, 0.0) for _ in network.graph.edges
         ]
         self.outflow = [FlowRatesCollection() for _ in network.graph.edges]
         self.outflow_changes = PriorityQueue()
@@ -219,12 +220,12 @@ class DynamicFlow:
                 for e in commodity.sink.incoming_edges
                 if i in self.outflow[e.id]._functions_dict
             ),
-            start=RightConstant([0.0], [0.0], (0, float("inf"))),
+            start=RightConstant(array.array("d", [0.0]), array.array("d", [0.0]), (0, float("inf"))),
         )
         accum_net_outflow = net_outflow.integral()
         net_inflow: RightConstant = sum(
             (inflow for inflow in commodity.sources.values()),
-            start=RightConstant([0.0], [0.0], (0, float("inf"))),
+            start=RightConstant(array.array("d", [0.0]), array.array("d", [0.0]), (0, float("inf"))),
         )
         accum_net_inflow = net_inflow.integral()
 

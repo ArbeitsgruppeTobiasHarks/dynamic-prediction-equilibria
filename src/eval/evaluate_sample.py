@@ -12,7 +12,7 @@ from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate import COLORS, evaluate_single_run
 from utilities.json_encoder import JSONEncoder
-from utilities.right_constant import RightConstant
+from cython_test.right_constant import RightConstant
 from visualization.to_json import to_visualization_json
 
 

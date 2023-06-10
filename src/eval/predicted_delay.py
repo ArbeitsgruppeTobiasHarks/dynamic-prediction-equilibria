@@ -1,3 +1,4 @@
+import array
 from dataclasses import dataclass
 from math import floor
 from typing import Dict, Iterable, List, Literal, Optional, Set
@@ -10,7 +11,7 @@ from core.network import Network
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
 from utilities.arrays import elem_lrank, elem_rank
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
 from utilities.status_logger import TimedStatusLogger
 
@@ -148,7 +149,7 @@ def costs_from_preds(
     return [
         PiecewiseLinear(
             predictions[e].times,
-            [travel_time[e] + value / capacity[e] for value in predictions[e].values],
+            array.array("d", (travel_time[e] + value / capacity[e] for value in predictions[e].values)),
             predictions[e].first_slope / capacity[e],
             predictions[e].last_slope / capacity[e],
             (at, float("inf")),

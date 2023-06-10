@@ -11,7 +11,7 @@ from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from core.predictor import Predictor
 from ml.neighboring_edges import get_neighboring_edges_mask_undirected
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 
 
 class SKNeighborhoodPredictor(Predictor):

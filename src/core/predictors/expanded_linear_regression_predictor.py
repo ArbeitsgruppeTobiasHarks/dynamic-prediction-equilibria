@@ -10,7 +10,7 @@ from sklearn.linear_model import LinearRegression
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from core.predictor import Predictor
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 
 PredictFunction = Callable[[float, DynamicFlow], List[PiecewiseLinear]]
 
