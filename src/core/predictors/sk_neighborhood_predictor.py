@@ -127,14 +127,14 @@ class SKNeighborhoodPredictor(Predictor):
             evaluated_queues[masked_id] = {}
             evaluated_loads[masked_id] = {}
 
-            evaluation_times = list(
+            evaluation_times = array.array("d", sorted(
                 set(
                     prediction_time + t * self._prediction_interval
                     for prediction_time in prediction_times
                     for t in range(-self._past_timesteps + 1, 1)
                 )
-            )
-            evaluation_times.sort()
+            ))
+
             for i, value in enumerate(queue.eval_sorted_array(evaluation_times)):
                 evaluated_queues[masked_id][evaluation_times[i]] = value
             for i, value in enumerate(
