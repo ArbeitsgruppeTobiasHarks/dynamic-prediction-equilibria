@@ -135,7 +135,7 @@ class TFNeighborhoodPredictor(Predictor):
                         evaluated_loads[masked_id][time] = edge_loads[e_id](time)
 
         edges = self.network.graph.edges
-        zero_fct = PiecewiseLinear([0.0], [0.0], 0.0, 0.0)
+        zero_fct = PiecewiseLinear(array.array("b", (0.0,)), array.array("b", (0.0, )), 0.0, 0.0)
         assert len(edges) == len(flow.queues)
 
         result_predictions = [[] for _ in prediction_times]
