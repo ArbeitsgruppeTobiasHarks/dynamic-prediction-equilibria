@@ -630,9 +630,9 @@ class PiecewiseLinear:
                 return next_time
             next_time = self.times[rnk + 1]
             rnk += 1
-        
+
         if self.last_slope == 0:
-            return float('inf')
+            return float("inf")
         else:
             return self.times[-1]
 

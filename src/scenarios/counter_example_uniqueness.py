@@ -1,4 +1,5 @@
 from typing import List, Tuple
+
 from core.network import Network
 from core.network_loader import NetworkLoader, Path
 from utilities.right_constant import RightConstant
@@ -6,10 +7,10 @@ from visualization.to_json import to_visualization_json
 
 
 def run_scenario():
-    '''
+    """
     We confirm the counter-example of uniqueness of (multi-commodity!) dynamic nash equilibria outlined in
     https://link.springer.com/article/10.1007/s11067-013-9206-6
-    '''
+    """
     # We map the nodes a,b,c,d in the paper to 0,1,2,3.
     # We map the edges 1,2,3,4,5,6 in the paper to 0,1,2,3,4,5.
 
@@ -28,12 +29,7 @@ def run_scenario():
     # Link 6: c -> b; transit time 40; capacity infty
     network.add_edge(2, 1, 40, infinite_capacity)
 
-    network.graph.positions = {
-        0: (0, 0),
-        1: (1, 0),
-        2: (1, 1),
-        3: (0, 1)
-    }
+    network.graph.positions = {0: (0, 0), 1: (1, 0), 2: (1, 1), 3: (0, 1)}
 
     # There are two OD-pairs, OD pair 1 from a to d, and OD pair 2 from c to b.
     # Both have a demand of 20 on the interval [0, 15].
@@ -45,13 +41,13 @@ def run_scenario():
         # Path A1: a -> b -> c -> d
         ([edges[0], edges[1], edges[2]], RightConstant([0, 5, 15], [20, 10, 0])),
         # Path A2: a -> d
-        ([edges[4]], RightConstant([0, 5, 15], [0, 10, 0]))
+        ([edges[4]], RightConstant([0, 5, 15], [0, 10, 0])),
     ]
     path_inflows_2: List[Tuple[Path, RightConstant]] = [
         # Path B1: c -> d -> a -> b
         ([edges[2], edges[3], edges[0]], RightConstant([0, 10, 15], [20, 10, 0])),
         # Path B2: c -> b
-        ([edges[5]], RightConstant([0, 10, 15], [0, 10, 0]))
+        ([edges[5]], RightConstant([0, 10, 15], [0, 10, 0])),
     ]
 
     path_inflows = path_inflows_1 + path_inflows_2
@@ -59,11 +55,15 @@ def run_scenario():
     loader = NetworkLoader(network, path_inflows)
     build = loader.build_flow()
     flow = next(build)
-    while flow.phi < float('inf'):
+    while flow.phi < float("inf"):
         flow = next(build)
     print("Equilibrium 1 computed.")
-    to_visualization_json("./counter-example.json", flow, network,
-                          colors={0: 'red', 1:  'red', 2:  'blue', 3: 'blue'})
+    to_visualization_json(
+        "./counter-example.json",
+        flow,
+        network,
+        colors={0: "red", 1: "red", 2: "blue", 3: "blue"},
+    )
 
 
 if __name__ == "__main__":

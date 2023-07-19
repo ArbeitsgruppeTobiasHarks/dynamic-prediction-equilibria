@@ -7,14 +7,13 @@ from core.machine_precision import eps
 from utilities.queues import PriorityQueue
 
 
-
 def reverse_dijkstra(
     sink: Node, costs: List[float], nodes: Set[Node]
 ) -> Dict[Node, float]:
-    '''
+    """
     Returns a dictionary mapping all reachable nodes to their distance to the sink given static, non-negative edge costs.
     To constrain the search to a subset of nodes, pass a subset of all nodes as the third argument; otherwise simply pass a set containing all nodes.
-    '''
+    """
 
     dist: Dict[Node, float] = {sink: 0}
 

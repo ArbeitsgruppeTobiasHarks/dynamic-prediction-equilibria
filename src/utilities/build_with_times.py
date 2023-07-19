@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 from time import time
 from typing import Iterable, Optional, Tuple
 
-from core.dynamic_flow import DynamicFlow
 from core.dpe_flow_builder import FlowBuilder
+from core.dynamic_flow import DynamicFlow
 
 
 def build_with_times(

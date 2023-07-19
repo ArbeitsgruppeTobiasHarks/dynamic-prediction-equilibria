@@ -5,8 +5,8 @@ import random
 from math import ceil, log10
 from typing import Callable, Optional
 
-from core.dynamic_flow import DynamicFlow
 from core.dpe_flow_builder import FlowBuilder
+from core.dynamic_flow import DynamicFlow
 from core.network import Network
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.predictor_type import PredictorType

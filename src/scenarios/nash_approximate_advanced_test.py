@@ -1,15 +1,11 @@
-from typing import List, Tuple
 from core.nash_flow_builder import NashFlowBuilder
 from core.network import Network
-from core.network_loader import NetworkLoader, Path
 from core.predictors.predictor_type import PredictorType
 from utilities.right_constant import RightConstant
 from visualization.to_json import to_visualization_json
 
 
 def run_scenario():
-    
-
     network = Network()
     infinite_capacity = 40
     # Link 1: a -> b; transit time 10; capacity 10
@@ -25,19 +21,24 @@ def run_scenario():
     # Link 6: c -> b; transit time 40; capacity infty
     network.add_edge(2, 1, 40, infinite_capacity)
 
-    network.graph.positions = {
-        0: (0, 0),
-        1: (1, 0),
-        2: (1, 1),
-        3: (0, 1)
-    }
+    network.graph.positions = {0: (0, 0), 1: (1, 0), 2: (1, 1), 3: (0, 1)}
 
-    network.add_commodity({ 0: RightConstant([0, 15], [20, 0], (0, float('inf')))}, 3, predictor_type=PredictorType.CONSTANT)
-    network.add_commodity({ 2: RightConstant([0, 15], [20, 0], (0, float('inf')))}, 1, predictor_type=PredictorType.CONSTANT)
+    network.add_commodity(
+        {0: RightConstant([0, 15], [20, 0], (0, float("inf")))},
+        3,
+        predictor_type=PredictorType.CONSTANT,
+    )
+    network.add_commodity(
+        {2: RightConstant([0, 15], [20, 0], (0, float("inf")))},
+        1,
+        predictor_type=PredictorType.CONSTANT,
+    )
 
     loader = NashFlowBuilder(network)
     flow, _ = loader.build_flow()
-    to_visualization_json("./test.json", flow,  network, { 0: 'red', 1: 'blue', 2: 'green', 3: 'orange' })
+    to_visualization_json(
+        "./test.json", flow, network, {0: "red", 1: "blue", 2: "green", 3: "orange"}
+    )
 
 
 if __name__ == "__main__":
