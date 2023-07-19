@@ -1,7 +1,7 @@
 import heapq
-from typing import Optional, List, TypeVar, Generic, Tuple, Dict, Hashable
+from typing import Dict, Generic, Hashable, List, Optional, Tuple, TypeVar
 
-T = TypeVar('T', bound=Hashable)
+T = TypeVar("T", bound=Hashable)
 
 
 class PriorityQueue(Generic[T]):
@@ -101,10 +101,12 @@ class PriorityQueue(Generic[T]):
         self._siftdown(0, pos)
 
     def min_key(self) -> float:
-        return float('inf') if len(self._data) == 0 else self._data[0][0]
+        return float("inf") if len(self._data) == 0 else self._data[0][0]
 
     def sorted(self) -> List[T]:
-        return [ev_tuple[2] for ev_tuple in heapq.nsmallest(len(self._data), self._data)]
+        return [
+            ev_tuple[2] for ev_tuple in heapq.nsmallest(len(self._data), self._data)
+        ]
 
     def __len__(self) -> int:
         return self._data.__len__()
@@ -140,7 +142,10 @@ class PriorityQueue(Generic[T]):
         right_child = 2 * pos + 2
         while left_child < len(self):
             smallest = left_child
-            if right_child < len(self) and self._data[right_child] < self._data[left_child]:
+            if (
+                right_child < len(self)
+                and self._data[right_child] < self._data[left_child]
+            ):
                 smallest = right_child
             if new_entry >= self._data[smallest]:
                 return
@@ -153,7 +158,7 @@ class PriorityQueue(Generic[T]):
     def remove(self, item: T):
         assert self.has(item)
         pos: int = self._index_dict[item]
-        self._data[pos] = (float('-inf'), -1, item)
+        self._data[pos] = (float("-inf"), -1, item)
         self._siftdown(0, pos)
         assert self._data[0][2] == item
         self.pop()

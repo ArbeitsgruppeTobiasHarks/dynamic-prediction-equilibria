@@ -24,10 +24,10 @@ def build_sample_network() -> Network:
     network.add_edge(3, 2, 1, 1)
 
     network.graph.positions = {
-        0: (0., 0.),
-        1: (1., 0.),
-        2: (0., 1.),
-        3: (1., 1.)
+        0: (0.0, 0.0),
+        1: (1.0, 0.0),
+        2: (0.0, 1.0),
+        3: (1.0, 1.0),
     }
 
     return network
@@ -42,5 +42,5 @@ class TestNetwork(unittest.TestCase):
         self.assertEqual(len(network.graph.nodes[2].incoming_edges), 2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

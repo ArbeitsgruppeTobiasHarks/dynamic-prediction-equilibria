@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/scenarios/sample_scenario.py",
             "env": {
-                "PYTHONOPTIMIZE": "TRUE"
+                "PYTHONOPTIMIZE": "TRUE",
+                "PYTHONPATH": "${workspaceFolder}/src"
             },
             "console": "integratedTerminal",
             "justMyCode": true
@@ -21,7 +22,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/scenarios/sioux_falls_scenario.py",
             "env": {
-                "PYTHONOPTIMIZE": "TRUE"
+                "PYTHONOPTIMIZE": "TRUE",
+                "PYTHONPATH": "${workspaceFolder}/src"
             },
             "console": "integratedTerminal",
             "justMyCode": true
@@ -32,7 +34,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/scenarios/sioux_falls_multi_com_scenario.py",
             "env": {
-                "PYTHONOPTIMIZE": "TRUE"
+                "PYTHONOPTIMIZE": "TRUE",
+                "PYTHONPATH": "${workspaceFolder}/src"
             },
             "console": "integratedTerminal",
             "justMyCode": true
@@ -43,7 +46,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/scenarios/anaheim_scenario.py",
             "env": {
-                "PYTHONOPTIMIZE": "TRUE"
+                "PYTHONOPTIMIZE": "TRUE",
+                "PYTHONPATH": "${workspaceFolder}/src"
             },
             "console": "integratedTerminal",
             "justMyCode": true
@@ -54,7 +58,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/scenarios/anaheim_multi_com_scenario.py",
             "env": {
-                "PYTHONOPTIMIZE": "TRUE"
+                "PYTHONOPTIMIZE": "TRUE",
+                "PYTHONPATH": "${workspaceFolder}/src"
             },
             "console": "integratedTerminal",
             "justMyCode": true
@@ -65,7 +70,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/scenarios/nguyen_scenario.py",
             "env": {
-                "PYTHONOPTIMIZE": "TRUE"
+                "PYTHONOPTIMIZE": "TRUE",
+                "PYTHONPATH": "${workspaceFolder}/src"
             },
             "console": "integratedTerminal",
             "justMyCode": true
@@ -76,7 +82,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/scenarios/berlin_friedrichshain_scenario.py",
             "env": {
-                "PYTHONOPTIMIZE": "TRUE"
+                "PYTHONOPTIMIZE": "TRUE",
+                "PYTHONPATH": "${workspaceFolder}/src"
             },
             "console": "integratedTerminal",
             "justMyCode": true

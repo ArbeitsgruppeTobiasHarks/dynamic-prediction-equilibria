@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import IntEnum
 
 
-class PredictorType(Enum):
+class PredictorType(IntEnum):
     ZERO = 0
     CONSTANT = 1
     LINEAR = 2

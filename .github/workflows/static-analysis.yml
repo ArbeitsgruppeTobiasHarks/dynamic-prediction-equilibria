@@ -1,0 +1,25 @@
+name: Format & Lint
+on: [push]
+jobs:
+  format-and-lint:
+    concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+      - name: Install Python and Poetry
+        run: |
+          sudo add-apt-repository ppa:deadsnakes/ppa
+          sudo apt update
+          sudo apt install python3.11
+          curl -sSL https://install.python-poetry.org | python3.11 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install Python Dependencies
+        run: |
+          poetry env use python3.11
+          poetry install
+      - name: Format & Lint
+        run: |
+          poetry run black src --check
+          poetry run isort src --profile black --check
+          poetry run pylint src --errors-only

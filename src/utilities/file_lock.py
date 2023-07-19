@@ -5,8 +5,11 @@ from typing import IO, Callable, List, Optional
 from utilities.no_op import no_op
 
 
-def with_file_lock(file_path: str, handle: Callable[[Callable[[str], IO]], None] = no_op,
-                   expect_exists: Optional[List[str]] = None):
+def with_file_lock(
+    file_path: str,
+    handle: Callable[[Callable[[str], IO]], None] = no_op,
+    expect_exists: Optional[List[str]] = None,
+):
     if expect_exists is None:
         expect_exists = [file_path]
 
@@ -29,8 +32,7 @@ def with_file_lock(file_path: str, handle: Callable[[Callable[[str], IO]], None]
         try:
             os.remove(lock_path)
         except OSError as e:
-            print(
-                f"An error occurred while removing lock file {lock_path}.", e)
+            print(f"An error occurred while removing lock file {lock_path}.", e)
 
 
 def wait_for_locks(dir: str):
@@ -39,8 +41,7 @@ def wait_for_locks(dir: str):
     while locks is None or len(locks) > 0:
         locks = [file for file in os.listdir(dir) if file.startswith(".lock.")]
         if len(locks) > 0:
-            print(
-                f"Found locks in {dir}. Waiting for {curr_backoff_secs} seconds...")
+            print(f"Found locks in {dir}. Waiting for {curr_backoff_secs} seconds...")
             time.sleep(curr_backoff_secs)
             curr_backoff_secs = min(curr_backoff_secs * 2, 30)
         elif len(locks) == 0 and curr_backoff_secs > 1:

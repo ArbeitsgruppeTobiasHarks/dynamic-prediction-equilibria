@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Set, Tuple
-from core.graph import Node, Edge
+from typing import Callable, Dict, FrozenSet, List, NamedTuple, Set, Tuple
+
+from core.graph import Edge, Node
 from core.machine_precision import eps
 from utilities.queues import PriorityQueue
 
 
 
 def reverse_dijkstra(
-        sink: Node,
-        costs: List[float],
-        nodes: Set[Node]
+    sink: Node, costs: List[float], nodes: Set[Node]
 ) -> Dict[Node, float]:
     '''
     Returns a dictionary mapping all reachable nodes to their distance to the sink given static, non-negative edge costs.
@@ -43,9 +42,18 @@ def reverse_dijkstra(
     return dist
 
 
+class DynamicDijkstraResult(NamedTuple):
+    arrival_times: Dict[Node, float]
+    realized_cost: Dict[Edge, float]
+
+
 def dynamic_dijkstra(
-        phi: float, source: Node, sink: Node, relevant_nodes: Set[Node], costs: List[Callable[[float], float]]
-) -> Tuple[Dict[Node, float], Dict[Edge, float]]:
+    phi: float,
+    source: Node,
+    sink: Node,
+    relevant_nodes: Set[Node],
+    costs: List[Callable[[float], float]],
+) -> DynamicDijkstraResult:
     """
     Assumes costs to follow the FIFO rule and relevant_nodes to contain
     all nodes that lie on a path from source to sink.
@@ -62,7 +70,7 @@ def dynamic_dijkstra(
             break
         for e in v.outgoing_edges:
             w = e.node_to
-            if w in arrival_times.keys() or w not in relevant_nodes:
+            if w in arrival_times or w not in relevant_nodes:
                 continue
             realized_cost[e] = costs[e.id](arrival_times[v])
             relaxation = arrival_times[v] + realized_cost[e]
@@ -70,4 +78,30 @@ def dynamic_dijkstra(
                 queue.push(w, relaxation)
             elif relaxation < queue.key_of(w):
                 queue.decrease_key(w, relaxation)
-    return arrival_times, realized_cost
+    return DynamicDijkstraResult(arrival_times, realized_cost)
+
+
+def get_active_edges_from_dijkstra(
+    dijkstra_result: DynamicDijkstraResult,
+    source: Node,
+    sink: Node,
+) -> List[Edge]:
+    arrival_times, realised_cost = dijkstra_result
+    active_edges = []
+    touched_nodes = {sink}
+    queue: List[Node] = [sink]
+    while queue:
+        w = queue.pop()
+        for e in w.incoming_edges:
+            if e not in realised_cost.keys():
+                continue
+            v: Node = e.node_from
+            if arrival_times[v] + realised_cost[e] <= arrival_times[w] + eps:
+                if v == source:
+                    active_edges.append(e)
+                if v not in touched_nodes:
+                    touched_nodes.add(v)
+                    queue.append(v)
+
+    assert len(active_edges) > 0
+    return active_edges

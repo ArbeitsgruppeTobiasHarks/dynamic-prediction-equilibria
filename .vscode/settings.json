@@ -11,5 +11,6 @@
     "ltex.latex.environments": {
         "minted": "ignore"
     },
-    "js/ts.implicitProjectConfig.checkJs": true
+    "js/ts.implicitProjectConfig.checkJs": true,
+    "python.analysis.typeCheckingMode": "basic"
 }

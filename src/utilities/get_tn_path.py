@@ -9,5 +9,6 @@ def get_tn_path() -> str:
         tn_path = os.path.expanduser("~/git/TransportationNetworks")
     if not os.path.isdir(tn_path):
         raise FileNotFoundError(
-            f"Could not find the transportation networks directory at {tn_path}!")
+            f"Could not find the transportation networks directory at {tn_path}!"
+        )
     return tn_path

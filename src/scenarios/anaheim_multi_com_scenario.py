@@ -1,22 +1,31 @@
 import json
-from math import pi
 import os
+from math import pi
+
+import numpy as np
 
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
-
 from core.predictors.constant_predictor import ConstantPredictor
 from core.predictors.linear_predictor import LinearPredictor
 from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor
 from core.predictors.zero_predictor import ZeroPredictor
 from eval.evaluate_network import eval_network_demand
-from importer.tntp_importer import add_commodities, import_network, natural_earth_projection
+from importer.tntp_importer import (
+    add_commodities,
+    import_network,
+    natural_earth_projection,
+)
+from ml.build_test_flows import build_flows
+from ml.generate_queues import (
+    generate_queues_and_edge_loads,
+    save_queues_and_edge_loads_for_flow,
+)
+from ml.neighboring_edges import get_neighboring_edges_undirected
 from ml.SKFullNetworkModel import train_sk_full_net_model
 from ml.SKNeighborhood import train_sk_neighborhood_model
 from ml.TFNeighborhood import train_tf_neighborhood_model
-from ml.build_test_flows import build_flows
-from ml.generate_queues import generate_queues_and_edge_loads, save_queues_and_edge_loads_for_flow
 from utilities.get_tn_path import get_tn_path
 
 
@@ -27,30 +36,30 @@ def add_node_position_from_geojson(network: Network, geojson_path: str):
         id = row["properties"]["id"]
         coordinates = row["geometry"]["coordinates"]
         network.graph.positions[id] = natural_earth_projection(
-            coordinates[1] / 180 * pi, coordinates[0] / 180 * pi)
-    assert all(
-        node in network.graph.positions for node in network.graph.nodes.keys())
+            coordinates[1] / 180 * pi, coordinates[0] / 180 * pi
+        )
+    assert all(node in network.graph.positions for node in network.graph.nodes.keys())
 
 
-def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: str, scenario_dir: str):
+def run_scenario(
+    edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: str, scenario_dir: str
+):
     network_path = os.path.join(scenario_dir, "network.pickle")
     flows_dir = os.path.join(scenario_dir, "flows")
-    tf_neighborhood_models_path = os.path.join(
-        scenario_dir, "tf-neighborhood-models")
-    sk_neighborhood_models_path = os.path.join(
-        scenario_dir, "sk-neighborhood-models")
+    tf_neighborhood_models_path = os.path.join(scenario_dir, "tf-neighborhood-models")
+    sk_neighborhood_models_path = os.path.join(scenario_dir, "sk-neighborhood-models")
     sk_full_net_path = os.path.join(scenario_dir, "sk-full-net-model")
     queues_and_edge_loads_dir = os.path.join(scenario_dir, "queues-and-edge-loads")
     shallow_eval_dir = os.path.join(scenario_dir, "shallow-eval")
     eval_dir = os.path.join(scenario_dir, "eval")
 
-    reroute_interval = .125
-    inflow_horizon = 12.
-    horizon = 60.
+    reroute_interval = 0.125
+    inflow_horizon = 12.0
+    horizon = 60.0
     past_timesteps = 20
     future_timesteps = 20
-    prediction_interval = 1.
-    number_training_flows = 500
+    prediction_interval = 1.0
+    number_training_flows = 200
     number_eval_flows = 20
     pred_horizon = future_timesteps * prediction_interval
     max_distance = 3
@@ -62,31 +71,79 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
     os.makedirs(os.path.dirname(network_path), exist_ok=True)
     network.to_file(network_path)
 
-    demand_sigma = min(Network.from_file(network_path).capacity) / 2.
+    demand_sigma = min(Network.from_file(network_path).capacity) / 2.0
 
     network.print_info()
 
     def on_flow_computed(flow_id: str, flow: DynamicFlow):
         out_path = os.path.join(
-            queues_and_edge_loads_dir, f"{flow_id}-queues-and-edge-loads.npy")
-        save_queues_and_edge_loads_for_flow(out_path, past_timesteps, horizon, reroute_interval, prediction_interval,
-                                            flow)
+            queues_and_edge_loads_dir, f"{flow_id}-queues-and-edge-loads.npy"
+        )
+        save_queues_and_edge_loads_for_flow(
+            out_path,
+            past_timesteps,
+            horizon,
+            reroute_interval,
+            prediction_interval,
+            flow,
+        )
 
-    build_flows(network_path, flows_dir, inflow_horizon,
-                number_training_flows, horizon, reroute_interval, demand_sigma, check_for_optimizations=False,
-                on_flow_computed=on_flow_computed, generate_visualization=False, save_dummy=True)
+    avg_neighborhood_size = np.average(
+        [
+            len(get_neighboring_edges_undirected(e, max_distance))
+            for e in network.graph.edges
+        ]
+    )
+    print(
+        f"Avg neighborhood size: {avg_neighborhood_size/len(network.graph.edges)*100}%"
+    )
+
+    build_flows(
+        network_path,
+        flows_dir,
+        inflow_horizon,
+        number_training_flows,
+        horizon,
+        reroute_interval,
+        demand_sigma,
+        check_for_optimizations=False,
+        on_flow_computed=on_flow_computed,
+        generate_visualization=False,
+        save_dummy=True,
+    )
 
     generate_queues_and_edge_loads(
-        past_timesteps, flows_dir, queues_and_edge_loads_dir, horizon, reroute_interval, prediction_interval)
+        past_timesteps,
+        flows_dir,
+        queues_and_edge_loads_dir,
+        horizon,
+        reroute_interval,
+        prediction_interval,
+    )
 
     build_tf_neighborhood_predictor = train_tf_neighborhood_model(
-        queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval, prediction_interval, horizon,
-        network, tf_neighborhood_models_path, max_distance)
+        queues_and_edge_loads_dir,
+        past_timesteps,
+        future_timesteps,
+        reroute_interval,
+        prediction_interval,
+        horizon,
+        network,
+        tf_neighborhood_models_path,
+        max_distance,
+    )
 
     build_sk_neighborhood_predictor = train_sk_neighborhood_model(
-        queues_and_edge_loads_dir, past_timesteps, future_timesteps, reroute_interval, prediction_interval, horizon,
-        network, sk_neighborhood_models_path, max_distance)
-
+        queues_and_edge_loads_dir,
+        past_timesteps,
+        future_timesteps,
+        reroute_interval,
+        prediction_interval,
+        horizon,
+        network,
+        sk_neighborhood_models_path,
+        max_distance,
+    )
 
     sk_predictor = None
     tf_predictor = None
@@ -103,7 +160,9 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
             PredictorType.ZERO: ZeroPredictor(network),
             PredictorType.CONSTANT: ConstantPredictor(network),
             PredictorType.LINEAR: LinearPredictor(network, pred_horizon),
-            PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(network, pred_horizon, delta=1.),
+            PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(
+                network, pred_horizon, delta=1.0
+            ),
             PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: sk_predictor,
             PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: tf_predictor,
         }
@@ -123,12 +182,22 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
         visualization_config={
             PredictorType.ZERO: ("blue", "$\\hat q^{\\text{Z}}$"),
             PredictorType.CONSTANT: ("red", "$\\hat q^{\\text{C}}$"),
-            PredictorType.LINEAR: ("{rgb,255:red,0; green,128; blue,0}", "$\\hat q^{\\text{L}}$"),
+            PredictorType.LINEAR: (
+                "{rgb,255:red,0; green,128; blue,0}",
+                "$\\hat q^{\\text{L}}$",
+            ),
             PredictorType.REGULARIZED_LINEAR: ("orange", "$\\hat q^{\\text{RL}}$"),
-            PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{LR-neighboring}}$"),
-            PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: ("black", "$\\hat q^{\\text{NN-neighboring}}$"),
+            PredictorType.MACHINE_LEARNING_SK_NEIGHBORHOOD: (
+                "black",
+                "$\\hat q^{\\text{LR-neighboring}}$",
+            ),
+            PredictorType.MACHINE_LEARNING_TF_NEIGHBORHOOD: (
+                "black",
+                "$\\hat q^{\\text{NN-neighboring}}$",
+            ),
         },
-        generate_flow_visualization=False)
+        generate_flow_visualization=False,
+    )
 
     average_comp_times = []
     for file in os.listdir(eval_dir):
@@ -143,13 +212,17 @@ def run_scenario(edges_tntp_path: str, trip_tntp_file_path: str, geojson_path: s
 
 
 if __name__ == "__main__":
+
     def main():
         tn_path = get_tn_path()
         edges_tntp_path = os.path.join(tn_path, "Anaheim/Anaheim_net.tntp")
         geojson_path = os.path.join(tn_path, "Anaheim/anaheim_nodes.geojson")
         trips_tntp_file_path = os.path.join(tn_path, "Anaheim/Anaheim_trips.tntp")
-        run_scenario(edges_tntp_path, trips_tntp_file_path,
-                     geojson_path, "./out/journal-anaheim-multi-com")
-
+        run_scenario(
+            edges_tntp_path,
+            trips_tntp_file_path,
+            geojson_path,
+            "./out/journal-anaheim-multi-com",
+        )
 
     main()
