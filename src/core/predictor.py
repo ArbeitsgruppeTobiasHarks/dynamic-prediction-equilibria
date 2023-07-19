@@ -5,7 +5,7 @@ from typing import List
 
 from core.dynamic_flow import DynamicFlow
 from core.network import Network
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 
 
 class Predictor(ABC):

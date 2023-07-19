@@ -1,4 +1,5 @@
 from __future__ import annotations
+import array
 
 from typing import List, Optional
 
@@ -6,7 +7,7 @@ from core.dynamic_flow import DynamicFlow
 from core.machine_precision import eps
 from core.network import Network
 from core.predictor import Predictor
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 
 
 class RegularizedLinearPredictor(Predictor):
@@ -24,7 +25,7 @@ class RegularizedLinearPredictor(Predictor):
     def predict(
         self, prediction_time: float, flow: DynamicFlow
     ) -> List[PiecewiseLinear]:
-        times = [prediction_time, prediction_time + self.horizon]
+        times = array.array("d", (prediction_time, prediction_time + self.horizon))
         phi_minus_delta = prediction_time - self.delta
         queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
         for i, old_queue in enumerate(flow.queues):
@@ -36,10 +37,10 @@ class RegularizedLinearPredictor(Predictor):
             if new_queue < 0 and queue_at_phi > eps:
                 new_time = prediction_time - queue_at_phi / gradient
                 queues[i] = PiecewiseLinear(
-                    [prediction_time, new_time], [queue_at_phi, 0.0], 0.0, 0.0
+                    array.array("d", (prediction_time, new_time)), array.array("d", (queue_at_phi, 0.0)), 0.0, 0.0
                 )
             else:
-                queues[i] = PiecewiseLinear(times, [queue_at_phi, new_queue], 0.0, 0.0)
+                queues[i] = PiecewiseLinear(times, array.array("d", (queue_at_phi, new_queue)), 0.0, 0.0)
 
         return queues
 

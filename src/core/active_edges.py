@@ -2,7 +2,7 @@ from typing import Callable, Dict, FrozenSet, List, Set
 
 from core.dijkstra import dynamic_dijkstra
 from core.graph import DirectedGraph, Edge, Node
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 
 identity = PiecewiseLinear([0.0], [0.0], 1.0, 1.0)
 

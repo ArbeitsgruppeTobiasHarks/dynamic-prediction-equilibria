@@ -45,7 +45,7 @@ def dynamic_dijkstra(
     source: Node,
     sink: Node,
     relevant_nodes: Set[Node],
-    costs: List[Callable[[float], float]],
+    cost: Callable[[int, float], float],
 ) -> DynamicDijkstraResult:
     """
     Assumes costs to follow the FIFO rule and relevant_nodes to contain
@@ -65,7 +65,7 @@ def dynamic_dijkstra(
             w = e.node_to
             if w in arrival_times or w not in relevant_nodes:
                 continue
-            realized_cost[e] = costs[e.id](arrival_times[v])
+            realized_cost[e] = cost(e.id, arrival_times[v])
             relaxation = arrival_times[v] + realized_cost[e]
             if not queue.has(w):
                 queue.push(w, relaxation)

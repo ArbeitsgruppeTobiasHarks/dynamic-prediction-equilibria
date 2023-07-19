@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from math import floor
-from typing import Dict, Iterable, List, Literal, Optional, Set
+from typing import Callable, Dict, Iterable, List, Literal, Optional, Set
 
 from core.dijkstra import dynamic_dijkstra, get_active_edges_from_dijkstra
 from core.dynamic_flow import DynamicFlow
@@ -10,7 +10,7 @@ from core.network import Network
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
 from utilities.arrays import elem_lrank, elem_rank
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
 from utilities.status_logger import TimedStatusLogger
 
@@ -75,7 +75,7 @@ def approximate_max_predicted_delay(
 
             interval_start = pred_times[0]
             costs_at_start = costs_from_preds(
-                network, predictor_predictions[0], interval_start
+                network, predictor_predictions[0]
             )
             delays_at_start: Dict[int, float] = {}
             for k in range(len(pred_times) - 1):
@@ -83,7 +83,7 @@ def approximate_max_predicted_delay(
                 interval_end = pred_times[k + 1]
 
                 costs_at_end = costs_from_preds(
-                    network, predictor_predictions[k + 1], interval_end
+                    network, predictor_predictions[k + 1]
                 )
                 delays_at_end = {}
 
@@ -140,21 +140,12 @@ def approximate_max_predicted_delay(
 
 
 def costs_from_preds(
-    network: Network, predictions: List[PiecewiseLinear], at: float
+    network: Network, predictions: List[PiecewiseLinear]
 ) -> List[PiecewiseLinear]:
     travel_time = network.travel_time
     capacity = network.capacity
 
-    return [
-        PiecewiseLinear(
-            predictions[e].times,
-            [travel_time[e] + value / capacity[e] for value in predictions[e].values],
-            predictions[e].first_slope / capacity[e],
-            predictions[e].last_slope / capacity[e],
-            (at, float("inf")),
-        )
-        for e in range(len(network.graph.edges))
-    ]
+    return lambda e_id, t: travel_time[e_id] + predictions[e_id](t) / capacity[e_id]
 
 
 def get_pred_edge_delay(
@@ -163,7 +154,7 @@ def get_pred_edge_delay(
     network: Network,
     sink: Node,
     com_nodes: Set[Node],
-    costs: List[PiecewiseLinear],
+    costs: Callable[[int, float], float],
 ):
     edge = network.graph.edges[edge_idx]
     result_from_sink = dynamic_dijkstra(at, edge.node_from, sink, com_nodes, costs)
@@ -174,7 +165,7 @@ def get_pred_edge_delay(
         return 0.0
     else:
         arrival_times_using_e, _ = dynamic_dijkstra(
-            at + costs[edge_idx](at), edge.node_to, sink, com_nodes, costs
+            at + costs(edge_idx, at), edge.node_to, sink, com_nodes, costs
         )
         return arrival_times_using_e[sink] - result_from_sink.arrival_times[sink]
 

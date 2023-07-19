@@ -1,3 +1,4 @@
+import array
 import dataclasses
 import json
 from abc import abstractmethod
@@ -11,6 +12,8 @@ class JSONEncoder(json.JSONEncoder):
             json_method = getattr(obj.__class__, "__json__")
         if callable(json_method):
             return json_method(obj)
+        if isinstance(obj, array.array):
+            return list(obj)
         if dataclasses.is_dataclass(obj):
             return dataclasses.asdict(obj)
         return super().default(obj)

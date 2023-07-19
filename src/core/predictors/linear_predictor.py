@@ -1,4 +1,5 @@
 from __future__ import annotations
+import array
 
 from typing import List, Optional
 
@@ -7,7 +8,7 @@ from core.machine_precision import eps
 from core.network import Network
 from core.predictor import Predictor
 from utilities.arrays import elem_rank
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 
 
 class LinearPredictor(Predictor):
@@ -26,7 +27,7 @@ class LinearPredictor(Predictor):
     def predict(
         self, prediction_time: float, flow: DynamicFlow
     ) -> List[PiecewiseLinear]:
-        times = [prediction_time, prediction_time + self.horizon]
+        times = array.array("d", (prediction_time, prediction_time + self.horizon))
         queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
         for i, old_queue in enumerate(flow.queues):
             curr_queue = max(0.0, old_queue(prediction_time))
@@ -35,9 +36,9 @@ class LinearPredictor(Predictor):
             if new_queue < 0 and curr_queue > eps:
                 new_time = prediction_time - curr_queue / gradient
                 queues[i] = PiecewiseLinear(
-                    [prediction_time, new_time], [curr_queue, 0.0], 0.0, 0.0
+                    array.array("d", (prediction_time, new_time)), array.array("d", (curr_queue, 0.0)), 0.0, 0.0
                 )
             else:
-                queues[i] = PiecewiseLinear(times, [curr_queue, new_queue], 0.0, 0.0)
+                queues[i] = PiecewiseLinear(times, array.array("d", (curr_queue, new_queue)), 0.0, 0.0)
 
         return queues  # type: ignore

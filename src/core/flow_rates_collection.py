@@ -1,11 +1,12 @@
 from __future__ import annotations
+import array
 
 from typing import Dict, Optional
 
 from core.machine_precision import eps
 from utilities.arrays import merge_sorted
-from utilities.piecewise_linear import PiecewiseLinear
-from utilities.right_constant import RightConstant
+from src.cython_test.piecewise_linear import PiecewiseLinear
+from cython_test.right_constant import RightConstant
 
 
 class FlowRatesCollectionItem:
@@ -118,4 +119,4 @@ class FlowRatesCollection:
 
     @staticmethod
     def _new_flow_fn():
-        return RightConstant([0.0], [0.0], (0.0, float("inf")))
+        return RightConstant(array.array("d", [0.0]), array.array("d", [0.0]), (0.0, float("inf")))

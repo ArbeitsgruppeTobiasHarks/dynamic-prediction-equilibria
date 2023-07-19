@@ -1,4 +1,5 @@
 from __future__ import annotations
+import array
 
 from functools import lru_cache
 from typing import Dict, Generator, List, Optional, Set, Tuple
@@ -14,7 +15,7 @@ from core.machine_precision import eps
 from core.network import Commodity, Network
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
 
 
@@ -88,26 +89,12 @@ class FlowBuilder:
     @lru_cache(maxsize=None)
     def _get_costs(self, predictor_type: PredictorType) -> List[PiecewiseLinear]:
         prediction_time = self._next_reroute_time - self.reroute_interval
-        graph = self.network.graph
         travel_time = self.network.travel_time
         capacity = self.network.capacity
         predictions = self.predictors[predictor_type].predict(
             prediction_time, self._flow
         )
-        costs = [
-            PiecewiseLinear(
-                predictions[e].times,
-                [
-                    travel_time[e] + value / capacity[e]
-                    for value in predictions[e].values
-                ],
-                predictions[e].first_slope / capacity[e],
-                predictions[e].last_slope / capacity[e],
-                (prediction_time, float("inf")),
-            )
-            for e in range(len(graph.edges))
-        ]
-        return costs
+        return lambda e_id, t: travel_time[e_id] + predictions[e_id].eval(t) / capacity[e_id]
 
     def build_flow(self) -> Generator[DynamicFlow, None, None]:
         if self._built:
@@ -150,8 +137,10 @@ class FlowBuilder:
         sink = commodity.sink
 
         if self.predictors[commodity.predictor_type].is_constant():
+            cost = self._get_costs(commodity.predictor_type)
             const_costs = [
-                c.values[0] for c in self._get_costs(commodity.predictor_type)
+                cost(e_id, self._flow.phi)
+                for e_id in range(len(self.network.graph.edges))
             ]
             distances = reverse_dijkstra(commodity.sink, const_costs, com_nodes)
             for v in com_nodes:

@@ -1,10 +1,11 @@
 from __future__ import annotations
+import array
 
 from typing import List
 
 from core.dynamic_flow import DynamicFlow
 from core.predictor import Predictor
-from utilities.piecewise_linear import PiecewiseLinear
+from src.cython_test.piecewise_linear import PiecewiseLinear
 
 
 class ZeroPredictor(Predictor):
@@ -17,5 +18,5 @@ class ZeroPredictor(Predictor):
     def predict(
         self, prediction_time: float, flow: DynamicFlow
     ) -> List[PiecewiseLinear]:
-        zero_fct = PiecewiseLinear([prediction_time], [0.0], 0.0, 0.0)
+        zero_fct = PiecewiseLinear(array.array("d", [prediction_time]), array.array("d", [0.0]), 0.0, 0.0)
         return [zero_fct for _ in flow.queues]
