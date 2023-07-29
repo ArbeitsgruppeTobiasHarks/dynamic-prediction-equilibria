@@ -62,7 +62,7 @@ def run_scenario():
         "./counter-example.json",
         flow,
         network,
-        colors={0: "red", 1: "red", 2: "blue", 3: "blue"},
+        color_by_comm_idx={0: "red", 1: "red", 2: "blue", 3: "blue"},
     )
 
 

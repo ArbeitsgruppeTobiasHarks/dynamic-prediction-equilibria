@@ -20,9 +20,9 @@ def run_scenario():
         predictor_type=PredictorType.CONSTANT,
     )
 
-    loader = NashFlowBuilder(network)
+    loader = NashFlowBuilder(network, iterations=100)
     flow, path_dist = loader.build_flow()
-    to_visualization_json("./test.json", flow, network, {0: "red", 1: "blue"})
+    to_visualization_json("./test-simple.json", flow, network, {0: "red", 1: "blue"})
 
 
 if __name__ == "__main__":

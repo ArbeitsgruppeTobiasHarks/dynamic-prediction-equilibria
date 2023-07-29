@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from test.test_interpolate import plot as plot_linear
 from test.test_right_constant import plot_many as plot_constant
-from typing import Dict, Generator, List, Tuple
+from typing import Dict, List, Tuple
 
 from core.bellman_ford import bellman_ford
 from core.dijkstra import reverse_dijkstra
@@ -21,6 +21,10 @@ PathInflow = Tuple[Path, RightConstant]
 
 @dataclass
 class LabelledPathEntry:
+    """
+    This class represents one edge of a labelled path.
+    Each such edge is labelled with a starting time and an active_until time.
+    """
     edge: Edge
     starting_time: float
     active_until: float
@@ -56,7 +60,7 @@ class PathInflows:
                 return inflow
         return RightConstant([0], [0], (0, float("inf")))
 
-    def set(self, path: Path, new_inflow: RightConstant) -> RightConstant:
+    def set(self, path: Path, new_inflow: RightConstant) -> None:
         for i, (other_path, _) in enumerate(self._path_inflows):
             if other_path == path:
                 self._path_inflows[i] = (path, new_inflow)
@@ -68,10 +72,11 @@ class NashFlowBuilder:
     network: Network
     _built: bool
 
-    def __init__(self, network: Network):
+    def __init__(self, network: Network, iterations: int = 10):
         self.network = network
         assert all(len(c.sources) == 1 for c in network.commodities)
         self._built = False
+        self._iterations = iterations
 
     def _get_initial_path_dist(self) -> List[List[PathInflow]]:
         costs = self.network.travel_time
@@ -108,7 +113,7 @@ class NashFlowBuilder:
         Returns the shortest paths from source to sink in the network
         over time.
         """
-        shortest_paths_computed_until = 0
+        shortest_paths_computed_until = 0.0
         identity = PiecewiseLinear(
             [shortest_paths_computed_until],
             [shortest_paths_computed_until],
@@ -121,11 +126,15 @@ class NashFlowBuilder:
         paths_over_time: PathsOverTime = PathsOverTime()
 
         while shortest_paths_computed_until < float("inf"):
-            v = source
             labelled_path: List[LabelledPathEntry] = []
 
             departure = shortest_paths_computed_until
+            # We want to find a path that is active starting from time `departure` and that is active for as long as possible (heuristically?).
+
+            # We start at the source and iteratively select the next edge of the path.
+            v = source
             while v != sink:
+                # Select the next edge of the 
                 best_edge = None
                 best_edge_active_until = None
 
@@ -148,7 +157,7 @@ class NashFlowBuilder:
                         best_edge = edge
                         best_edge_active_until = active_until
 
-                assert edge is not None
+                assert best_edge is not None
                 labelled_path.append(
                     LabelledPathEntry(best_edge, departure, best_edge_active_until)
                 )
@@ -179,10 +188,8 @@ class NashFlowBuilder:
     ) -> List[List[Tuple[Path, PathsOverTime, PiecewiseLinear]]]:
         """
         Assumes that the paths have the same source and sink.
+        TODO: This function can be optimized (a lot?).
         """
-        cur_od_pair = None
-        cur_earliest_arrival_fcts = None
-        cur_best_paths = None
 
         results = []
 
@@ -192,35 +199,32 @@ class NashFlowBuilder:
             ] = []  # (path, paths_over_time, delay)
             for path, _ in path_inflows:
                 od_pair = path[0].node_from, path[-1].node_to
+                # Compute earliest arrival times
+                costs = [
+                    PiecewiseLinear(
+                        flow.queues[e].times,
+                        [
+                            flow._network.travel_time[e]
+                            + v / flow._network.capacity[e]
+                            for v in flow.queues[e].values
+                        ],
+                        flow.queues[e].first_slope / flow._network.capacity[e],
+                        flow.queues[e].last_slope / flow._network.capacity[e],
+                        domain=(0.0, float("inf")),
+                    ).simplify()
+                    for e in range(len(flow.queues))
+                ]
+                cur_earliest_arrival_fcts = bellman_ford(
+                    od_pair[1],
+                    costs,
+                    flow._network.graph.get_nodes_reaching(od_pair[1]),
+                    0.0,
+                    float("inf"),
+                )
 
-                if cur_od_pair is None or od_pair[1] != cur_od_pair[1]:
-                    # Recompute earliest arrival times
-                    costs = [
-                        PiecewiseLinear(
-                            flow.queues[e].times,
-                            [
-                                flow._network.travel_time[e]
-                                + v / flow._network.capacity[e]
-                                for v in flow.queues[e].values
-                            ],
-                            flow.queues[e].first_slope / flow._network.capacity[e],
-                            flow.queues[e].last_slope / flow._network.capacity[e],
-                            domain=(0.0, float("inf")),
-                        ).simplify()
-                        for e in range(len(flow.queues))
-                    ]
-                    cur_earliest_arrival_fcts = bellman_ford(
-                        od_pair[1],
-                        costs,
-                        flow._network.graph.get_nodes_reaching(od_pair[1]),
-                        0.0,
-                        float("inf"),
-                    )
-
-                if od_pair != cur_od_pair:
-                    cur_best_paths = self.compute_shortest_paths_over_time(
-                        cur_earliest_arrival_fcts, costs, od_pair[0], od_pair[1]
-                    )
+                cur_best_paths = self.compute_shortest_paths_over_time(
+                    cur_earliest_arrival_fcts, costs, od_pair[0], od_pair[1]
+                )
 
                 identity = PiecewiseLinear(
                     [0.0], [0.0], first_slope=1, last_slope=1, domain=(0, float("inf"))
@@ -352,7 +356,7 @@ class NashFlowBuilder:
             flow = next(builder)
 
         iteration = 1
-        while iteration < 10:
+        while iteration < self._iterations:
             flow, path_dist = self.iterate(iteration, flow, path_dist)
             iteration += 1
         return flow, path_dist
