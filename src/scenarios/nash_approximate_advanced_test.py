@@ -37,7 +37,10 @@ def run_scenario():
     loader = NashFlowBuilder(network, iterations=200)
     flow, _ = loader.build_flow()
     to_visualization_json(
-        "./test-advanced.json", flow, network, {0: "red", 1: "blue", 2: "green", 3: "orange"}
+        "./test-advanced.json",
+        flow,
+        network,
+        {0: "red", 1: "blue", 2: "green", 3: "orange"},
     )
 
 

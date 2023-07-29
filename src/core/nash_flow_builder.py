@@ -25,6 +25,7 @@ class LabelledPathEntry:
     This class represents one edge of a labelled path.
     Each such edge is labelled with a starting time and an active_until time.
     """
+
     edge: Edge
     starting_time: float
     active_until: float
@@ -134,7 +135,8 @@ class NashFlowBuilder:
             # We start at the source and iteratively select the next edge of the path.
             v = source
             while v != sink:
-                # Select the next edge of the 
+                # Select the next outgoing edge of the current node v:
+                # the edge e that is active for the longest period (starting from the arrival/departure time at v `departure`).
                 best_edge = None
                 best_edge_active_until = None
 
@@ -204,8 +206,7 @@ class NashFlowBuilder:
                     PiecewiseLinear(
                         flow.queues[e].times,
                         [
-                            flow._network.travel_time[e]
-                            + v / flow._network.capacity[e]
+                            flow._network.travel_time[e] + v / flow._network.capacity[e]
                             for v in flow.queues[e].values
                         ],
                         flow.queues[e].first_slope / flow._network.capacity[e],

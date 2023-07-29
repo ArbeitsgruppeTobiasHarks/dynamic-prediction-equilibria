@@ -15,7 +15,10 @@ def run_scenario(edges_tntp_path: str, nodes_tntp_path: str, od_pairs_file_path:
     loader = NashFlowBuilder(network)
     flow, _ = loader.build_flow()
     to_visualization_json(
-        "./test-sioux-falls.json", flow, network, {0: "red", 1: "blue", 2: "green", 3: "orange"}
+        "./test-sioux-falls.json",
+        flow,
+        network,
+        {0: "red", 1: "blue", 2: "green", 3: "orange"},
     )
 
 
