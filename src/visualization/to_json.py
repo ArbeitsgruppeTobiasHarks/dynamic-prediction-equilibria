@@ -40,7 +40,8 @@ def to_visualization_json(
     path: str, flow: DynamicFlow, network: Network, color_by_comm_idx: Dict[int, str]
 ):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with gzip.open(path, "wt", encoding="UTF-8") as file:
+    #with gzip.open(path, "wt", encoding="UTF-8") as file:
+    with open(path, "w", encoding="UTF-8") as file:
         JSONEncoder().dump(
             {
                 "network": {
