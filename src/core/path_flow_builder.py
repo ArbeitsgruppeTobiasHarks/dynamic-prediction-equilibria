@@ -12,11 +12,14 @@ from core.graph import Edge, Node
 from core.machine_precision import eps
 from core.network import Commodity, Network
 from utilities.queues import PriorityQueue
+from utilities.right_constant import RightConstant
+
+Path = List[Edge]
 
 
 class PathFlowBuilder:
     network: Network
-    paths: List[Tuple[List[int], float]]
+    paths: Dict[int, Path]  # each commodity is associated with a single path
     reroute_interval: Optional[float]
     _active_edges: List[Dict[Node, List[Edge]]]
     _built: bool
@@ -29,11 +32,11 @@ class PathFlowBuilder:
     _network_inflow_changes: PriorityQueue[Tuple[Commodity, Node, float]]
 
     def __init__(
-        self,
-        network: Network,
-        paths: Dict[int, List[Tuple[List[int], float]]],
-        # None means rerouting every time some outflow changes
-        reroute_interval: Optional[float],
+            self,
+            network: Network,
+            paths: Dict[int, Path],
+            # None means rerouting every time some outflow changes
+            reroute_interval: Optional[float],
     ):
         self.network = network
         self.paths = paths
@@ -92,8 +95,8 @@ class PathFlowBuilder:
                 c, s, t = self._network_inflow_changes.pop()
                 self._handle_nodes.add(s)
             if (
-                self.reroute_interval is None
-                or self._flow.phi >= self._next_reroute_time
+                    self.reroute_interval is None
+                    or self._flow.phi >= self._next_reroute_time
             ):
                 self._active_edges = [{} for _ in self.network.commodities]
                 self._route_time = self._next_reroute_time
@@ -111,33 +114,41 @@ class PathFlowBuilder:
 
             yield self._flow
 
-    def _get_active_edges(self, i: int, s: Node) -> List[Edge]:
-        if s in self._active_edges[i]:
-            return self._active_edges[i][s]
-
-        commodity = self.network.commodities[i]
-        com_nodes = self._important_nodes[i]
-        sink = commodity.sink
-
-        const_costs = [
-            self.network.travel_time[e] for e in range(len(self.network.graph.edges))
-            ]
-        distances = reverse_dijkstra(commodity.sink, const_costs, com_nodes)
-        for v in com_nodes:
-            if v == commodity.sink:
-                continue
-            active_edges = []
-            for e in v.outgoing_edges:
-                w = e.node_to
-                if w not in distances.keys():
-                    continue
-                if const_costs[e.id] + distances[w] <= distances[v] + eps:
-                    active_edges.append(e)
-            assert len(active_edges) > 0
-            for j in self._commodity_ids_by_sink[commodity.sink]:
-                self._active_edges[j][v] = active_edges
-
-        return self._active_edges[i][s]
+    # def _get_active_edges(self, i: int, s: Node) -> List[Edge]:
+    #     if s in self._active_edges[i]:
+    #         return self._active_edges[i][s]
+    #
+    #     commodity = self.network.commodities[i]
+    #     com_nodes = self._important_nodes[i]
+    #     sink = commodity.sink
+    #
+    #     const_costs = [
+    #         self.network.travel_time[e] for e in range(len(self.network.graph.edges))
+    #     ]
+    #     distances = reverse_dijkstra(commodity.sink, const_costs, com_nodes)
+    #     for v in com_nodes:
+    #         if v == commodity.sink:
+    #             continue
+    #         active_edges = []
+    #         for e in v.outgoing_edges:
+    #             w = e.node_to
+    #             if w not in distances.keys():
+    #                 continue
+    #             if const_costs[e.id] + distances[w] <= distances[v] + eps:
+    #                 active_edges.append(e)
+    #         assert len(active_edges) > 0
+    #         for j in self._commodity_ids_by_sink[commodity.sink]:
+    #             self._active_edges[j][v] = active_edges
+    #
+    #     return self._active_edges[i][s]
+    def _get_next_edge(self, i: int, v: Node):
+        path = self.paths[i]
+        edge = None
+        for e in path:
+            if e.node_from == v:
+                edge = e
+                break
+        return edge
 
     def _determine_new_inflow(self) -> Dict[int, Dict[int, float]]:
         new_inflow = {}
@@ -169,23 +180,8 @@ class PathFlowBuilder:
                 if inflow < eps:
                     continue
 
-                weight = {
-                    e.id: sum(w for path, w in self.paths[i] if e.id in path)
-                    for e in v.incoming_edges
-                }
-                for e in v.outgoing_edges:
-                    e_inflow = 0.0
-                    for path, w in self.paths[i]:
-                        if e.id not in path:
-                            continue
-                        idx = path.index(e.id)
-                        if idx == 0:
-                            # we have a source
-                            e_inflow += net_inflow_by_com[i] * w
-                        else:
-                            prev = path[idx-1]
-                            e_inflow += outflows[prev][i] * w / weight[prev]
-                    if e_inflow > eps:
-                        new_inflow[e.id][i] = e_inflow
+                edge = self._get_next_edge(i, v)
+                if edge is not None:
+                    new_inflow[edge.id][i] = inflow
 
         return new_inflow
