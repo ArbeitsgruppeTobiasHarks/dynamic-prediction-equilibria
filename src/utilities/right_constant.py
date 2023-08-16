@@ -1,10 +1,10 @@
 from __future__ import annotations
-import numbers
 
+import numbers
 from typing import List, Tuple
 
 from core.machine_precision import eps
-from utilities.arrays import elem_rank, elem_lrank, merge_sorted, merge_sorted_many
+from utilities.arrays import elem_lrank, elem_rank, merge_sorted, merge_sorted_many
 from utilities.piecewise_linear import PiecewiseLinear
 
 
@@ -154,7 +154,9 @@ class RightConstant:
 
     def __rmul__(self, other):
         if isinstance(other, numbers.Number):
-            return RightConstant(self.times, [float(other)*v for v in self.values], self.domain)
+            return RightConstant(
+                self.times, [float(other) * v for v in self.values], self.domain
+            )
         if isinstance(other, RightConstant):
             assert self.domain == other.domain
 
@@ -171,7 +173,6 @@ class RightConstant:
                 new_values[i] = self.values[lptr] * other.values[rptr]
 
             return RightConstant(new_times, new_values, self.domain)
-
 
             return RightConstant(times, values, self.domain).simplify()
         else:

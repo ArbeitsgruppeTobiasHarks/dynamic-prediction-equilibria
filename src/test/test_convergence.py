@@ -1,13 +1,14 @@
 import os
-from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
-from utilities.get_tn_path import get_tn_path
+
+from core.convergence import FlowIterator
 from core.network import Network
 from core.predictors.predictor_type import PredictorType
-from scenarios.scenario_utils import get_demand_with_inflow_horizon
-from core.convergence import FlowIterator
-from visualization.to_json import merge_commodities, to_visualization_json
-from utilities.combine_commodities import combine_commodities_with_same_sink
 from eval.evaluate import calculate_optimal_average_travel_time
+from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
+from scenarios.scenario_utils import get_demand_with_inflow_horizon
+from utilities.combine_commodities import combine_commodities_with_same_sink
+from utilities.get_tn_path import get_tn_path
+from visualization.to_json import merge_commodities, to_visualization_json
 
 
 def run_scenario(scenario_dir: str):
@@ -22,7 +23,6 @@ def run_scenario(scenario_dir: str):
 
     num_iterations = 200
     alpha = 0.01
-
 
     tn_path = get_tn_path()
     edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
@@ -58,7 +58,9 @@ def run_scenario(scenario_dir: str):
     for route, commodities in flow_iter._route_users.items():
         merged_flow = merge_commodities(merged_flow, network, commodities)
 
-    opt_avg_travel_time = calculate_optimal_average_travel_time(merged_flow, network, inflow_horizon, horizon, network.commodities[0])
+    opt_avg_travel_time = calculate_optimal_average_travel_time(
+        merged_flow, network, inflow_horizon, horizon, network.commodities[0]
+    )
     print(f"Optimal average travel time: {opt_avg_travel_time}")
 
     visualization_path = os.path.join(flows_dir, f"conv_merged_flow.vis.json")
@@ -66,13 +68,7 @@ def run_scenario(scenario_dir: str):
         visualization_path,
         merged_flow,
         network,
-        {
-            0: 'green',
-            1: 'blue',
-            2: 'red',
-            3: 'purple',
-            4: 'brown'
-        }
+        {0: "green", 1: "blue", 2: "red", 3: "purple", 4: "brown"},
     )
 
 

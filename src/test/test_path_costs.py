@@ -1,18 +1,18 @@
 import os
-from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
-from utilities.get_tn_path import get_tn_path
 
+import matplotlib.pyplot as plt
+
+from core.bellman_ford import bellman_ford
 from core.network import Network
+from core.path_flow_builder import PathFlowBuilder
 from core.predictors.predictor_type import PredictorType
+from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
 from ml.generate_queues import generate_queues_and_edge_loads
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
-
-from core.path_flow_builder import PathFlowBuilder
 from utilities.build_with_times import build_with_times
-from visualization.to_json import merge_commodities, to_visualization_json
-from core.bellman_ford import bellman_ford
+from utilities.get_tn_path import get_tn_path
 from utilities.piecewise_linear import PiecewiseLinear
-import matplotlib.pyplot as plt
+from visualization.to_json import merge_commodities, to_visualization_json
 
 
 def run_scenario(scenario_dir: str):
@@ -53,12 +53,13 @@ def run_scenario(scenario_dir: str):
     s = network.graph.nodes[1]
     t = network.graph.nodes[14]
     paths_edge_ids = [[1, 5, 9, 33], [1, 6, 35, 33], [0, 3, 14, 10, 9, 33]]
-    paths = {i: [network.graph.edges[e_id] for e_id in e_ids] for i, e_ids in enumerate(paths_edge_ids)}
+    paths = {
+        i: [network.graph.edges[e_id] for e_id in e_ids]
+        for i, e_ids in enumerate(paths_edge_ids)
+    }
 
     flow_builder = PathFlowBuilder(network, paths, reroute_interval)
-    flow, _ = build_with_times(
-        flow_builder, flow_index, reroute_interval, horizon
-    )
+    flow, _ = build_with_times(flow_builder, flow_index, reroute_interval, horizon)
 
     costs = [
         PiecewiseLinear(
@@ -103,21 +104,26 @@ def run_scenario(scenario_dir: str):
         visualization_path,
         flow,
         network,
-        {
-            0: 'green',
-            1: 'blue',
-            2: 'red'
-        },
+        {0: "green", 1: "blue", 2: "red"},
     )
     print(f"Successfully written visualization to disk!")
 
     Network.from_file(network_path).print_info()
 
-    plt.plot(l0.times, l0.values, color='green')
-    plt.plot(l1.times, l1.values, color='blue')
-    plt.plot(l2.times, l2.values, color='red')
-    plt.plot(earliest_arrival_fcts[s].times, earliest_arrival_fcts[s].values, color='black')
-    plt.plot([0, l0.values[-1]], [earliest_arrival_fcts[s].values[0], earliest_arrival_fcts[s].values[0]+ l0.values[-1]], '--')
+    plt.plot(l0.times, l0.values, color="green")
+    plt.plot(l1.times, l1.values, color="blue")
+    plt.plot(l2.times, l2.values, color="red")
+    plt.plot(
+        earliest_arrival_fcts[s].times, earliest_arrival_fcts[s].values, color="black"
+    )
+    plt.plot(
+        [0, l0.values[-1]],
+        [
+            earliest_arrival_fcts[s].values[0],
+            earliest_arrival_fcts[s].values[0] + l0.values[-1],
+        ],
+        "--",
+    )
     plt.show()
 
 

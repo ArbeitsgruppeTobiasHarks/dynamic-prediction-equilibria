@@ -1,14 +1,13 @@
 import os
-from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
-from utilities.get_tn_path import get_tn_path
 
 from core.network import Network
+from core.path_flow_builder import PathFlowBuilder
 from core.predictors.predictor_type import PredictorType
+from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
 from ml.generate_queues import generate_queues_and_edge_loads
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
-
-from core.path_flow_builder import PathFlowBuilder
 from utilities.build_with_times import build_with_times
+from utilities.get_tn_path import get_tn_path
 from visualization.to_json import merge_commodities, to_visualization_json
 
 
@@ -48,12 +47,13 @@ def run_scenario(scenario_dir: str):
     )
 
     paths_edge_ids = [[1, 5, 9, 33], [1, 6, 35, 33], [0, 3, 14, 10, 9, 33]]
-    paths = {i: [network.graph.edges[e_id] for e_id in e_ids] for i, e_ids in enumerate(paths_edge_ids)}
+    paths = {
+        i: [network.graph.edges[e_id] for e_id in e_ids]
+        for i, e_ids in enumerate(paths_edge_ids)
+    }
 
     flow_builder = PathFlowBuilder(network, paths, reroute_interval)
-    flow, _ = build_with_times(
-        flow_builder, flow_index, reroute_interval, horizon
-    )
+    flow, _ = build_with_times(flow_builder, flow_index, reroute_interval, horizon)
 
     # merged_flow = merge_commodities(
     #     flow, network, range(len(network.commodities))
@@ -62,11 +62,7 @@ def run_scenario(scenario_dir: str):
         visualization_path,
         flow,
         network,
-        {
-            0: 'green',
-            1: 'blue',
-            2: 'red'
-        },
+        {0: "green", 1: "blue", 2: "red"},
     )
     print(f"Successfully written visualization to disk!")
 

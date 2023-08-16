@@ -32,11 +32,11 @@ class PathFlowBuilder:
     _network_inflow_changes: PriorityQueue[Tuple[Commodity, Node, float]]
 
     def __init__(
-            self,
-            network: Network,
-            paths: Dict[int, Path],
-            # None means rerouting every time some outflow changes
-            reroute_interval: Optional[float],
+        self,
+        network: Network,
+        paths: Dict[int, Path],
+        # None means rerouting every time some outflow changes
+        reroute_interval: Optional[float],
     ):
         self.network = network
         self.paths = paths
@@ -95,8 +95,8 @@ class PathFlowBuilder:
                 c, s, t = self._network_inflow_changes.pop()
                 self._handle_nodes.add(s)
             if (
-                    self.reroute_interval is None
-                    or self._flow.phi >= self._next_reroute_time
+                self.reroute_interval is None
+                or self._flow.phi >= self._next_reroute_time
             ):
                 self._active_edges = [{} for _ in self.network.commodities]
                 self._route_time = self._next_reroute_time
@@ -171,7 +171,6 @@ class PathFlowBuilder:
             )
 
             for i in used_commodities:
-
                 inflow = sum(
                     outflow[i] for outflow in outflows.values() if i in outflow
                 )
