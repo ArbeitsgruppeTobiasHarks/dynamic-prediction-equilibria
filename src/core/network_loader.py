@@ -116,7 +116,7 @@ class NetworkLoader:
                 )
                 if i in net_inflow_by_com:
                     inflow += net_inflow_by_com[i]
-                if inflow < eps:
+                if inflow <= eps:
                     continue
 
                 active_edges = self._get_active_edges(i, v)
