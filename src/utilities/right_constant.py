@@ -1,9 +1,10 @@
 from __future__ import annotations
+import numbers
 
 from typing import List, Tuple
 
 from core.machine_precision import eps
-from utilities.arrays import elem_lrank, merge_sorted, merge_sorted_many
+from utilities.arrays import elem_rank, elem_lrank, merge_sorted, merge_sorted_many
 from utilities.piecewise_linear import PiecewiseLinear
 
 
@@ -150,6 +151,49 @@ class RightConstant:
         if not isinstance(other, RightConstant):
             raise TypeError("Can only subtract a RightConstantFunction.")
         return self + (-other)
+
+    def __rmul__(self, other):
+        if isinstance(other, numbers.Number):
+            return RightConstant(self.times, [float(other)*v for v in self.values], self.domain)
+        if isinstance(other, RightConstant):
+            assert self.domain == other.domain
+
+            new_times = merge_sorted(self.times, other.times)
+            new_values = [0.0] * len(new_times)
+
+            lptr = 0
+            rptr = 0
+            for i, time in enumerate(new_times):
+                while lptr < len(self.times) - 1 and self.times[lptr + 1] <= time:
+                    lptr += 1
+                while rptr < len(other.times) - 1 and other.times[rptr + 1] <= time:
+                    rptr += 1
+                new_values[i] = self.values[lptr] * other.values[rptr]
+
+            return RightConstant(new_times, new_values, self.domain)
+
+
+            return RightConstant(times, values, self.domain).simplify()
+        else:
+            raise TypeError("Can only multiply by a numeric or a RightConstant.")
+
+    def __mul__(self, other):
+        return self.__rmul__(other)
+
+    def restrict(self, interval: Tuple[float, float]):
+        assert self.domain[0] <= interval[0] <= interval[1] <= self.domain[1]
+
+        times = [interval[0]]
+        values = [1.0]
+        if self.domain[0] < interval[0] - eps:
+            times = [interval[0]] + times
+            values = [0.0] + values
+        if interval[1] < self.domain[1] - eps:
+            times = times + [interval[1]]
+            values = values + [0.0]
+        restictor = RightConstant(times, values, self.domain)
+
+        return self.__mul__(restictor)
 
     def simplify(self) -> RightConstant:
         """
