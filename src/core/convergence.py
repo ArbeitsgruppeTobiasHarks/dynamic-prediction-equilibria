@@ -1,5 +1,6 @@
 import os
 from typing import Dict, List, Tuple
+from dataclasses import dataclass
 
 from core.machine_precision import eps
 from core.graph import Node, Edge
@@ -14,9 +15,122 @@ from core.dijkstra import reverse_dijkstra
 from core.bellman_ford import bellman_ford
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
-from visualization.to_json import merge_commodities
+from utilities.combine_commodities import combine_commodities_with_same_sink
+from eval.evaluate import calculate_optimal_average_travel_time
 
 Path = List[Edge]
+
+
+class PathsOverTime:
+    """
+    This class represents a set of paths over time.
+    A path paths[i] is active until time times[i] (starting from time times[i-1] or -inf).
+    """
+
+    times: List[float]
+    paths: List[Path]
+
+    def __init__(self):
+        self.times = []
+        self.paths = []
+
+    def add_path(self, starting_time: float, path: Path):
+        self.times.append(starting_time)
+        self.paths.append(path)
+
+
+@dataclass
+class LabelledPathEntry:
+    """
+    This class represents one edge of a labelled path.
+    Each such edge is labelled with a starting time and an active_until time.
+    """
+
+    edge: Edge
+    starting_time: float
+    active_until: float
+
+
+def compute_shortest_paths_over_time(
+        earliest_arrival_fcts: Dict[Node, PiecewiseLinear],
+        edge_costs: List[PiecewiseLinear],
+        source: Node,
+        sink: Node,
+) -> PathsOverTime:
+    """
+    Returns the shortest paths from source to sink in the network
+    over time.
+    """
+    shortest_paths_computed_until = 0.0
+    identity = PiecewiseLinear(
+        [shortest_paths_computed_until],
+        [shortest_paths_computed_until],
+        1.0,
+        1.0,
+        (shortest_paths_computed_until, float("inf")),
+    )
+    edge_exit_times: Dict[Edge, PiecewiseLinear] = {}
+
+    paths_over_time: PathsOverTime = PathsOverTime()
+
+    while shortest_paths_computed_until < float("inf"):
+        labelled_path: List[LabelledPathEntry] = []
+
+        departure = shortest_paths_computed_until
+        # We want to find a path that is active starting from time `departure` and that is active for as long as possible (heuristically?).
+
+        # We start at the source and iteratively select the next edge of the path.
+        v = source
+        while v != sink:
+            # Select the next outgoing edge of the current node v:
+            # the edge e that is active for the longest period (starting from the arrival/departure time at v `departure`).
+            best_edge = None
+            best_edge_active_until = None
+
+            for edge in v.outgoing_edges:
+                edge_exit_times[edge] = identity.plus(
+                    edge_costs[edge.id]
+                ).ensure_monotone(True)
+                edge_delay = (
+                        earliest_arrival_fcts[edge.node_to].compose(
+                            edge_exit_times[edge]
+                        )
+                        - earliest_arrival_fcts[v]
+                )
+                # edge_delay is (close to) zero at times when the edge is active; otherwise it is positive.
+                if edge_delay(departure) > eps:
+                    continue
+
+                active_until = edge_delay.next_change_time(departure)
+                if best_edge is None or active_until > best_edge_active_until:
+                    best_edge = edge
+                    best_edge_active_until = active_until
+
+            assert best_edge is not None
+            labelled_path.append(
+                LabelledPathEntry(best_edge, departure, best_edge_active_until)
+            )
+            v = best_edge.node_to
+            departure = edge_exit_times[best_edge](departure)
+
+        # Compute path_active_until
+        rest_of_path_active_until = float("inf")
+        for labelled_edge in reversed(labelled_path):
+            last_enter_time_st_rest_path_active = edge_exit_times[
+                labelled_edge.edge
+            ].max_t_below(rest_of_path_active_until)
+            rest_of_path_active_until = min(
+                last_enter_time_st_rest_path_active, labelled_edge.active_until
+            )
+
+        paths_over_time.add_path(
+            rest_of_path_active_until, [label.edge for label in labelled_path]
+        )
+
+        assert shortest_paths_computed_until < rest_of_path_active_until
+
+        shortest_paths_computed_until = rest_of_path_active_until
+    return paths_over_time
 
 
 def evaluate_path(costs: List[PiecewiseLinear], path: Path) -> PiecewiseLinear:
@@ -210,7 +324,19 @@ class FlowIterator:
 
         for s, t in self._route_users.keys():
             important_nodes = flow._network.graph.get_nodes_reaching(t)
-            best_paths = self._get_optimal_paths(important_nodes, costs, (s, t))
+            #best_paths = self._get_optimal_paths(important_nodes, costs, (s, t))
+
+            earliest_arrivals = bellman_ford(
+                t,
+                costs,
+                important_nodes,
+                0.0,
+                float("inf"),
+            )
+            p_o_t = compute_shortest_paths_over_time(earliest_arrivals, costs, s, t)
+
+            best_paths = [( ([0.0] + p_o_t.times)[i], p_o_t.paths[i] ) for i in range(len(p_o_t.paths)) ]
+
             self._assign_new_paths((s, t), best_paths)
 
         return flow
@@ -218,7 +344,6 @@ class FlowIterator:
     def run(self):
 
         self._initialize_paths()
-        merged_flow: DynamicFlow
 
         while self._iter < self.num_iterations:
 
@@ -227,7 +352,7 @@ class FlowIterator:
             self._flows.append(flow)
             self._iter += 1
 
-            print(f"Iterations completed: {self._iter}/{self.num_iterations};")
+            print(f"Iterations completed: {self._iter}/{self.num_iterations}")
             print(f"Average travel times:")
             for (s,t), c_ids in self._route_users.items():
                 accum_net_outflow = sum(
@@ -252,5 +377,7 @@ class FlowIterator:
                                           - accum_net_outflow.integrate(0.0, self.horizon)
                                   ) / accum_net_inflow(self.horizon)
                 print(f"({s.id}, {t.id}): {avg_travel_time}")
+
+            print()
 
         return self._flows[-1]

@@ -6,6 +6,8 @@ from core.predictors.predictor_type import PredictorType
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from core.convergence import FlowIterator
 from visualization.to_json import merge_commodities, to_visualization_json
+from utilities.combine_commodities import combine_commodities_with_same_sink
+from eval.evaluate import calculate_optimal_average_travel_time
 
 
 def run_scenario(scenario_dir: str):
@@ -18,8 +20,8 @@ def run_scenario(scenario_dir: str):
     horizon = 100.0
     demand = 2e4
 
-    num_iterations = 25
-    alpha = 0.05
+    num_iterations = 200
+    alpha = 0.01
 
 
     tn_path = get_tn_path()
@@ -30,23 +32,39 @@ def run_scenario(scenario_dir: str):
     network.to_file(network_path)
 
     inflow = get_demand_with_inflow_horizon(demand, inflow_horizon)
-    s = network.graph.nodes[1]
-    t = network.graph.nodes[14]
-
     network.add_commodity(
-        {s.id: inflow},
-        t.id,
+        {1: inflow},
+        14,
         PredictorType.CONSTANT,
     )
+    # network.add_commodity(
+    #     {5: inflow*0.6},
+    #     13,
+    #     PredictorType.CONSTANT,
+    # )
+    # network.add_commodity(
+    #     {6: inflow*0.3},
+    #     15,
+    #     PredictorType.CONSTANT,
+    # )
 
     flow_iter = FlowIterator(network, reroute_interval, horizon, num_iterations, alpha)
 
     last_flow = flow_iter.run()
 
-    visualization_path = os.path.join(flows_dir, f"conv_last_flow.vis.json")
+    merged_flow = last_flow
+    combine_commodities_with_same_sink(network)
+
+    for route, commodities in flow_iter._route_users.items():
+        merged_flow = merge_commodities(merged_flow, network, commodities)
+
+    opt_avg_travel_time = calculate_optimal_average_travel_time(merged_flow, network, inflow_horizon, horizon, network.commodities[0])
+    print(f"Optimal average travel time: {opt_avg_travel_time}")
+
+    visualization_path = os.path.join(flows_dir, f"conv_merged_flow.vis.json")
     to_visualization_json(
         visualization_path,
-        last_flow,
+        merged_flow,
         network,
         {
             0: 'green',
@@ -56,24 +74,6 @@ def run_scenario(scenario_dir: str):
             4: 'brown'
         }
     )
-
-    # for i, flow in enumerate(flow_iter._flows):
-    #     visualization_path = os.path.join(flows_dir, f"conv_flow{i}.vis.json")
-    #     to_visualization_json(
-    #         visualization_path,
-    #         flow,
-    #         network,
-    #         {
-    #             0: 'green',
-    #             1: 'blue',
-    #             2: 'red',
-    #             3: 'purple',
-    #             4: 'brown'
-    #         },
-    #     )
-    #     print(f"Successfully written visualization to disk!")
-
-    #Network.from_file(network_path).print_info()
 
 
 if __name__ == "__main__":
