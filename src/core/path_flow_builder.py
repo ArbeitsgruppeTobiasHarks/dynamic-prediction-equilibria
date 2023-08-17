@@ -2,11 +2,6 @@ from __future__ import annotations
 
 from typing import Dict, Generator, List, Optional, Set, Tuple
 
-from core.dijkstra import (
-    dynamic_dijkstra,
-    get_active_edges_from_dijkstra,
-    reverse_dijkstra,
-)
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.graph import Edge, Node
 from core.machine_precision import eps
@@ -35,7 +30,6 @@ class PathFlowBuilder:
         self,
         network: Network,
         paths: Dict[int, Path],
-        # None means rerouting every time some outflow changes
         reroute_interval: Optional[float],
     ):
         self.network = network
@@ -114,33 +108,6 @@ class PathFlowBuilder:
 
             yield self._flow
 
-    # def _get_active_edges(self, i: int, s: Node) -> List[Edge]:
-    #     if s in self._active_edges[i]:
-    #         return self._active_edges[i][s]
-    #
-    #     commodity = self.network.commodities[i]
-    #     com_nodes = self._important_nodes[i]
-    #     sink = commodity.sink
-    #
-    #     const_costs = [
-    #         self.network.travel_time[e] for e in range(len(self.network.graph.edges))
-    #     ]
-    #     distances = reverse_dijkstra(commodity.sink, const_costs, com_nodes)
-    #     for v in com_nodes:
-    #         if v == commodity.sink:
-    #             continue
-    #         active_edges = []
-    #         for e in v.outgoing_edges:
-    #             w = e.node_to
-    #             if w not in distances.keys():
-    #                 continue
-    #             if const_costs[e.id] + distances[w] <= distances[v] + eps:
-    #                 active_edges.append(e)
-    #         assert len(active_edges) > 0
-    #         for j in self._commodity_ids_by_sink[commodity.sink]:
-    #             self._active_edges[j][v] = active_edges
-    #
-    #     return self._active_edges[i][s]
     def _get_next_edge(self, i: int, v: Node):
         path = self.paths[i]
         edge = None

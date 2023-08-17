@@ -119,7 +119,7 @@ class RightConstant:
                 rptr += 1
             new_values[i] = self.values[lptr] + other.values[rptr]
 
-        return RightConstant(new_times, new_values, self.domain)
+        return RightConstant(new_times, new_values, self.domain).simplify()
 
     @staticmethod
     def sum(functions: List[RightConstant], domain=(0, float("inf"))) -> RightConstant:
@@ -139,7 +139,7 @@ class RightConstant:
             new_values[i] = sum(
                 functions[j].values[ptrs[j]] for j in range(len(functions))
             )
-        return RightConstant(new_times, new_values, domain)
+        return RightConstant(new_times, new_values, domain).simplify()
 
     def __add__(self, other):
         return self.__radd__(other)
@@ -172,7 +172,7 @@ class RightConstant:
                     rptr += 1
                 new_values[i] = self.values[lptr] * other.values[rptr]
 
-            return RightConstant(new_times, new_values, self.domain)
+            return RightConstant(new_times, new_values, self.domain).simplify()
         else:
             raise TypeError("Can only multiply by a numeric or a RightConstant.")
 

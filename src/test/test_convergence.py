@@ -17,12 +17,12 @@ def run_scenario(scenario_dir: str):
     flows_dir = os.path.join(scenario_dir, "flows")
 
     reroute_interval = 0.125
-    inflow_horizon = 10.0
+    inflow_horizon = 20.0
     horizon = 100.0
-    demand = 2e4
+    demand = 5e4
 
-    num_iterations = 200
-    alpha = 0.01
+    num_iterations = 100
+    alpha = 0.05
 
     tn_path = get_tn_path()
     edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
@@ -33,20 +33,20 @@ def run_scenario(scenario_dir: str):
 
     inflow = get_demand_with_inflow_horizon(demand, inflow_horizon)
     network.add_commodity(
-        {1: inflow},
+        {1: inflow*0.4},
         14,
         PredictorType.CONSTANT,
     )
-    # network.add_commodity(
-    #     {5: inflow*0.6},
-    #     13,
-    #     PredictorType.CONSTANT,
-    # )
-    # network.add_commodity(
-    #     {6: inflow*0.3},
-    #     15,
-    #     PredictorType.CONSTANT,
-    # )
+    network.add_commodity(
+        {5: inflow*0.6},
+        23,
+        PredictorType.CONSTANT,
+    )
+    network.add_commodity(
+        {15: inflow},
+        3,
+        PredictorType.CONSTANT,
+    )
 
     flow_iter = FlowIterator(network, reroute_interval, horizon, num_iterations, alpha)
 
@@ -58,10 +58,15 @@ def run_scenario(scenario_dir: str):
     for route, commodities in flow_iter._route_users.items():
         merged_flow = merge_commodities(merged_flow, network, commodities)
 
-    opt_avg_travel_time = calculate_optimal_average_travel_time(
-        merged_flow, network, inflow_horizon, horizon, network.commodities[0]
-    )
-    print(f"Optimal average travel time: {opt_avg_travel_time}")
+    print(f"Optimal average travel times:")
+    for com in network.commodities:
+        s = next(iter(com.sources))
+        t = com.sink
+        opt_avg_travel_time = calculate_optimal_average_travel_time(
+            merged_flow, network, inflow_horizon, horizon, com
+        )
+        print(f"({s.id}, {t.id}): {opt_avg_travel_time}")
+
 
     visualization_path = os.path.join(flows_dir, f"conv_merged_flow.vis.json")
     to_visualization_json(
