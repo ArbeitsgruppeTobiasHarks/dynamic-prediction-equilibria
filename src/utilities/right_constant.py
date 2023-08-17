@@ -173,8 +173,6 @@ class RightConstant:
                 new_values[i] = self.values[lptr] * other.values[rptr]
 
             return RightConstant(new_times, new_values, self.domain)
-
-            return RightConstant(times, values, self.domain).simplify()
         else:
             raise TypeError("Can only multiply by a numeric or a RightConstant.")
 
