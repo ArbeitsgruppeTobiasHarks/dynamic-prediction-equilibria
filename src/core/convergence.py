@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Collection
 
 from core.bellman_ford import bellman_ford
 from core.dijkstra import reverse_dijkstra
@@ -17,6 +17,9 @@ from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
 from visualization.to_json import merge_commodities, to_visualization_json
+
+from concurrent.futures import ThreadPoolExecutor
+
 
 Path = List[Edge]
 
@@ -148,28 +151,28 @@ def evaluate_path(costs: List[PiecewiseLinear], path: Path) -> PiecewiseLinear:
     return path_exit_time
 
 
-def get_shortest_path_at(
-    earliest_arrivals: Dict[Node, PiecewiseLinear],
-    costs: List[PiecewiseLinear],
-    at: float,
-    source: Node,
-) -> Path:
-    """
-    Computes shortest path at given moment
-    """
-    v = source
-    t_arr = earliest_arrivals[source](at)
-    path = []
-    tau = at
-    while tau < t_arr - eps:
-        for e in v.outgoing_edges:
-            if abs(earliest_arrivals[e._node_to](tau + costs[e.id](tau)) - t_arr) < eps:
-                path.append(e)
-                v = e._node_to
-                tau = tau + costs[e.id](tau)
-                break
-
-    return path
+# def get_shortest_path_at(
+#     earliest_arrivals: Dict[Node, PiecewiseLinear],
+#     costs: List[PiecewiseLinear],
+#     at: float,
+#     source: Node,
+# ) -> Path:
+#     """
+#     Computes shortest path at given moment
+#     """
+#     v = source
+#     t_arr = earliest_arrivals[source](at)
+#     path = []
+#     tau = at
+#     while tau < t_arr - eps:
+#         for e in v.outgoing_edges:
+#             if abs(earliest_arrivals[e._node_to](tau + costs[e.id](tau)) - t_arr) < eps:
+#                 path.append(e)
+#                 v = e._node_to
+#                 tau = tau + costs[e.id](tau)
+#                 break
+#
+#     return path
 
 
 class FlowIterator:
@@ -180,9 +183,9 @@ class FlowIterator:
     alpha: float  # convergence rate from (0,1) interval
     _iter: int
     _flows: List[DynamicFlow]
-    _route_users: Dict[Tuple[Node, Node], List[int]]  # commodities with common s-t pair
+    _route_users: Dict[Tuple[Node, Node], Collection[int]]  # commodities with common s-t pair
     _inflows: Dict[Tuple[Node, Node], RightConstant]  # route inflows
-    _path_used: Dict[int, Path]  # paths assigned to commodities
+    _important_nodes: Dict[Tuple[Node, Node], Collection[Node]]
 
     def __init__(
         self,
@@ -203,12 +206,15 @@ class FlowIterator:
         self._flows = []
         self._inflows = {}
         self._route_users = {}
+        self._important_nodes = {}
 
         for i, com in enumerate(network.commodities):
             t = com.sink
             for s, inflow in com.sources.items():
                 self._inflows.update({(s, t): inflow})
                 self._route_users.update({(s, t): [i]})
+                self._important_nodes.update({(s, t): self.network.graph.get_nodes_reaching(t)})
+
         self._paths = {i: None for i in range(len(network.commodities))}
         assert len(self._route_users) == len(self._paths)
 
@@ -241,54 +247,57 @@ class FlowIterator:
 
         return flow
 
-    def _get_optimal_paths(self, important_nodes, costs, route):
-        """
-        Computes optimal paths over time for given route (s,t) from cost functions
-        """
-        s, t = route
+    # def _get_optimal_paths(self, important_nodes, costs, route):
+    #     """
+    #     Computes optimal paths over time for given route (s,t) from cost functions
+    #     """
+    #     s, t = route
+    #
+    #     earliest_arrivals = bellman_ford(
+    #         t,
+    #         costs,
+    #         important_nodes,
+    #         0.0,
+    #         float("inf"),
+    #     )
+    #
+    #     phi = 0.0
+    #     best_paths = []
+    #     while phi < self.horizon:
+    #         # find optimal path on the next timestep to guarantee improvement
+    #         path = get_shortest_path_at(
+    #             earliest_arrivals, costs, phi + self.reroute_interval, s
+    #         )
+    #         best_paths.append((phi, path))
+    #
+    #         diff = (
+    #             (evaluate_path(costs, path) - earliest_arrivals[s])
+    #             .restrict((phi, float("inf")))
+    #             .simplify()
+    #         )
+    #         if max(diff.values) < eps:
+    #             break
+    #         else:
+    #             assert diff.values[0] < eps
+    #             for idx in range(len(diff.times) - 1):
+    #                 if diff.values[idx + 1] > 1000 * eps:
+    #                     phi = diff.times[idx]
+    #                     break
+    #
+    #     return best_paths
 
-        earliest_arrivals = bellman_ford(
-            t,
-            costs,
-            important_nodes,
-            0.0,
-            float("inf"),
-        )
+    def _assign_new_paths(self, route, p_o_t):
 
-        phi = 0.0
-        best_paths = []
-        while phi < self.horizon:
-            # find optimal path on the next timestep to guarantee improvement
-            path = get_shortest_path_at(
-                earliest_arrivals, costs, phi + self.reroute_interval, s
-            )
-            best_paths.append((phi, path))
-
-            diff = (
-                (evaluate_path(costs, path) - earliest_arrivals[s])
-                .restrict((phi, float("inf")))
-                .simplify()
-            )
-            if max(diff.values) < eps:
-                break
-            else:
-                assert diff.values[0] < eps
-                for idx in range(len(diff.times) - 1):
-                    if diff.values[idx + 1] > 1000 * eps:
-                        phi = diff.times[idx]
-                        break
-
-        return best_paths
-
-    def _assign_new_paths(self, route, new_paths):
         for com_id in self._route_users[route]:
             self.network.commodities[com_id].sources[route[0]] *= 1 - self.alpha
 
-        for i in range(len(new_paths)):
-            phi, new_path = new_paths[i]
-            phi_next = new_paths[i + 1][0] if i + 1 < len(new_paths) else float("inf")
+        for i in range(len(p_o_t.paths)):
+            new_path = p_o_t.paths[i]
+            phi = p_o_t.times[i-1] if i > 0 else 0.0
+            phi_next = p_o_t.times[i]
 
             new_inflow = self._inflows[route].restrict((phi, phi_next)) * self.alpha
+
             if new_inflow.integral()(self.horizon) > eps:
                 already_present = False
                 for com_id in self._route_users[route]:
@@ -306,6 +315,23 @@ class FlowIterator:
                         route[1].id,
                         PredictorType.CONSTANT,
                     )
+
+    def _parallel_compute_shortest_paths(self, costs):
+        def process_route(route):
+            s, t = route
+            earliest_arrivals = bellman_ford(
+                t,
+                costs,
+                self._important_nodes[route],
+                0.0,
+                float("inf"),
+            )
+            p_o_t = compute_shortest_paths_over_time(earliest_arrivals, costs, s, t)
+
+            self._assign_new_paths(route, p_o_t)
+
+        with ThreadPoolExecutor() as executor:
+            executor.map(process_route, self._route_users.keys())
 
     def _iterate(self):
         """
@@ -328,25 +354,7 @@ class FlowIterator:
             for e in range(len(flow.queues))
         ]
 
-        for s, t in self._route_users.keys():
-            important_nodes = flow._network.graph.get_nodes_reaching(t)
-            # best_paths = self._get_optimal_paths(important_nodes, costs, (s, t))
-
-            earliest_arrivals = bellman_ford(
-                t,
-                costs,
-                important_nodes,
-                0.0,
-                float("inf"),
-            )
-            p_o_t = compute_shortest_paths_over_time(earliest_arrivals, costs, s, t)
-
-            best_paths = [
-                (([0.0] + p_o_t.times)[i], p_o_t.paths[i])
-                for i in range(len(p_o_t.paths))
-            ]
-
-            self._assign_new_paths((s, t), best_paths)
+        self._parallel_compute_shortest_paths(costs)
 
         return flow
 
