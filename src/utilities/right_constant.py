@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numbers
+from math import ceil
 from typing import List, Tuple
 
 from core.machine_precision import eps
@@ -182,15 +183,15 @@ class RightConstant:
     def restrict(self, interval: Tuple[float, float]):
         assert self.domain[0] <= interval[0] <= interval[1] <= self.domain[1]
 
-        times = [interval[0]]
-        values = [1.0]
+        new_times = [interval[0]]
+        new_values = [1.0]
         if self.domain[0] < interval[0] - eps:
-            times = [interval[0]] + times
-            values = [0.0] + values
+            new_times = [interval[0]] + new_times
+            new_values = [0.0] + new_values
         if interval[1] < self.domain[1] - eps:
-            times = times + [interval[1]]
-            values = values + [0.0]
-        restictor = RightConstant(times, values, self.domain)
+            new_times = new_times + [interval[1]]
+            new_values = new_values + [0.0]
+        restictor = RightConstant(new_times, new_values, self.domain)
 
         return self.__mul__(restictor)
 
@@ -219,3 +220,15 @@ class RightConstant:
         return PiecewiseLinear(
             times, values, self.values[0], self.values[-1], self.domain
         )
+
+    def project_to_grid(self, delta) -> RightConstant:
+        """"
+        Returns a RightConstant approximation with grid size delta
+        """
+        integral = self.integral()
+        n_nodes = ceil((self.times[-1] - self.times[0]) / delta) + 1
+        new_times = [self.times[0] + delta*n for n in range(n_nodes)]
+        new_values = [0.0] * n_nodes
+        for i in range(n_nodes - 1):
+            new_values[i] = ( integral(new_times[i+1]) - integral(new_times[i]) ) / delta
+        return RightConstant(new_times, new_values, self.domain)

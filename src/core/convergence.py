@@ -53,6 +53,266 @@ class LabelledPathEntry:
     starting_time: float
     active_until: float
 
+# def evaluate_path(costs: List[PiecewiseLinear], path: Path) -> PiecewiseLinear:
+#     """ "
+#     Computes path exit time as a function
+#     """
+#     identity = PiecewiseLinear(
+#         [0.0], [0.0], first_slope=1, last_slope=1, domain=(0, float("inf"))
+#     )
+#     path_exit_time = identity
+#
+#     for edge in path[::-1]:
+#         path_exit_time = path_exit_time.compose(
+#             identity.plus(costs[edge.id]).ensure_monotone(True)
+#         )
+#
+#     return path_exit_time
+
+
+class BaseFlowIterator:
+    network: Network
+    reroute_interval: float
+    horizon: float
+    num_iterations: int
+    _iter: int
+    _flows: List[DynamicFlow]
+    _route_users: Dict[Tuple[Node, Node], List[int]]  # commodities with common s-t pair
+    _inflows: Dict[Tuple[Node, Node], RightConstant]  # route inflows
+    _important_nodes: Dict[Tuple[Node, Node], Collection[Node]]
+
+    def __init__(
+        self,
+        network: Network,
+        reroute_interval: float,
+        horizon: float,
+        num_iterations: int = 100,
+    ):
+        assert all(len(c.sources) == 1 for c in network.commodities)
+        self.network = network
+        self.reroute_interval = reroute_interval
+        self.horizon = horizon
+        self.num_iterations = num_iterations
+        self._iter = 0
+        self._flows = []
+        self._inflows = {}
+        self._route_users = {}
+        self._important_nodes = {}
+
+        for i, com in enumerate(network.commodities):
+            t = com.sink
+            s, inflow = next(iter(com.sources.items()))
+            self._inflows[(s, t)] = inflow
+            self._route_users[(s, t)] = [i]
+            self._important_nodes[(s, t)] = (
+                    network.graph.get_nodes_reaching(t) & network.graph.get_reachable_nodes(s)
+            )
+
+        self._paths = {i: None for i in range(len(network.commodities))}
+        assert len(self._route_users) == len(self._paths)
+
+    def _initialize_paths(self):
+        """
+        Assigns each commodity the shortest path under assumption there are no queues
+        """
+        for s, t in self._route_users:
+            dist = reverse_dijkstra(
+                t, self.network.travel_time, self.network.graph.get_nodes_reaching(t)
+            )
+            v = s
+            path = []
+            while v != t:
+                for e in v.outgoing_edges:
+                    if dist[v] - dist[e._node_to] == self.network.travel_time[e.id]:
+                        path.append(e)
+                        v = e._node_to
+                        break
+
+            for i in self._route_users[(s, t)]:
+                self._paths[i] = path
+
+    def _compute_flow(self):
+        flow_builder = PathFlowBuilder(self.network, self._paths, self.reroute_interval)
+        generator = flow_builder.build_flow()
+        flow = next(generator)
+        while flow.phi < self.horizon:
+            flow = next(generator)
+
+        return flow
+
+    def _reassign_inflows(self, costs):
+        raise NotImplementedError
+
+    def _iteration(self):
+        """
+        Computes current flow and edge costs, then reassigns the inflows
+        """
+
+        flow = self._compute_flow()
+
+        costs = [
+            PiecewiseLinear(
+                flow.queues[e].times,
+                [
+                    flow._network.travel_time[e] + v / flow._network.capacity[e]
+                    for v in flow.queues[e].values
+                ],
+                flow.queues[e].first_slope / flow._network.capacity[e],
+                flow.queues[e].last_slope / flow._network.capacity[e],
+                domain=(0.0, float("inf")),
+            ).simplify()
+            for e in range(len(flow.queues))
+        ]
+
+        self._reassign_inflows(costs)
+
+        return flow
+
+    def _avg_travel_times(self, flow, relative=True):
+        avg_travel_times = {}
+        for (s, t), c_ids in self._route_users.items():
+            accum_net_outflow = sum(
+                (
+                    flow.outflow[e.id]._functions_dict[c_id]
+                    for c_id in c_ids
+                    for e in t.incoming_edges
+                    if c_id in flow.outflow[e.id]._functions_dict
+                ),
+                start=RightConstant([0.0], [0.0], (0, float("inf"))),
+            ).integral()
+            accum_net_inflow = sum(
+                (
+                    inflow
+                    for c_id in c_ids
+                    for inflow in flow._network.commodities[c_id].sources.values()
+                ),
+                start=RightConstant([0.0], [0.0], (0, float("inf"))),
+            ).integral()
+            avg_travel_times[(s,t)] = (
+                                      accum_net_inflow.integrate(0.0, self.horizon)
+                                      - accum_net_outflow.integrate(0.0, self.horizon)
+                              ) / accum_net_inflow(self.horizon)
+
+            if relative: # divide by optimal travel times
+                com = self.network.commodities[min(c_ids)]
+                inflow_horizon = self._inflows[(s,t)].times[-1]
+                opt_avg_travel_time = calculate_optimal_average_travel_time(
+                        flow, self.network, inflow_horizon, self.horizon, com
+                )
+                assert opt_avg_travel_time > 0
+                avg_travel_times[(s, t)] /= opt_avg_travel_time
+
+        return avg_travel_times
+
+    def run(self, eval_every=10):
+
+        self._initialize_paths()
+        flow = self._iteration()
+        avg_travel_times = self._avg_travel_times(flow, relative=True)
+        self._flows.append(flow)
+        self._iter += 1
+
+        print(f"Initial relative average travel times:")
+        for (s, t), avg_travel_time in avg_travel_times.items():
+            print(f"({s.id} -> {t.id}): {round(avg_travel_time, 4)}")
+        print()
+
+        while self._iter < self.num_iterations:
+            flow = self._iteration()
+            self._flows.append(flow)
+            self._iter += 1
+
+            if self._iter % eval_every == 0:
+                avg_travel_times = self._avg_travel_times(flow, relative=True)
+
+                print(f"Iterations completed: {self._iter}/{self.num_iterations}")
+                print(f"Relative average travel times:")
+                for (s,t), avg_travel_time in avg_travel_times.items():
+                    print(f"({s.id} -> {t.id}): {round(avg_travel_time, 4)}")
+                print()
+
+        merged_flow = self._flows[-1]
+        combine_commodities_with_same_sink(self.network)
+        for route, commodities in self._route_users.items():
+            merged_flow = merge_commodities(merged_flow, self.network, commodities)
+
+        return merged_flow
+
+
+class AlphaFlowIterator(BaseFlowIterator):
+    alpha: float    # convergence rate from (0,1) interval
+    approx_inflows: bool    # option to project inflows to regular grid after each iteration
+    """
+    At each iteration, a constant fraction of inflow is redistributed to optimal path from previous iteration
+    """
+
+    def __init__(self,
+                 network: Network,
+                 reroute_interval: float,
+                 horizon: float,
+                 num_iterations: int = 100,
+                 alpha: float = 0.01,
+                 approx_inflows: bool = True):
+
+        super().__init__(network, reroute_interval, horizon, num_iterations)
+        assert 0 < alpha < 1
+        self.alpha = alpha
+        self.approx_inflows = approx_inflows
+
+    def _assign_new_paths(self, route, p_o_t):
+
+        for com_id in self._route_users[route]:
+            self.network.commodities[com_id].sources[route[0]] *= 1 - self.alpha
+
+        for i in range(len(p_o_t.paths)):
+            new_path = p_o_t.paths[i]
+            phi = p_o_t.times[i-1] if i > 0 else 0.0
+            phi_next = p_o_t.times[i]
+
+            new_inflow = self._inflows[route].restrict((phi, phi_next)) * self.alpha
+
+            if new_inflow.integral()(self.horizon) > eps:
+                already_present = False
+                for com_id in self._route_users[route]:
+                    if self._paths[com_id] == new_path:
+                        already_present = True
+                        self.network.commodities[com_id].sources[route[0]] += new_inflow
+                        break
+
+                if not already_present:
+                    new_com_id = len(self.network.commodities)
+                    self._paths[new_com_id] = new_path
+                    self._route_users[route].append(new_com_id)
+                    self.network.add_commodity(
+                        {route[0].id: new_inflow},
+                        route[1].id,
+                        PredictorType.CONSTANT,
+                    )
+
+    def _reassign_inflows(self, costs):
+
+        def process_route(route):
+            s, t = route
+            earliest_arrivals = bellman_ford(
+                t,
+                costs,
+                self._important_nodes[route],
+                0.0,
+                float("inf"),
+            )
+            p_o_t = compute_shortest_paths_over_time(earliest_arrivals, costs, s, t)
+
+            self._assign_new_paths(route, p_o_t)
+
+            if self.approx_inflows:
+                for com_id in self._route_users[route]:
+                    inflow = self.network.commodities[com_id].sources[route[0]]
+                    self.network.commodities[com_id].sources[route[0]] = inflow.project_to_grid(
+                        self.reroute_interval).simplify()
+
+        with ThreadPoolExecutor() as executor:
+            executor.map(process_route, self._route_users.keys())
+
 
 def compute_shortest_paths_over_time(
     earliest_arrival_fcts: Dict[Node, PiecewiseLinear],
@@ -132,267 +392,3 @@ def compute_shortest_paths_over_time(
 
         shortest_paths_computed_until = rest_of_path_active_until
     return paths_over_time
-
-
-def evaluate_path(costs: List[PiecewiseLinear], path: Path) -> PiecewiseLinear:
-    """ "
-    Computes path exit time as a function
-    """
-    identity = PiecewiseLinear(
-        [0.0], [0.0], first_slope=1, last_slope=1, domain=(0, float("inf"))
-    )
-    path_exit_time = identity
-
-    for edge in path[::-1]:
-        path_exit_time = path_exit_time.compose(
-            identity.plus(costs[edge.id]).ensure_monotone(True)
-        )
-
-    return path_exit_time
-
-
-# def get_shortest_path_at(
-#     earliest_arrivals: Dict[Node, PiecewiseLinear],
-#     costs: List[PiecewiseLinear],
-#     at: float,
-#     source: Node,
-# ) -> Path:
-#     """
-#     Computes shortest path at given moment
-#     """
-#     v = source
-#     t_arr = earliest_arrivals[source](at)
-#     path = []
-#     tau = at
-#     while tau < t_arr - eps:
-#         for e in v.outgoing_edges:
-#             if abs(earliest_arrivals[e._node_to](tau + costs[e.id](tau)) - t_arr) < eps:
-#                 path.append(e)
-#                 v = e._node_to
-#                 tau = tau + costs[e.id](tau)
-#                 break
-#
-#     return path
-
-
-class FlowIterator:
-    network: Network
-    reroute_interval: float
-    horizon: float
-    num_iterations: int
-    alpha: float  # convergence rate from (0,1) interval
-    _iter: int
-    _flows: List[DynamicFlow]
-    _route_users: Dict[Tuple[Node, Node], Collection[int]]  # commodities with common s-t pair
-    _inflows: Dict[Tuple[Node, Node], RightConstant]  # route inflows
-    _important_nodes: Dict[Tuple[Node, Node], Collection[Node]]
-
-    def __init__(
-        self,
-        network: Network,
-        reroute_interval: float,
-        horizon: float,
-        num_iterations: int = 100,
-        alpha: float = 0.1,
-    ):
-        assert all(len(c.sources) == 1 for c in network.commodities)
-        assert 0 < alpha < 1
-        self.network = network
-        self.reroute_interval = reroute_interval
-        self.horizon = horizon
-        self.num_iterations = num_iterations
-        self.alpha = alpha
-        self._iter = 0
-        self._flows = []
-        self._inflows = {}
-        self._route_users = {}
-        self._important_nodes = {}
-
-        for i, com in enumerate(network.commodities):
-            t = com.sink
-            for s, inflow in com.sources.items():
-                self._inflows.update({(s, t): inflow})
-                self._route_users.update({(s, t): [i]})
-                self._important_nodes.update({(s, t): self.network.graph.get_nodes_reaching(t)})
-
-        self._paths = {i: None for i in range(len(network.commodities))}
-        assert len(self._route_users) == len(self._paths)
-
-    def _initialize_paths(self):
-        """
-        Assigns each commodity the shortest path not regarding the queues
-        """
-        for s, t in self._route_users:
-            dist = reverse_dijkstra(
-                t, self.network.travel_time, self.network.graph.get_nodes_reaching(t)
-            )
-            v = s
-            path = []
-            while v != t:
-                for e in v.outgoing_edges:
-                    if dist[v] - dist[e._node_to] == self.network.travel_time[e.id]:
-                        path.append(e)
-                        v = e._node_to
-                        break
-
-            for i in self._route_users[(s, t)]:
-                self._paths[i] = path
-
-    def _compute_flow(self):
-        flow_builder = PathFlowBuilder(self.network, self._paths, self.reroute_interval)
-        generator = flow_builder.build_flow()
-        flow = next(generator)
-        while flow.phi < self.horizon:
-            flow = next(generator)
-
-        return flow
-
-    # def _get_optimal_paths(self, important_nodes, costs, route):
-    #     """
-    #     Computes optimal paths over time for given route (s,t) from cost functions
-    #     """
-    #     s, t = route
-    #
-    #     earliest_arrivals = bellman_ford(
-    #         t,
-    #         costs,
-    #         important_nodes,
-    #         0.0,
-    #         float("inf"),
-    #     )
-    #
-    #     phi = 0.0
-    #     best_paths = []
-    #     while phi < self.horizon:
-    #         # find optimal path on the next timestep to guarantee improvement
-    #         path = get_shortest_path_at(
-    #             earliest_arrivals, costs, phi + self.reroute_interval, s
-    #         )
-    #         best_paths.append((phi, path))
-    #
-    #         diff = (
-    #             (evaluate_path(costs, path) - earliest_arrivals[s])
-    #             .restrict((phi, float("inf")))
-    #             .simplify()
-    #         )
-    #         if max(diff.values) < eps:
-    #             break
-    #         else:
-    #             assert diff.values[0] < eps
-    #             for idx in range(len(diff.times) - 1):
-    #                 if diff.values[idx + 1] > 1000 * eps:
-    #                     phi = diff.times[idx]
-    #                     break
-    #
-    #     return best_paths
-
-    def _assign_new_paths(self, route, p_o_t):
-
-        for com_id in self._route_users[route]:
-            self.network.commodities[com_id].sources[route[0]] *= 1 - self.alpha
-
-        for i in range(len(p_o_t.paths)):
-            new_path = p_o_t.paths[i]
-            phi = p_o_t.times[i-1] if i > 0 else 0.0
-            phi_next = p_o_t.times[i]
-
-            new_inflow = self._inflows[route].restrict((phi, phi_next)) * self.alpha
-
-            if new_inflow.integral()(self.horizon) > eps:
-                already_present = False
-                for com_id in self._route_users[route]:
-                    if self._paths[com_id] == new_path:
-                        already_present = True
-                        self.network.commodities[com_id].sources[route[0]] += new_inflow
-                        break
-
-                if not already_present:
-                    new_com_id = len(self.network.commodities)
-                    self._paths[new_com_id] = new_path
-                    self._route_users[route].append(new_com_id)
-                    self.network.add_commodity(
-                        {route[0].id: new_inflow},
-                        route[1].id,
-                        PredictorType.CONSTANT,
-                    )
-
-    def _parallel_compute_shortest_paths(self, costs):
-        def process_route(route):
-            s, t = route
-            earliest_arrivals = bellman_ford(
-                t,
-                costs,
-                self._important_nodes[route],
-                0.0,
-                float("inf"),
-            )
-            p_o_t = compute_shortest_paths_over_time(earliest_arrivals, costs, s, t)
-
-            self._assign_new_paths(route, p_o_t)
-
-        with ThreadPoolExecutor() as executor:
-            executor.map(process_route, self._route_users.keys())
-
-    def _iterate(self):
-        """
-        Performs one iteration
-        """
-
-        flow = self._compute_flow()
-
-        costs = [
-            PiecewiseLinear(
-                flow.queues[e].times,
-                [
-                    flow._network.travel_time[e] + v / flow._network.capacity[e]
-                    for v in flow.queues[e].values
-                ],
-                flow.queues[e].first_slope / flow._network.capacity[e],
-                flow.queues[e].last_slope / flow._network.capacity[e],
-                domain=(0.0, float("inf")),
-            ).simplify()
-            for e in range(len(flow.queues))
-        ]
-
-        self._parallel_compute_shortest_paths(costs)
-
-        return flow
-
-    def run(self):
-        self._initialize_paths()
-
-        while self._iter < self.num_iterations:
-            flow = self._iterate()
-
-            self._flows.append(flow)
-            self._iter += 1
-
-            print(f"Iterations completed: {self._iter}/{self.num_iterations}")
-            print(f"Average travel times:")
-            for (s, t), c_ids in self._route_users.items():
-                accum_net_outflow = sum(
-                    (
-                        flow.outflow[e.id]._functions_dict[c_id]
-                        for c_id in c_ids
-                        for e in t.incoming_edges
-                        if c_id in flow.outflow[e.id]._functions_dict
-                    ),
-                    start=RightConstant([0.0], [0.0], (0, float("inf"))),
-                ).integral()
-                accum_net_inflow = sum(
-                    (
-                        inflow
-                        for c_id in c_ids
-                        for inflow in flow._network.commodities[c_id].sources.values()
-                    ),
-                    start=RightConstant([0.0], [0.0], (0, float("inf"))),
-                ).integral()
-                avg_travel_time = (
-                    accum_net_inflow.integrate(0.0, self.horizon)
-                    - accum_net_outflow.integrate(0.0, self.horizon)
-                ) / accum_net_inflow(self.horizon)
-                print(f"({s.id}, {t.id}): {avg_travel_time}")
-
-            print()
-
-        return self._flows[-1]

@@ -1,6 +1,6 @@
 import os
 
-from core.convergence import FlowIterator
+from core.convergence import AlphaFlowIterator
 from core.network import Network
 from core.predictors.predictor_type import PredictorType
 from eval.evaluate import calculate_optimal_average_travel_time
@@ -18,11 +18,12 @@ def run_scenario(scenario_dir: str):
 
     reroute_interval = 0.125
     inflow_horizon = 20.0
-    horizon = 100.0
+    horizon = 200.0
     demand = 5e4
 
-    num_iterations = 100
-    alpha = 0.05
+    num_iterations = 250
+    alpha = 0.1
+    approx_inflows = True
 
     tn_path = get_tn_path()
     edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
@@ -33,42 +34,26 @@ def run_scenario(scenario_dir: str):
 
     inflow = get_demand_with_inflow_horizon(demand, inflow_horizon)
     network.add_commodity(
-        {1: inflow*0.4},
+        {1: inflow*0.3},
         14,
         PredictorType.CONSTANT,
     )
     network.add_commodity(
-        {5: inflow*0.6},
+        {5: inflow*0.4},
         23,
         PredictorType.CONSTANT,
     )
     network.add_commodity(
-        {15: inflow},
+        {15: inflow*0.3},
         3,
         PredictorType.CONSTANT,
     )
 
-    flow_iter = FlowIterator(network, reroute_interval, horizon, num_iterations, alpha)
+    flow_iter = AlphaFlowIterator(network, reroute_interval, horizon, num_iterations, alpha, approx_inflows)
 
-    last_flow = flow_iter.run()
+    merged_flow = flow_iter.run(eval_every=10)
 
-    merged_flow = last_flow
-    combine_commodities_with_same_sink(network)
-
-    for route, commodities in flow_iter._route_users.items():
-        merged_flow = merge_commodities(merged_flow, network, commodities)
-
-    print(f"Optimal average travel times:")
-    for com in network.commodities:
-        s = next(iter(com.sources))
-        t = com.sink
-        opt_avg_travel_time = calculate_optimal_average_travel_time(
-            merged_flow, network, inflow_horizon, horizon, com
-        )
-        print(f"({s.id}, {t.id}): {opt_avg_travel_time}")
-
-
-    visualization_path = os.path.join(flows_dir, f"conv_merged_flow.vis.json")
+    visualization_path = os.path.join(flows_dir, f"conv_merged_flow_approx.vis.json")
     to_visualization_json(
         visualization_path,
         merged_flow,
