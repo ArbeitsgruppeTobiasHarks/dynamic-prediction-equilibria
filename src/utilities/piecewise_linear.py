@@ -626,7 +626,7 @@ class PiecewiseLinear:
         next_time = time
         val = self._eval_with_rank(time, rnk)
         while rnk < len(self.times) - 1:
-            if abs(val - self.values[rnk + 1]) > eps:
+            if abs(val - self.values[rnk + 1]) > 10*eps:
                 return next_time
             next_time = self.times[rnk + 1]
             rnk += 1

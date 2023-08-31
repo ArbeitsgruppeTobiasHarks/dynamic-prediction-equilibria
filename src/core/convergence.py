@@ -11,8 +11,6 @@ from core.network import Network
 from core.path_flow_builder import PathFlowBuilder
 from core.predictors.predictor_type import PredictorType
 from eval.evaluate import calculate_optimal_average_travel_time
-from ml.generate_queues import generate_queues_and_edge_loads
-from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.piecewise_linear import PiecewiseLinear
 from utilities.right_constant import RightConstant
@@ -145,7 +143,7 @@ class BaseFlowIterator:
 
     def _iteration(self):
         """
-        Computes current flow and edge costs, then reassigns the inflows
+        Computes current flow and edge costs, then calls _reassign_inflows()
         """
 
         flow = self._compute_flow()
@@ -208,14 +206,12 @@ class BaseFlowIterator:
 
         self._initialize_paths()
         flow = self._iteration()
-        avg_travel_times = self._avg_travel_times(flow, relative=True)
         self._flows.append(flow)
         self._iter += 1
 
         print(f"Initial relative average travel times:")
-        for (s, t), avg_travel_time in avg_travel_times.items():
+        for (s, t), avg_travel_time in self._avg_travel_times(flow, relative=True).items():
             print(f"({s.id} -> {t.id}): {round(avg_travel_time, 4)}")
-        print()
 
         while self._iter < self.num_iterations:
             flow = self._iteration()
@@ -223,13 +219,11 @@ class BaseFlowIterator:
             self._iter += 1
 
             if self._iter % eval_every == 0:
-                avg_travel_times = self._avg_travel_times(flow, relative=True)
-
+                print()
                 print(f"Iterations completed: {self._iter}/{self.num_iterations}")
                 print(f"Relative average travel times:")
-                for (s,t), avg_travel_time in avg_travel_times.items():
+                for (s,t), avg_travel_time in self._avg_travel_times(flow, relative=True).items():
                     print(f"({s.id} -> {t.id}): {round(avg_travel_time, 4)}")
-                print()
 
         merged_flow = self._flows[-1]
         combine_commodities_with_same_sink(self.network)
@@ -240,7 +234,7 @@ class BaseFlowIterator:
 
 
 class AlphaFlowIterator(BaseFlowIterator):
-    alpha: float    # convergence rate from (0,1) interval
+    alpha: float    # fraction of inflow to be redistributed
     approx_inflows: bool    # option to project inflows to regular grid after each iteration
     """
     At each iteration, a constant fraction of inflow is redistributed to optimal path from previous iteration
@@ -255,7 +249,6 @@ class AlphaFlowIterator(BaseFlowIterator):
                  approx_inflows: bool = True):
 
         super().__init__(network, reroute_interval, horizon, num_iterations)
-        assert 0 < alpha < 1
         self.alpha = alpha
         self.approx_inflows = approx_inflows
 
@@ -270,27 +263,27 @@ class AlphaFlowIterator(BaseFlowIterator):
             phi_next = p_o_t.times[i]
 
             new_inflow = self._inflows[route].restrict((phi, phi_next)) * self.alpha
+            if new_inflow.integral()(self.horizon) < eps:
+                continue
 
-            if new_inflow.integral()(self.horizon) > eps:
-                already_present = False
-                for com_id in self._route_users[route]:
-                    if self._paths[com_id] == new_path:
-                        already_present = True
-                        self.network.commodities[com_id].sources[route[0]] += new_inflow
-                        break
+            already_present = False
+            for com_id in self._route_users[route]:
+                if self._paths[com_id] == new_path:
+                    already_present = True
+                    self.network.commodities[com_id].sources[route[0]] += new_inflow
+                    break
 
-                if not already_present:
-                    new_com_id = len(self.network.commodities)
-                    self._paths[new_com_id] = new_path
-                    self._route_users[route].append(new_com_id)
-                    self.network.add_commodity(
-                        {route[0].id: new_inflow},
-                        route[1].id,
-                        PredictorType.CONSTANT,
-                    )
+            if not already_present:
+                new_com_id = len(self.network.commodities)
+                self._paths[new_com_id] = new_path
+                self._route_users[route].append(new_com_id)
+                self.network.add_commodity(
+                    {route[0].id: new_inflow},
+                    route[1].id,
+                    PredictorType.CONSTANT,
+                )
 
     def _reassign_inflows(self, costs):
-
         def process_route(route):
             s, t = route
             earliest_arrivals = bellman_ford(
@@ -348,7 +341,7 @@ def compute_shortest_paths_over_time(
             # Select the next outgoing edge of the current node v:
             # the edge e that is active for the longest period (starting from the arrival/departure time at v `departure`).
             best_edge = None
-            best_edge_active_until = None
+            best_active_until = None
 
             for edge in v.outgoing_edges:
                 edge_exit_times[edge] = identity.plus(
@@ -357,19 +350,23 @@ def compute_shortest_paths_over_time(
                 edge_delay = (
                     earliest_arrival_fcts[edge.node_to].compose(edge_exit_times[edge])
                     - earliest_arrival_fcts[v]
-                )
+                ).simplify()
+
+                # it can happen that delay is negative - just computational issue?
+
                 # edge_delay is (close to) zero at times when the edge is active; otherwise it is positive.
                 if edge_delay(departure) > eps:
                     continue
 
                 active_until = edge_delay.next_change_time(departure)
-                if best_edge is None or active_until > best_edge_active_until:
+
+                if best_edge is None or active_until > best_active_until:
                     best_edge = edge
-                    best_edge_active_until = active_until
+                    best_active_until = active_until
 
             assert best_edge is not None
             labelled_path.append(
-                LabelledPathEntry(best_edge, departure, best_edge_active_until)
+                LabelledPathEntry(best_edge, departure, best_active_until)
             )
             v = best_edge.node_to
             departure = edge_exit_times[best_edge](departure)
