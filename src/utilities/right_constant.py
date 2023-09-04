@@ -180,20 +180,26 @@ class RightConstant:
     def __mul__(self, other):
         return self.__rmul__(other)
 
+    @staticmethod
+    def indicator(interval: Tuple[float, float]):
+        domain = (0, float('inf'))
+        assert domain[0] <= interval[0] <= interval[1] <= domain[1]
+
+        times = [interval[0]]
+        values = [1.0]
+        if domain[0] < interval[0] - eps:
+            times = [domain[0]] + times
+            values = [0.0] + values
+        if interval[1] < domain[1] - eps:
+            times = times + [interval[1]]
+            values = values + [0.0]
+        return RightConstant(times, values, domain)
+
     def restrict(self, interval: Tuple[float, float]):
         assert self.domain[0] <= interval[0] <= interval[1] <= self.domain[1]
 
-        new_times = [interval[0]]
-        new_values = [1.0]
-        if self.domain[0] < interval[0] - eps:
-            new_times = [interval[0]] + new_times
-            new_values = [0.0] + new_values
-        if interval[1] < self.domain[1] - eps:
-            new_times = new_times + [interval[1]]
-            new_values = new_values + [0.0]
-        restictor = RightConstant(new_times, new_values, self.domain)
-
-        return self.__mul__(restictor)
+        restrictor = self.indicator(interval)
+        return self.__mul__(restrictor)
 
     def simplify(self) -> RightConstant:
         """
@@ -230,5 +236,12 @@ class RightConstant:
         new_times = [self.times[0] + delta*n for n in range(n_nodes)]
         new_values = [0.0] * n_nodes
         for i in range(n_nodes - 1):
-            new_values[i] = ( integral(new_times[i+1]) - integral(new_times[i]) ) / delta
+            new_values[i] = (integral(new_times[i+1]) - integral(new_times[i])) / delta
         return RightConstant(new_times, new_values, self.domain)
+
+    def invert(self) -> RightConstant:
+        return RightConstant(
+            self.times,
+            [1.0 / v if v > eps else 0 for v in self.values],
+            self.domain
+        )
