@@ -250,3 +250,19 @@ class DynamicFlow:
             edge_load.domain = (float("-inf"), edge_load.domain[1])
 
         return edge_loads
+
+    def get_edge_costs(self) -> List[PiecewiseLinear]:
+        costs = [
+            PiecewiseLinear(
+                self.queues[e].times,
+                [
+                    self._network.travel_time[e] + v / self._network.capacity[e]
+                    for v in self.queues[e].values
+                ],
+                self.queues[e].first_slope / self._network.capacity[e],
+                self.queues[e].last_slope / self._network.capacity[e],
+                domain=(0.0, float("inf")),
+            )
+            for e in range(len(self.queues))
+        ]
+        return costs

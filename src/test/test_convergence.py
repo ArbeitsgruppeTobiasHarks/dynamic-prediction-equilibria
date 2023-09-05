@@ -1,14 +1,12 @@
 import os
 
-from core.convergence import AlphaFlowIterator
-from core.network import Network
+from core.convergence import AlphaFlowIterator, BetaFlowIterator
 from core.predictors.predictor_type import PredictorType
-from eval.evaluate import calculate_optimal_average_travel_time
 from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
-from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.get_tn_path import get_tn_path
 from visualization.to_json import merge_commodities, to_visualization_json
+
 
 
 def run_scenario(scenario_dir: str):
@@ -21,9 +19,11 @@ def run_scenario(scenario_dir: str):
     horizon = 200.0
     demand = 5e4
 
-    num_iterations = 250
-    alpha = 0.1
+    num_iterations = 200
+    alpha = 0.05
+    beta = 1.0
     approx_inflows = True
+    evaluate_every = 10
 
     tn_path = get_tn_path()
     edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
@@ -49,9 +49,9 @@ def run_scenario(scenario_dir: str):
         PredictorType.CONSTANT,
     )
 
-    flow_iter = AlphaFlowIterator(network, reroute_interval, horizon, num_iterations, alpha, approx_inflows)
+    flow_iter = BetaFlowIterator(network, reroute_interval, horizon, num_iterations, alpha, beta, approx_inflows)
 
-    merged_flow = flow_iter.run(eval_every=10)
+    merged_flow = flow_iter.run(eval_every=evaluate_every)
 
     visualization_path = os.path.join(flows_dir, f"conv_merged_flow_approx.vis.json")
     to_visualization_json(

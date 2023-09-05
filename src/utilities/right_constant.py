@@ -180,25 +180,15 @@ class RightConstant:
     def __mul__(self, other):
         return self.__rmul__(other)
 
-    @staticmethod
-    def indicator(interval: Tuple[float, float]):
-        domain = (0, float('inf'))
-        assert domain[0] <= interval[0] <= interval[1] <= domain[1]
+    def indicator(self):
+        assert all(v in (0.0, 1.0) for v in self.values)
 
-        times = [interval[0]]
-        values = [1.0]
-        if domain[0] < interval[0] - eps:
-            times = [domain[0]] + times
-            values = [0.0] + values
-        if interval[1] < domain[1] - eps:
-            times = times + [interval[1]]
-            values = values + [0.0]
-        return RightConstant(times, values, domain)
+        return Indicator(self.times, self.values, self.domain)
 
     def restrict(self, interval: Tuple[float, float]):
         assert self.domain[0] <= interval[0] <= interval[1] <= self.domain[1]
 
-        restrictor = self.indicator(interval)
+        restrictor = Indicator.from_interval(*interval)
         return self.__mul__(restrictor)
 
     def simplify(self) -> RightConstant:
@@ -245,3 +235,47 @@ class RightConstant:
             [1.0 / v if v > eps else 0 for v in self.values],
             self.domain
         )
+
+
+class Indicator(RightConstant):
+    """
+    Allows only values of 0 and 1
+    """
+    @staticmethod
+    def from_interval(start: float, end: float):
+        domain = (0, float('inf'))
+        assert domain[0] <= start <= end <= domain[1]
+
+        times = [start]
+        values = [1.0]
+        if domain[0] < start - eps:
+            times = [domain[0]] + times
+            values = [0.0] + values
+        if end < domain[1] - eps:
+            times = times + [end]
+            values = values + [0.0]
+        return Indicator(times, values, domain)
+
+    def simplify(self) -> Indicator:
+        new_times = [self.times[0]]
+        new_values = [self.values[0]]
+        for i in range(0, len(self.times) - 1):
+            if self.values[i] != self.values[i + 1]:
+                new_times.append(self.times[i + 1])
+                new_values.append(self.values[i + 1])
+        return Indicator(new_times, new_values, self.domain)
+
+    def __radd__(self, other):
+        """
+        Summation is replaced with OR operation
+        """
+        added = super().__radd__(other)
+        added.values = list(map(lambda x: min(1.0, x), added.values))
+
+        return added.simplify().indicator()
+
+    def __rmul__(self, other):
+        if isinstance(other, Indicator):
+            return super().__rmul__(other).simplify().indicator()
+        else:
+            return super().__rmul__(other)
