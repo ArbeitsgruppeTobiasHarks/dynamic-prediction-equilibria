@@ -8,7 +8,6 @@ from utilities.get_tn_path import get_tn_path
 from visualization.to_json import merge_commodities, to_visualization_json
 
 
-
 def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
     network_path = os.path.join(scenario_dir, "network.pickle")
@@ -19,11 +18,11 @@ def run_scenario(scenario_dir: str):
     horizon = 200.0
     demand = 5e4
 
-    num_iterations = 200
-    alpha = 0.05
+    num_iterations = 100
+    alpha_fun = lambda d: min(d, 1.0)
     beta = 1.0
     approx_inflows = True
-    evaluate_every = 10
+    evaluate_every = 5
 
     tn_path = get_tn_path()
     edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
@@ -49,7 +48,7 @@ def run_scenario(scenario_dir: str):
         PredictorType.CONSTANT,
     )
 
-    flow_iter = BetaFlowIterator(network, reroute_interval, horizon, num_iterations, alpha, beta, approx_inflows)
+    flow_iter = BetaFlowIterator(network, reroute_interval, horizon, num_iterations, alpha_fun, beta, approx_inflows)
 
     merged_flow = flow_iter.run(eval_every=evaluate_every)
 

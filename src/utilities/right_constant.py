@@ -120,7 +120,7 @@ class RightConstant:
                 rptr += 1
             new_values[i] = self.values[lptr] + other.values[rptr]
 
-        return RightConstant(new_times, new_values, self.domain).simplify()
+        return RightConstant(new_times, new_values, self.domain)
 
     @staticmethod
     def sum(functions: List[RightConstant], domain=(0, float("inf"))) -> RightConstant:
@@ -173,7 +173,7 @@ class RightConstant:
                     rptr += 1
                 new_values[i] = self.values[lptr] * other.values[rptr]
 
-            return RightConstant(new_times, new_values, self.domain).simplify()
+            return RightConstant(new_times, new_values, self.domain)
         else:
             raise TypeError("Can only multiply by a numeric or a RightConstant.")
 
@@ -256,14 +256,14 @@ class Indicator(RightConstant):
             values = values + [0.0]
         return Indicator(times, values, domain)
 
-    def simplify(self) -> Indicator:
-        new_times = [self.times[0]]
-        new_values = [self.values[0]]
-        for i in range(0, len(self.times) - 1):
-            if self.values[i] != self.values[i + 1]:
-                new_times.append(self.times[i + 1])
-                new_values.append(self.values[i + 1])
-        return Indicator(new_times, new_values, self.domain)
+    # def simplify(self) -> Indicator:
+    #     new_times = [self.times[0]]
+    #     new_values = [self.values[0]]
+    #     for i in range(0, len(self.times) - 1):
+    #         if self.values[i] != self.values[i + 1]:
+    #             new_times.append(self.times[i + 1])
+    #             new_values.append(self.values[i + 1])
+    #     return Indicator(new_times, new_values, self.domain)
 
     def __radd__(self, other):
         """

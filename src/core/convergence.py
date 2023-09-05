@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Collection
+from math import ceil
+from typing import Dict, List, Tuple, Collection, Callable
 
 from core.bellman_ford import bellman_ford
 from core.dijkstra import reverse_dijkstra
@@ -40,7 +41,7 @@ class PathsOverTime:
     Each path is equipped with intervals of activity represented by indicator
     """
 
-    paths : List[Path]
+    paths: List[Path]
     activity_indicators: List[Indicator]
 
     def __init__(self, paths, activity_indicators):
@@ -395,7 +396,7 @@ def get_activity_indicator(delay: PiecewiseLinear) -> Indicator:
                 times += [interval_start, interval_end]
                 values += [1.0, 0.0]
 
-    if delay.values[-1] < eps:  # assuming last slope for delay can only be zero
+    if delay.values[-1] < eps:  # assuming last slope for delay can only equal to 0
         times += [interval_start]
         values += [1.0]
 
@@ -404,6 +405,20 @@ def get_activity_indicator(delay: PiecewiseLinear) -> Indicator:
         values = [0.0] + values
 
     return Indicator(times, values, delay.domain)
+
+
+def approximate_linear(lin: PiecewiseLinear, delta: float, horizon: float) -> RightConstant:
+    """
+    Returns a RightConstant approximation with grid size delta
+    """
+    n_nodes = ceil(horizon / delta) + 1
+    new_times = [delta * n for n in range(n_nodes)]
+    new_values = [0.0] * n_nodes
+    for i in range(n_nodes - 1):
+        new_values[i] = lin.integrate(new_times[i], new_times[i + 1]) / delta
+    new_values[-1] = lin.values[-1]
+
+    return RightConstant(new_times, new_values, lin.domain)
 
 
 # def compute_exit_time(costs: List[PiecewiseLinear], path: Path) -> PiecewiseLinear:
@@ -421,6 +436,7 @@ def get_activity_indicator(delay: PiecewiseLinear) -> Indicator:
 #         )
 #
 #     return path_exit_time
+
 
 def compute_all_shortest_paths(
     earliest_arrival_fcts: Dict[Node, PiecewiseLinear],
@@ -472,24 +488,52 @@ def compute_all_shortest_paths(
 
 
 class BetaFlowIterator(BaseFlowIterator):
+    alpha_fun: Callable[[float], float] # fraction of inflow to redistribute as function of relative delay
     beta: float # fraction of inflow for uniform redistribution
+    approx_inflows: bool
     """
-    We now compute all shortest paths instead of one
+    Inflow redistribution dependent on relative delay 
     """
     def __init__(self,
                  network: Network,
                  reroute_interval: float,
                  horizon: float,
                  num_iterations: int = 100,
-                 alpha: float = 0.1,
-                 beta: float = 0.01,
+                 alpha_fun: Callable[[float], float] = lambda d: 0.01,
+                 beta: float = 1.0,
                  approx_inflows: bool = True):
         super().__init__(network, reroute_interval, horizon, num_iterations)
-        self.alpha = alpha
+        self.alpha_fun = alpha_fun
         self.beta = beta
         self.approx_inflows = approx_inflows
 
-    def _assign_new_paths(self, route, shortest_paths):
+    def _compute_new_inflow(self, route, earliest_arrival, costs) -> RightConstant:
+
+        new_inflow = RightConstant([0.0], [0.0], (0, float('inf')))
+        inflow_horizon = self._inflows[route].times[-1]
+        earliest_arrival_approx = approximate_linear(earliest_arrival, self.reroute_interval, inflow_horizon)
+
+        for com_id in self._route_users[route]:
+            arrival = identity
+            for edge in self._paths[com_id][::-1]:
+                arrival = arrival.compose(
+                    identity.plus(costs[edge.id]).ensure_monotone(True)
+                )
+
+            arrival_approx = approximate_linear(arrival, self.reroute_interval, inflow_horizon)
+            alpha_vals = [
+                self.alpha_fun(arr/opt_arr - 1)
+                for arr, opt_arr in zip(arrival_approx.values, earliest_arrival_approx.values)
+            ]
+            alpha = RightConstant(arrival_approx.times, alpha_vals, (0, float('inf')))
+
+            to_redistribution = alpha * self.network.commodities[com_id].sources[route[0]]
+            new_inflow += to_redistribution
+            self.network.commodities[com_id].sources[route[0]] -= to_redistribution
+
+        return new_inflow.simplify()
+
+    def _assign_new_paths(self, route, shortest_paths, new_inflow):
 
         path_commodity = {i: None for i in range(len(shortest_paths))}
         for com_id in self._route_users[route]:
@@ -497,34 +541,34 @@ class BetaFlowIterator(BaseFlowIterator):
             if path in shortest_paths.paths:
                 path_commodity[shortest_paths.paths.index(path)] = com_id
 
-        for com_id in self._route_users[route]:
-            self.network.commodities[com_id].sources[route[0]] *= 1 - self.alpha
-
-        uniform_factor = RightConstant.sum(shortest_paths.activity_indicators).invert()
+        uniform_factor = RightConstant.sum(shortest_paths.activity_indicators).invert() # could be not 1, shouldn't be 0
 
         active_inflow = sum(
             self.network.commodities[com_id].sources[route[0]] * shortest_paths.activity_indicators[i]
             for i, com_id in path_commodity.items() if com_id is not None
         )
-        proportional_factor = active_inflow.invert() if active_inflow != 0 else 0
+        proportional_factor = 1.0 / active_inflow.integral()(self.horizon) if active_inflow != 0 else 0
+        proportional_factor *= Indicator.from_interval(0, float('inf'))
 
         for i in range(len(shortest_paths)):
             com_id = path_commodity[i]
 
             path_prob = self.beta * shortest_paths.activity_indicators[i] * uniform_factor
             if com_id is not None:
-                path_prob += (1 - self.beta) * self.network.commodities[com_id].sources[route[0]] * proportional_factor
+                path_prob += ((1 - self.beta)
+                              * self.network.commodities[com_id].sources[route[0]].integral()(self.horizon)
+                              * proportional_factor)
 
-            new_inflow = self.alpha * self._inflows[route] * path_prob
+            new_path_inflow = new_inflow * path_prob
 
             if com_id is not None:
-                self.network.commodities[com_id].sources[route[0]] += new_inflow
+                self.network.commodities[com_id].sources[route[0]] += new_path_inflow
             else:
                 new_com_id = len(self.network.commodities)
                 self._paths[new_com_id] = shortest_paths.paths[i]
                 self._route_users[route].append(new_com_id)
                 self.network.add_commodity(
-                    {route[0].id: new_inflow},
+                    {route[0].id: new_path_inflow},
                     route[1].id,
                     PredictorType.CONSTANT,
                 )
@@ -543,18 +587,18 @@ class BetaFlowIterator(BaseFlowIterator):
                 float("inf"),
             )
 
-            inflow_horizon = self._inflows[route].times[-1]
-            shortest_paths = compute_all_shortest_paths(earliest_arrivals, costs, s, t, inflow_horizon)
+            shortest_paths = compute_all_shortest_paths(earliest_arrivals, costs, s, t, self._inflows[route].times[-1])
 
-            self._assign_new_paths(route, shortest_paths)
+            new_inflow = self._compute_new_inflow(route, earliest_arrivals[s], costs)
+            self._assign_new_paths(route, shortest_paths, new_inflow)
 
             if self.approx_inflows:
                 for com_id in self._route_users[route]:
                     inflow = self.network.commodities[com_id].sources[route[0]]
                     self.network.commodities[com_id].sources[route[0]] = inflow.project_to_grid(self.reroute_interval)
 
-        for route in self._route_users.keys():
-            process_route(route)
+        # for route in self._route_users.keys():
+        #     process_route(route)
 
-        # with ThreadPoolExecutor() as executor:
-        #     executor.map(process_route, self._route_users.keys())
+        with ThreadPoolExecutor() as executor:
+            executor.map(process_route, self._route_users.keys())
