@@ -1,6 +1,6 @@
 import os
 
-from core.convergence import AlphaFlowIterator, BetaFlowIterator
+from core.convergence import BetaFlowIterator
 from core.predictors.predictor_type import PredictorType
 from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
@@ -48,9 +48,9 @@ def run_scenario(scenario_dir: str):
         PredictorType.CONSTANT,
     )
 
-    flow_iter = BetaFlowIterator(network, reroute_interval, horizon, num_iterations, alpha_fun, beta, approx_inflows)
+    flow_iter = BetaFlowIterator(network, reroute_interval, horizon, inflow_horizon, alpha_fun, beta, approx_inflows)
 
-    merged_flow = flow_iter.run(eval_every=evaluate_every)
+    merged_flow = flow_iter.run(num_iterations, evaluate_every)
 
     visualization_path = os.path.join(flows_dir, f"conv_merged_flow_approx.vis.json")
     to_visualization_json(
