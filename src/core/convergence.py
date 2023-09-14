@@ -511,7 +511,7 @@ class BetaFlowIterator(BaseFlowIterator):
 
         new_inflow = RightConstant([0.0], [0.0], (0, float('inf')))
         inflow_horizon = self._inflows[route].times[-1]
-        earliest_arrival_approx = approximate_linear(earliest_arrival, self.reroute_interval, inflow_horizon)
+        opt_travel_time_approx = approximate_linear(earliest_arrival - identity, self.reroute_interval, inflow_horizon)
 
         for com_id in self._route_users[route]:
             arrival = identity
@@ -520,12 +520,12 @@ class BetaFlowIterator(BaseFlowIterator):
                     identity.plus(costs[edge.id]).ensure_monotone(True)
                 )
 
-            arrival_approx = approximate_linear(arrival, self.reroute_interval, inflow_horizon)
+            travel_time_approx = approximate_linear(arrival - identity, self.reroute_interval, inflow_horizon)
             alpha_vals = [
                 self.alpha_fun(arr/opt_arr - 1)
-                for arr, opt_arr in zip(arrival_approx.values, earliest_arrival_approx.values)
+                for arr, opt_arr in zip(travel_time_approx.values, opt_travel_time_approx.values)
             ]
-            alpha = RightConstant(arrival_approx.times, alpha_vals, (0, float('inf')))
+            alpha = RightConstant(travel_time_approx.times, alpha_vals, (0, float('inf')))
 
             to_redistribution = alpha * self.network.commodities[com_id].sources[route[0]]
             new_inflow += to_redistribution
