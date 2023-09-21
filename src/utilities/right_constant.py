@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numbers
-from math import ceil
+from math import ceil, floor
 from typing import List, Tuple
 
 from core.machine_precision import eps
@@ -158,7 +158,7 @@ class RightConstant:
             return RightConstant(
                 self.times, [float(other) * v for v in self.values], self.domain
             )
-        if isinstance(other, RightConstant):
+        elif isinstance(other, RightConstant):
             assert self.domain == other.domain
 
             new_times = merge_sorted(self.times, other.times)
@@ -175,7 +175,7 @@ class RightConstant:
 
             return RightConstant(new_times, new_values, self.domain)
         else:
-            raise TypeError("Can only multiply by a numeric or a RightConstant.")
+            raise TypeError("Can only multiply by a numeric, a RightConstant.")
 
     def __mul__(self, other):
         return self.__rmul__(other)
@@ -217,22 +217,28 @@ class RightConstant:
             times, values, self.values[0], self.values[-1], self.domain
         )
 
-    def project_to_grid(self, delta) -> RightConstant:
-        """"
-        Returns a RightConstant approximation with grid size delta
+    def project_to_grid(self, delta: float, horizon: float) -> RightConstant:
         """
+        Returns a RightConstant approximation on the interval (self.domain[0], horizon) with grid size delta.
+        """
+        assert horizon <= self.domain[1]
+        n_nodes = floor((horizon - self.domain[0]) / delta) + 1
+        new_times = [self.domain[0] + delta*n for n in range(n_nodes)]
+        new_values = []
+
+        if new_times == self.times:  # already is an approximation itself
+            return self
+
         integral = self.integral()
-        n_nodes = ceil((self.times[-1] - self.times[0]) / delta) + 1
-        new_times = [self.times[0] + delta*n for n in range(n_nodes)]
-        new_values = [0.0] * n_nodes
         for i in range(n_nodes - 1):
-            new_values[i] = (integral(new_times[i+1]) - integral(new_times[i])) / delta
+            new_values.append((integral(new_times[i+1]) - integral(new_times[i])) / delta)
+        new_values.append(self.values[-1])
         return RightConstant(new_times, new_values, self.domain)
 
     def invert(self) -> RightConstant:
         return RightConstant(
             self.times,
-            [1.0 / v if v > eps else 0 for v in self.values],
+            [1.0 / v if v > eps else float('inf') for v in self.values],
             self.domain
         )
 

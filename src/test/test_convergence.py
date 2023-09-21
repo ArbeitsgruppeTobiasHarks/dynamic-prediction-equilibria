@@ -1,6 +1,6 @@
 import os
 
-from core.convergence import BetaFlowIterator
+from core.convergence import AlphaFlowIterator
 from core.predictors.predictor_type import PredictorType
 from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
@@ -16,13 +16,22 @@ def run_scenario(scenario_dir: str):
     reroute_interval = 0.125
     inflow_horizon = 20.0
     horizon = 200.0
-    demand = 5e4
+    demand = 1e5
 
-    num_iterations = 100
-    alpha_fun = lambda d: min(d, 1.0)
-    beta = 1.0
+    num_iterations = 10
+
+    def alpha_fun(delay):
+        if delay < 1e-5:
+            return 0.0
+        elif delay < 0.5:
+            return 0.01
+        elif delay < 1.0:
+            return 0.1
+        else:
+            return 0.5
+    delay_threshold = 1e-5
     approx_inflows = True
-    evaluate_every = 5
+    evaluate_every = 1
 
     tn_path = get_tn_path()
     edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
@@ -33,7 +42,7 @@ def run_scenario(scenario_dir: str):
 
     inflow = get_demand_with_inflow_horizon(demand, inflow_horizon)
     network.add_commodity(
-        {1: inflow*0.3},
+        {1: inflow*0.2},
         14,
         PredictorType.CONSTANT,
     )
@@ -43,14 +52,22 @@ def run_scenario(scenario_dir: str):
         PredictorType.CONSTANT,
     )
     network.add_commodity(
-        {15: inflow*0.3},
+        {15: inflow*0.4},
         3,
         PredictorType.CONSTANT,
     )
 
-    flow_iter = BetaFlowIterator(network, reroute_interval, horizon, inflow_horizon, alpha_fun, beta, approx_inflows)
+    flow_iter = AlphaFlowIterator(
+        network,
+        reroute_interval,
+        horizon,
+        inflow_horizon,
+        alpha_fun,
+        delay_threshold,
+        approx_inflows
+    )
 
-    merged_flow = flow_iter.run(num_iterations, evaluate_every)
+    merged_flow, path_metrics = flow_iter.run(num_iterations, evaluate_every)
 
     visualization_path = os.path.join(flows_dir, f"conv_merged_flow_approx.vis.json")
     to_visualization_json(
