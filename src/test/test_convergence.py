@@ -1,4 +1,5 @@
 import os
+import pickle
 
 from core.convergence import AlphaFlowIterator
 from core.predictors.predictor_type import PredictorType
@@ -6,6 +7,8 @@ from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.get_tn_path import get_tn_path
 from visualization.to_json import merge_commodities, to_visualization_json
+
+from utilities.combine_commodities import combine_commodities_with_same_sink
 
 
 def run_scenario(scenario_dir: str):
@@ -18,17 +21,15 @@ def run_scenario(scenario_dir: str):
     horizon = 200.0
     demand = 1e5
 
-    num_iterations = 10
+    num_iterations = 25
 
     def alpha_fun(delay):
         if delay < 1e-5:
             return 0.0
-        elif delay < 0.5:
-            return 0.01
         elif delay < 1.0:
-            return 0.1
+            return 0.01
         else:
-            return 0.5
+            return 0.1
     delay_threshold = 1e-5
     approx_inflows = True
     evaluate_every = 1
@@ -69,6 +70,11 @@ def run_scenario(scenario_dir: str):
 
     merged_flow, path_metrics = flow_iter.run(num_iterations, evaluate_every)
 
+    metrics_path = os.path.join(flows_dir, f"conv_metrics.pickle")
+    with open(f"conv_metrics.pickle", 'wb') as f:
+        pickle.dump(path_metrics, f)
+
+    combine_commodities_with_same_sink(network)
     visualization_path = os.path.join(flows_dir, f"conv_merged_flow_approx.vis.json")
     to_visualization_json(
         visualization_path,
