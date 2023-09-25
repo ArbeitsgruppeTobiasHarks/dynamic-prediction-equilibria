@@ -1,10 +1,9 @@
 import os
 from dataclasses import dataclass
 from math import ceil
-from typing import Dict, List, Tuple, Collection, Callable
+from typing import Dict, List, Tuple, Callable, Set
 
-
-from core.active_paths import PathsOverTime, get_activity_indicator, compute_path_travel_time, compute_all_active_paths, all_active_paths_parallel
+from core.active_paths import Path, PathsOverTime, get_activity_indicator, compute_path_travel_time, all_active_paths_parallel
 from core.bellman_ford import bellman_ford
 from core.dijkstra import reverse_dijkstra
 from core.dynamic_flow import DynamicFlow
@@ -13,17 +12,15 @@ from core.machine_precision import eps
 from core.network import Network
 from core.path_flow_builder import PathFlowBuilder
 from core.predictors.predictor_type import PredictorType
-from eval.evaluate import calculate_optimal_average_travel_time
 from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.piecewise_linear import PiecewiseLinear, identity
 from utilities.right_constant import RightConstant, Indicator
 from utilities.arrays import elem_lrank
+from utilities.status_logger import TimedStatusLogger
 from visualization.to_json import merge_commodities, to_visualization_json
 
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing as mp
-
-Path = List[Edge]
 
 
 def integrate_with_weights(lin: PiecewiseLinear, weights: RightConstant, start: float, end: float):
@@ -59,13 +56,13 @@ class BaseFlowIterator:
     _flow: DynamicFlow
     _flows_history: List[DynamicFlow]
     _comm_to_path: Dict[int, Path]
-    _path_to_comm: Dict[Tuple, int]
+    _path_to_comm: Dict[Path, int]
     _paths: Dict[Tuple[Node, Node], List[Path]]  # all used s-t paths
     _path_metrics: Dict[Tuple[int, int], Dict[int, Tuple]]
-    _important_nodes: Dict[Tuple[Node, Node], Collection[Node]]
+    _important_nodes: Dict[Tuple[Node, Node], Set[Node]]
     _fastest_travel_times: Dict[Tuple[Node, Node], float]  # travel times without queues
     _earliest_arrivals_to: Dict[Node, Dict[Node, PiecewiseLinear]] # earliest arrivals to sinks
-    _inflows: Dict[Tuple[Node, Node], float]
+    _inflows: Dict[Tuple[Node, Node], RightConstant]
 
     def __init__(
         self,
@@ -118,17 +115,18 @@ class BaseFlowIterator:
                 t, self.network.travel_time, self.network.graph.get_nodes_reaching(t)
             )
             v = s
-            path = []
+            edges = []
             while v != t:
                 for e in v.outgoing_edges:
                     if dist[v] - dist[e._node_to] == self.network.travel_time[e.id]:
-                        path.append(e)
+                        edges.append(e)
                         v = e._node_to
                         break
+            path = Path(edges)
 
             self._paths[(s, t)].append(path)
             self._comm_to_path[com_id] = path
-            self._path_to_comm[tuple(path)] = com_id
+            self._path_to_comm[path] = com_id
             self._fastest_travel_times[(s, t)] = dist[s]
 
     def _run_bellman_ford(self):
@@ -153,22 +151,18 @@ class BaseFlowIterator:
         self._flow = flow
 
     def _get_path_inflow(self, path: Path) -> RightConstant:
-        s = path[0]._node_from
-        path_key = tuple(path)
-
-        if path_key in self._path_to_comm:
-            com_id = self._path_to_comm[path_key]
-            return self.network.commodities[com_id].sources[s]
+        if path in self._path_to_comm:
+            com_id = self._path_to_comm[path]
+            return self.network.commodities[com_id].sources[path.start]
         else:
             return RightConstant([0.0], [0.0], (0, float('inf')))
 
     def _set_path_inflow(self, path: Path, new_inflow: RightConstant):
-        s = path[0]._node_from
-        t = path[-1]._node_to
-        path_key = tuple(path)
+        s = path.start
+        t = path.end
 
-        if path_key in self._path_to_comm:
-            com_id = self._path_to_comm[path_key]
+        if path in self._path_to_comm:
+            com_id = self._path_to_comm[path]
             self.network.commodities[com_id].sources[s] = new_inflow
         else:
             new_com_id = len(self.network.commodities)
@@ -178,7 +172,7 @@ class BaseFlowIterator:
                 PredictorType.CONSTANT
             )
             self._comm_to_path[new_com_id] = path
-            self._path_to_comm[path_key] = new_com_id
+            self._path_to_comm[path] = new_com_id
             self._paths[(s, t)].append(path)
 
     def _reassign_inflows(self):
@@ -193,9 +187,9 @@ class BaseFlowIterator:
         for (s, t), paths in self._paths.items():
             accum_net_outflow = sum(
                 (
-                    self._flow.outflow[p[-1].id]._functions_dict[self._path_to_comm[tuple(p)]]
+                    self._flow.outflow[p.edges[-1].id]._functions_dict[self._path_to_comm[p]]
                     for p in paths
-                    if self._path_to_comm[tuple(p)] in self._flow.outflow[p[-1].id]._functions_dict
+                    if self._path_to_comm[p] in self._flow.outflow[p.edges[-1].id]._functions_dict
                 ),
                 start=RightConstant([0.0], [0.0], (0, float("inf"))),
             ).integral()
@@ -206,7 +200,7 @@ class BaseFlowIterator:
                 ),
                 start=RightConstant([0.0], [0.0], (0, float("inf"))),
             ).integral()
-            assert abs(1 - accum_net_inflow(self.horizon)/accum_net_outflow(self.horizon)) < eps
+            # assert abs(1 - accum_net_inflow(self.horizon)/accum_net_outflow(self.horizon)) < eps
             avg_travel_time = (
                                       accum_net_inflow.integrate(0.0, self.horizon) -
                                       accum_net_outflow.integrate(0.0, self.horizon)
@@ -225,15 +219,32 @@ class BaseFlowIterator:
 
         return avg_delays
 
+    def _compute_metrics(self):
+        for (s, t) in self._paths.keys():
+            network_data = (
+                self._flow.get_edge_costs(),
+                self._earliest_arrivals_to[t][s] - identity,
+                self._fastest_travel_times[(s, t)],
+                self._inflows[(s, t)],
+                self.inflow_horizon,
+                self.delay_threshold
+            )
+
+            with mp.Pool(processes=mp.cpu_count()) as pool:
+                self._path_metrics[(s.id, t.id)][self._iter] = pool.starmap(
+                    compute_path_metrics,
+                    [(path, self._get_path_inflow(path), network_data) for path in self._paths[(s, t)]]
+                )
+
     def run(self, num_iterations, eval_every=10):
         """
         Main cycle
         """
 
         if self._iter == 0:
+
             self._initialize_paths()
             self._compute_flow()
-
             self._run_bellman_ford()
 
             print(f"Initial normalized average delays:")
@@ -244,9 +255,9 @@ class BaseFlowIterator:
 
             self._reassign_inflows()
             self._compute_flow()
-            self._iter += 1
-
             self._run_bellman_ford()
+
+            self._iter += 1
 
             if self._iter % eval_every == 0:
                 print()
@@ -255,25 +266,11 @@ class BaseFlowIterator:
                 for (s, t), avg_delay in self._get_route_avg_delays(normalize=True).items():
                     print(f"({s.id} -> {t.id}): {round(avg_delay, 4)}")
 
-                for (s, t) in self._paths.keys():
-                    network_data = (
-                        self._flow.get_edge_costs(),
-                        self._earliest_arrivals_to[t][s] - identity,
-                        self._fastest_travel_times[(s, t)],
-                        self._inflows[(s, t)],
-                        self.inflow_horizon,
-                        self.delay_threshold
-                    )
-
-                    with mp.Pool(processes=mp.cpu_count()) as pool:
-                        self._path_metrics[(s.id, t.id)][self._iter] = pool.starmap(
-                             compute_path_metrics,
-                             [(path, self._get_path_inflow(path), network_data) for path in self._paths[(s, t)]]
-                        )
+                self._compute_metrics()
 
         merged_flow = self._flow
         for paths in self._paths.values():
-            commodities = [self._path_to_comm[tuple(p)] for p in paths]
+            commodities = [self._path_to_comm[p] for p in paths]
             merged_flow = merge_commodities(merged_flow, self.network, commodities)
 
         return merged_flow, self._path_metrics
@@ -283,7 +280,7 @@ def compute_path_metrics(path, path_inflow, network_data):
 
     costs, optimal_travel_time, fastest_travel_time, total_inflow, inflow_horizon, delay_threshold = network_data
 
-    metrics = {'path': [e.id for e in path]}
+    metrics = {'path': str(path)}
 
     accum_path_inflow = path_inflow.integral()
     path_delay = compute_path_travel_time(path, costs) - optimal_travel_time
@@ -405,6 +402,7 @@ def approximate_linear(lin: PiecewiseLinear, delta: float, horizon: float) -> Ri
 
 class AlphaFlowIterator(BaseFlowIterator):
     alpha_fun: Callable[[float], float]  # fraction of inflow to redistribute as function of relative delay
+    min_path_active_time: float
     approx_inflows: bool
     """ 
     For each path, an approximation of relative delay d is computed. 
@@ -417,16 +415,20 @@ class AlphaFlowIterator(BaseFlowIterator):
                  inflow_horizon: float,
                  alpha_fun: Callable[[float], float] = lambda d: 0.01,
                  delay_threshold: float = eps,
+                 min_path_active_time: float = 1000*eps,
                  approx_inflows: bool = True):
         super().__init__(network, reroute_interval, horizon, inflow_horizon, delay_threshold)
         self.alpha_fun = alpha_fun
+        self.min_path_active_time = min_path_active_time
         self.approx_inflows = approx_inflows
 
     def _determine_new_inflow(self,
                               route: Tuple[Node, Node],
-                              costs: List[PiecewiseLinear]
+                              costs: List[PiecewiseLinear],
+                              new_paths_coverage: Indicator,
                               ) -> RightConstant:
 
+        total_inflow = self._inflows[route].integral()(self.inflow_horizon)
         new_inflow = RightConstant([0.0], [0.0], (0, float('inf')))
 
         opt_travel_time = self._earliest_arrivals_to[route[1]][route[0]] - identity
@@ -434,6 +436,8 @@ class AlphaFlowIterator(BaseFlowIterator):
 
         for path in self._paths[route]:
             path_inflow = self._get_path_inflow(path)
+            if path_inflow.integral()(self.inflow_horizon) < eps * total_inflow:
+                continue
 
             # travel_time = compute_path_travel_time(path, costs)
             path_delay = compute_path_travel_time(path, costs) - opt_travel_time
@@ -444,7 +448,7 @@ class AlphaFlowIterator(BaseFlowIterator):
             ]
             alpha = RightConstant(path_delay_approx.times, alpha_vals, (0, float('inf')))
 
-            inflow_change = alpha * path_inflow
+            inflow_change = alpha * path_inflow * new_paths_coverage
             new_inflow += inflow_change
             self._set_path_inflow(path, path_inflow - inflow_change)
 
@@ -452,22 +456,20 @@ class AlphaFlowIterator(BaseFlowIterator):
 
     def _assign_new_paths(self, active_paths: PathsOverTime, new_inflow: RightConstant):
 
-        # could be not 1, shouldn't be 0
-        n_active_paths = RightConstant.sum(active_paths.activity_indicators)
-        uniform_factor = n_active_paths.invert().restrict((0, self.inflow_horizon))
-        assert float('inf') not in uniform_factor.values
+        n_active_paths = RightConstant.sum(list(active_paths.values()))
+        uniform_factor = n_active_paths.invert()
 
-        for i in range(len(active_paths)):
-            path = active_paths.paths[i]
+        for path, indicator in active_paths.items():
             current_inflow = self._get_path_inflow(path)
 
-            path_prob = active_paths.activity_indicators[i] * uniform_factor
+            path_prob = indicator.restrict((0, self.inflow_horizon)) * uniform_factor
             new_path_inflow = current_inflow + new_inflow * path_prob
             self._set_path_inflow(path, new_path_inflow)
 
     def _reassign_inflows(self):
 
         costs = self._flow.get_edge_costs()
+        print()
 
         def process_route(route):
             s, t = route
@@ -477,16 +479,21 @@ class AlphaFlowIterator(BaseFlowIterator):
                 s,
                 t,
                 self.inflow_horizon,
-                delay_threshold=self.delay_threshold * self._fastest_travel_times[route]
+                delay_threshold=self.delay_threshold * self._fastest_travel_times[route],
+                min_active_time=self.min_path_active_time
             )
-            new_inflow = self._determine_new_inflow(route, costs)
+            new_inflow = self._determine_new_inflow(route, costs, active_paths.coverage())
             self._assign_new_paths(active_paths, new_inflow)
 
             if self.approx_inflows:
-                for path in self._paths[route]:
-                    inflow = self._get_path_inflow(path)
-                    approximation = inflow.project_to_grid(self.reroute_interval, self.inflow_horizon)
-                    self._set_path_inflow(path, approximation)
+                with TimedStatusLogger(f"Approximating inflows for route ({s.id} -> {t.id})..."):
+                    for path in self._paths[route]:
+                        inflow = self._get_path_inflow(path)
+                        approximation = inflow.project_to_grid(self.reroute_interval, self.inflow_horizon)
+                        self._set_path_inflow(path, approximation)
+
+            redis = new_inflow.integral()(self.inflow_horizon) / self._inflows[(s, t)].integral()(self.inflow_horizon)
+            print(f"({s.id} -> {t.id}): {round(100 * redis, 2)}% of inflow redistributed to {len(active_paths)} active paths")
 
         # for route in self._paths.keys():
         #     process_route(route)

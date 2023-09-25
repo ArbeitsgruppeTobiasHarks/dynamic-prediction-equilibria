@@ -19,18 +19,18 @@ def run_scenario(scenario_dir: str):
     reroute_interval = 0.125
     inflow_horizon = 20.0
     horizon = 200.0
-    demand = 1e5
+    demand = 7e4
 
-    num_iterations = 25
+    num_iterations = 100
 
     def alpha_fun(delay):
-        if delay < 1e-5:
+        if delay < 1e-3:
             return 0.0
-        elif delay < 1.0:
-            return 0.01
         else:
-            return 0.1
-    delay_threshold = 1e-5
+            return min(0.1 * delay, 0.5)
+
+    delay_threshold = 1e-6
+    min_path_active_time = reroute_interval
     approx_inflows = True
     evaluate_every = 1
 
@@ -65,13 +65,14 @@ def run_scenario(scenario_dir: str):
         inflow_horizon,
         alpha_fun,
         delay_threshold,
+        min_path_active_time,
         approx_inflows
     )
 
     merged_flow, path_metrics = flow_iter.run(num_iterations, evaluate_every)
 
-    metrics_path = os.path.join(flows_dir, f"conv_metrics.pickle")
-    with open(f"conv_metrics.pickle", 'wb') as f:
+    metrics_path = os.path.join(scenario_dir, f"conv_metrics.pickle")
+    with open(metrics_path, 'wb') as f:
         pickle.dump(path_metrics, f)
 
     combine_commodities_with_same_sink(network)

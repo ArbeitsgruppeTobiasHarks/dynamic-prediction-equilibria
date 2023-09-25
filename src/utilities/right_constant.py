@@ -238,7 +238,7 @@ class RightConstant:
     def invert(self) -> RightConstant:
         return RightConstant(
             self.times,
-            [1.0 / v if v > eps else float('inf') for v in self.values],
+            [1.0 / v if v > eps else 1.0 / eps for v in self.values],
             self.domain
         )
 

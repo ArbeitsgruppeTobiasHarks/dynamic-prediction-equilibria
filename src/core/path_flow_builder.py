@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from typing import Dict, Generator, List, Optional, Set, Tuple
 
+from core.active_paths import Path
 from core.dynamic_flow import DynamicFlow, FlowRatesCollection
 from core.graph import Edge, Node
 from core.machine_precision import eps
 from core.network import Commodity, Network
 from utilities.queues import PriorityQueue
 from utilities.right_constant import RightConstant
-
-Path = List[Edge]
 
 
 class PathFlowBuilder:
@@ -111,7 +110,7 @@ class PathFlowBuilder:
     def _get_next_edge(self, i: int, v: Node):
         path = self.paths[i]
         edge = None
-        for e in path:
+        for e in path.edges:
             if e.node_from == v:
                 edge = e
                 break

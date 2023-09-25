@@ -1,44 +1,65 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from core.graph import Edge, Node
 from core.machine_precision import eps
 from utilities.piecewise_linear import identity, PiecewiseLinear
-from utilities.right_constant import Indicator
+from utilities.right_constant import Indicator, RightConstant
 
 import multiprocessing as mp
 
-Path = List[Edge]
+
+class Path:
+    edges: List[Edge]
+    start: Optional[Node]
+    end: Optional[Node]
+
+    def __init__(self, edges):
+        self.edges = edges
+        if len(edges) > 0:
+            self.start = edges[0]._node_from
+            self.end = edges[-1]._node_to
+        else:
+            self.start = None
+            self.end = None
+
+    def add_edge(self, edge):
+        return Path(self.edges + [edge])
+
+    def __len__(self):
+        return len(self.edges)
+
+    def __eq__(self, other):
+        assert isinstance(other, Path)
+
+        if len(self) != len(other):
+            return False
+        else:
+            return all(e1 == e2 for e1, e2 in zip(self.edges, other.edges))
+
+    def __str__(self):
+        return str([e.id for e in self.edges])
+
+    def __hash__(self):
+        return hash(tuple(self.edges))
 
 
-class PathsOverTime:
+class PathsOverTime(Dict):
     """
     Collection of paths with same source and sink.
     Each path is equipped with intervals of activity represented by indicator
     """
 
-    paths: List[Path]
-    activity_indicators: List[Indicator]
-
     def __init__(self, paths, activity_indicators):
-        self.paths = paths
-        self.activity_indicators = activity_indicators
-
-    def __len__(self):
-        return len(self.paths)
-
-    def __add__(self, other):
-        return PathsOverTime(
-            self.paths + other.paths,
-            self.activity_indicators + other.activity_indicators
-        )
+        super().__init__({p: i for p, i in zip(paths, activity_indicators)})
 
     def add_path(self, path, activity_indicator):
-        if path in self.paths:
-            i = self.paths.index(path)
-            self.activity_indicators[i] += activity_indicator
+        if path in self.keys():
+            self[path] += activity_indicator
         else:
-            self.paths += [path]
-            self.activity_indicators += [activity_indicator]
+            self[path] = activity_indicator
+
+    def coverage(self):
+        return sum(self.values())
 
 #
 # @dataclass
@@ -183,63 +204,64 @@ def get_activity_indicator(
 def compute_path_travel_time(path: Path, costs: List[PiecewiseLinear]) -> PiecewiseLinear:
     path_exit_time = identity
 
-    for edge in path[::-1]:
+    for edge in path.edges[::-1]:
         path_exit_time = path_exit_time.compose(
             identity.plus(costs[edge.id]).ensure_monotone(True)
         )
 
     return path_exit_time - identity
 
-
-def compute_all_active_paths(
-        earliest_arrivals: Dict[Node, PiecewiseLinear],
-        edge_costs: List[PiecewiseLinear],
-        source: Node,
-        sink: Node,
-        inflow_horizon: float,
-        delay_threshold: float = eps,
-        min_active_time: float = 1000 * eps
-) -> PathsOverTime:
-    """
-    Constructs all simple s-t paths which are active for at least min_active_time
-    """
-
-    shortest_paths = PathsOverTime([], [])
-
-    initial_paths = PathsOverTime(
-        paths=[[]],
-        activity_indicators=[Indicator.from_interval(0.0, float('inf'))]
-    )
-    paths_to = {source: (initial_paths, [identity])}  # stores constructed subpaths grouped by end node
-
-    while len(paths_to) > 0:
-        destinations = set(e._node_to for v in paths_to.keys() for e in v.outgoing_edges if v != sink)
-        extended_paths_to = {
-            v: (PathsOverTime([], []), [])
-            for v in destinations
-        }
-
-        for v, (paths_to_v, exit_times) in paths_to.items():
-            if v == sink:
-                shortest_paths += paths_to_v
-                continue
-            for e in v.outgoing_edges:
-                for i in range(len(paths_to_v)):  # extend each path by adding an edge
-                    if e in paths_to_v.paths[i]:  # do not allow loops
-                        continue
-                    path = paths_to_v.paths[i] + [e]
-                    exit_time = (identity + edge_costs[e.id]).compose(exit_times[i])
-                    delay = earliest_arrivals[e._node_to].compose(exit_time) - earliest_arrivals[source]
-                    indicator = get_activity_indicator(delay, threshold=delay_threshold)
-                    if indicator.integral()(inflow_horizon) > min_active_time:
-                        extended_paths_to[e._node_to][0].add_path(path, indicator)
-                        extended_paths_to[e._node_to][1].append(exit_time)
-
-        paths_to = {v: (paths_to_v, exit_times)
-                    for v, (paths_to_v, exit_times) in extended_paths_to.items()
-                    if len(paths_to_v) > 0}
-
-    return shortest_paths
+#
+# def compute_all_active_paths(
+#         earliest_arrivals: Dict[Node, PiecewiseLinear],
+#         edge_costs: List[PiecewiseLinear],
+#         source: Node,
+#         sink: Node,
+#         inflow_horizon: float,
+#         delay_threshold: float = eps,
+#         min_active_time: float = 1000 * eps
+# ) -> PathsOverTime:
+#     """
+#     Constructs all simple s-t paths which are active for at least min_active_time
+#     """
+#
+#     shortest_paths = PathsOverTime([], [])
+#
+#     initial_paths = PathsOverTime(
+#         paths=[[]],
+#         activity_indicators=[Indicator.from_interval(0.0, float('inf'))]
+#     )
+#     paths_to = {source: (initial_paths, [identity])}  # stores constructed subpaths grouped by end node
+#
+#     while len(paths_to) > 0:
+#         destinations = set(e._node_to for v in paths_to.keys() for e in v.outgoing_edges if v != sink)
+#         extended_paths_to = {
+#             v: (PathsOverTime([], []), [])
+#             for v in destinations
+#         }
+#
+#         for v, (paths_to_v, exit_times) in paths_to.items():
+#             if v == sink:
+#                 shortest_paths.update(paths_to_v)
+#                 continue
+#             for e in v.outgoing_edges:
+#                 # works for ols PathsOverTime
+#                 for i in range(len(paths_to_v)):  # extend each path by adding an edge
+#                     if e in paths_to_v.paths[i]:  # do not allow loops
+#                         continue
+#                     path = paths_to_v.paths[i].add + [e]
+#                     exit_time = (identity + edge_costs[e.id]).compose(exit_times[i])
+#                     delay = earliest_arrivals[e._node_to].compose(exit_time) - earliest_arrivals[source]
+#                     indicator = get_activity_indicator(delay, threshold=delay_threshold)
+#                     if indicator.integral()(inflow_horizon) > min_active_time:
+#                         extended_paths_to[e._node_to][0].add_path(path, indicator)
+#                         extended_paths_to[e._node_to][1].append(exit_time)
+#
+#         paths_to = {v: (paths_to_v, exit_times)
+#                     for v, (paths_to_v, exit_times) in extended_paths_to.items()
+#                     if len(paths_to_v) > 0}
+#
+#     return shortest_paths
 
 
 def extend_path(path_data, network_data):
@@ -247,14 +269,14 @@ def extend_path(path_data, network_data):
     earliest_arrivals, edge_costs, source, inflow_horizon, delay_threshold, min_active_time = network_data
     extended = []
     for e in dest.outgoing_edges:
-        if e in path:  # do not allow loops
+        if e in path.edges:  # do not allow loops
             continue
         new_dest = e._node_to
         new_exit_time = (identity + edge_costs[e.id]).compose(exit_time)
         delay = earliest_arrivals[new_dest].compose(new_exit_time) - earliest_arrivals[source]
         new_indicator = get_activity_indicator(delay, threshold=delay_threshold)
         if new_indicator.integral()(inflow_horizon) > min_active_time:
-            extended.append((path + [e], new_dest, new_exit_time, new_indicator))
+            extended.append((path.add_edge(e), new_dest, new_exit_time, new_indicator))
 
     return extended
 
@@ -270,7 +292,7 @@ def all_active_paths_parallel(
 ) -> PathsOverTime:
 
     shortest_paths = PathsOverTime(paths=[], activity_indicators=[])
-    subpaths = [([], source, identity, Indicator.from_interval(0, float('inf')))]
+    subpaths = [(Path([]), source, identity, Indicator.from_interval(0, float('inf')))]
 
     network_data = (earliest_arrivals, edge_costs, source, inflow_horizon, delay_threshold, min_active_time)
     num_processes = mp.cpu_count()
