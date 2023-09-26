@@ -4,7 +4,6 @@ import pickle
 from core.convergence import AlphaFlowIterator
 from core.predictors.predictor_type import PredictorType
 from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
-from scenarios.nguyen_scenario import build_nguyen_network
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.get_tn_path import get_tn_path
 from visualization.to_json import merge_commodities, to_visualization_json
@@ -14,34 +13,48 @@ from utilities.combine_commodities import combine_commodities_with_same_sink
 
 def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
+    network_path = os.path.join(scenario_dir, "network.pickle")
     flows_dir = os.path.join(scenario_dir, "flows")
 
     reroute_interval = 0.125
-    inflow_horizon = 12.0
-    horizon = 60.0
-    demand = 100
+    inflow_horizon = 20.0
+    horizon = 200.0
+    demand = 1e5
 
-    num_iterations = 50
+    num_iterations = 250
 
     def alpha_fun(delay):
-        if delay < 1e-4:
-            return 0.0
-        else:
-            return min(0.1 * delay, 0.5)
+        return min(0.1 * delay, 0.5)
 
     delay_threshold = 1e-4
     min_path_active_time = reroute_interval
     approx_inflows = True
-    parallelize = False
-    log_every = 1
+    parallelize = True
+    log_every = 10
 
-    network = build_nguyen_network()
-    for s, t in [(1, 2), (1, 3), (4, 2), (4, 3)]:
-        network.add_commodity(
-            {s: get_demand_with_inflow_horizon(demand, inflow_horizon)},
-            t,
-            PredictorType.CONSTANT,
-        )
+    tn_path = get_tn_path()
+    edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
+    nodes_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_node.tntp")
+    network = import_sioux_falls(edges_tntp_path, nodes_tntp_path)
+    os.makedirs(os.path.dirname(network_path), exist_ok=True)
+    network.to_file(network_path)
+
+    inflow = get_demand_with_inflow_horizon(demand, inflow_horizon)
+    network.add_commodity(
+        {1: inflow*0.2},
+        14,
+        PredictorType.CONSTANT,
+    )
+    network.add_commodity(
+        {5: inflow*0.3},
+        23,
+        PredictorType.CONSTANT,
+    )
+    network.add_commodity(
+        {15: inflow*0.5},
+        3,
+        PredictorType.CONSTANT,
+    )
 
     flow_iter = AlphaFlowIterator(
         network,
@@ -73,6 +86,6 @@ def run_scenario(scenario_dir: str):
 if __name__ == "__main__":
 
     def main():
-        run_scenario("./out/convergence-test-nguyen")
+        run_scenario("./out/convergence-sioux-falls")
 
     main()

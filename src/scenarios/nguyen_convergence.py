@@ -21,19 +21,16 @@ def run_scenario(scenario_dir: str):
     horizon = 60.0
     demand = 100
 
-    num_iterations = 50
+    num_iterations = 500
 
     def alpha_fun(delay):
-        if delay < 1e-4:
-            return 0.0
-        else:
-            return min(0.1 * delay, 0.5)
+        return min(delay**2, 0.5)
 
-    delay_threshold = 1e-4
+    delay_threshold = 1e-6
     min_path_active_time = reroute_interval
     approx_inflows = True
     parallelize = False
-    log_every = 1
+    log_every = 50
 
     network = build_nguyen_network()
     for s, t in [(1, 2), (1, 3), (4, 2), (4, 3)]:
@@ -73,6 +70,6 @@ def run_scenario(scenario_dir: str):
 if __name__ == "__main__":
 
     def main():
-        run_scenario("./out/convergence-test-nguyen")
+        run_scenario("./out/convergence-nguyen")
 
     main()

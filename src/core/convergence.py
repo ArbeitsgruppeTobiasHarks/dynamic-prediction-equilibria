@@ -1,9 +1,10 @@
 import os
+from copy import deepcopy
 from dataclasses import dataclass
 from math import ceil
 from typing import Dict, List, Tuple, Callable, Set
 
-from core.active_paths import Path, PathsOverTime, get_activity_indicator, compute_path_travel_time, all_active_paths_parallel
+from core.active_paths import Path, PathsOverTime, get_activity_indicator, compute_path_travel_time, compute_all_active_paths, all_active_paths_parallel
 from core.bellman_ford import bellman_ford
 from core.dijkstra import reverse_dijkstra
 from core.dynamic_flow import DynamicFlow
@@ -52,15 +53,16 @@ class BaseFlowIterator:
     horizon: float
     inflow_horizon: float
     delay_threshold: float  # max value of normalized delay to consider path active
+    parallelize: bool
     _iter: int
     _flow: DynamicFlow
     _flows_history: List[DynamicFlow]
     _comm_to_path: Dict[int, Path]
     _path_to_comm: Dict[Path, int]
     _paths: Dict[Tuple[Node, Node], List[Path]]  # all used s-t paths
-    _path_metrics: Dict[Tuple[int, int], Dict[int, Tuple]]
+    _metrics: Dict[Tuple[int, int], Dict[str, List]]
     _important_nodes: Dict[Tuple[Node, Node], Set[Node]]
-    _fastest_travel_times: Dict[Tuple[Node, Node], float]  # travel times without queues
+    _free_flow_travel_times: Dict[Tuple[Node, Node], float]  # travel times without queues
     _earliest_arrivals_to: Dict[Node, Dict[Node, PiecewiseLinear]] # earliest arrivals to sinks
     _inflows: Dict[Tuple[Node, Node], RightConstant]
 
@@ -70,7 +72,8 @@ class BaseFlowIterator:
         reroute_interval: float,
         horizon: float,
         inflow_horizon: float,
-        delay_threshold: float
+        delay_threshold: float,
+        parallelize: bool
     ):
         assert all(len(c.sources) == 1 for c in network.commodities)
         self.network = network
@@ -78,14 +81,15 @@ class BaseFlowIterator:
         self.horizon = horizon
         self.inflow_horizon = inflow_horizon
         self.delay_threshold = delay_threshold
+        self.parallelize = parallelize
 
         self._iter = 0
         self._flow = DynamicFlow(self.network)
         self._flows_history = []
         self._paths = dict()
-        self._path_metrics = dict()
+        self._metrics = dict()
         self._important_nodes = dict()
-        self._fastest_travel_times = dict()
+        self._free_flow_travel_times = dict()
         self._earliest_arrivals_to = dict()
         self._inflows = dict()
 
@@ -93,10 +97,11 @@ class BaseFlowIterator:
             s, inflow = next(iter(com.sources.items()))
             t = com.sink
             self._paths[(s, t)] = []
-            self._path_metrics[(s.id, t.id)] = dict()
+            self._metrics[(s.id, t.id)] = {'avg_delays': [], 'path_metrics': []}
             self._important_nodes[(s, t)] = (
                     network.graph.get_nodes_reaching(t) & network.graph.get_reachable_nodes(s)
             )
+            self._earliest_arrivals_to[t] = dict()
             self._inflows[(s, t)] = inflow
 
         self._comm_to_path = {i: None for i in range(len(network.commodities))}
@@ -118,16 +123,19 @@ class BaseFlowIterator:
             edges = []
             while v != t:
                 for e in v.outgoing_edges:
-                    if dist[v] - dist[e._node_to] == self.network.travel_time[e.id]:
+                    new_node = e._node_to
+                    if new_node not in dist:
+                        continue
+                    if dist[v] - dist[new_node] == self.network.travel_time[e.id]:
                         edges.append(e)
-                        v = e._node_to
+                        v = new_node
                         break
             path = Path(edges)
 
             self._paths[(s, t)].append(path)
             self._comm_to_path[com_id] = path
             self._path_to_comm[path] = com_id
-            self._fastest_travel_times[(s, t)] = dist[s]
+            self._free_flow_travel_times[(s, t)] = dist[s]
 
     def _run_bellman_ford(self):
         costs = self._flow.get_edge_costs()
@@ -138,7 +146,7 @@ class BaseFlowIterator:
                 self._important_nodes[(s, t)],
                 0.0
             )
-            self._earliest_arrivals_to[t] = earliest_arrivals
+            self._earliest_arrivals_to[t].update(earliest_arrivals)
 
     def _compute_flow(self):
         flow_builder = PathFlowBuilder(self.network, self._comm_to_path, self.reroute_interval)
@@ -178,12 +186,11 @@ class BaseFlowIterator:
     def _reassign_inflows(self):
         raise NotImplementedError
 
-    def _get_route_avg_delays(self, normalize: bool = True):
+    def _compute_route_avg_delays(self, normalize: bool = True):
         """
         Computes average delays for all present s-t pairs.
         If parameter normalize is set to True, delays are divided by travel times without queues.
         """
-        avg_delays = {}
         for (s, t), paths in self._paths.items():
             accum_net_outflow = sum(
                 (
@@ -213,71 +220,88 @@ class BaseFlowIterator:
 
             assert opt_avg_travel_time > 0
 
-            avg_delays[(s, t)] = avg_travel_time - opt_avg_travel_time
+            avg_delay = avg_travel_time - opt_avg_travel_time
             if normalize:
-                avg_delays[(s, t)] /= self._fastest_travel_times[(s, t)]
+                avg_delay /= self._free_flow_travel_times[(s, t)]
 
-        return avg_delays
+            self._metrics[(s.id, t.id)]['avg_delays'].append(avg_delay)
 
-    def _compute_metrics(self):
+    def _compute_path_metrics(self):
+
         for (s, t) in self._paths.keys():
             network_data = (
                 self._flow.get_edge_costs(),
                 self._earliest_arrivals_to[t][s] - identity,
-                self._fastest_travel_times[(s, t)],
+                self._free_flow_travel_times[(s, t)],
                 self._inflows[(s, t)],
                 self.inflow_horizon,
                 self.delay_threshold
             )
 
-            with mp.Pool(processes=mp.cpu_count()) as pool:
-                self._path_metrics[(s.id, t.id)][self._iter] = pool.starmap(
-                    compute_path_metrics,
-                    [(path, self._get_path_inflow(path), network_data) for path in self._paths[(s, t)]]
-                )
+            if self.parallelize:
+                with mp.Pool(processes=mp.cpu_count()) as pool:
+                    path_metrics = pool.starmap(
+                        compute_path_metrics,
+                        [(path, self._get_path_inflow(path), network_data) for path in self._paths[(s, t)]]
+                    )
+            else:
+                path_metrics = [
+                    compute_path_metrics(path, self._get_path_inflow(path), network_data)
+                    for path in self._paths[(s, t)]
+                ]
 
-    def run(self, num_iterations, eval_every=10):
+            self._metrics[(s.id, t.id)]['path_metrics'].append(path_metrics)
+
+    def _iteration(self):
+
+        if self._iter == 0:
+            self._initialize_paths()
+        else:
+            self._reassign_inflows()
+
+        self._compute_flow()
+        self._run_bellman_ford()
+
+        self._compute_route_avg_delays(normalize=True)
+        self._compute_path_metrics()
+
+    def _merge_commodities(self):
+
+        merged_flow = self._flow
+        merged_network = deepcopy(self.network)
+        merged_network.commodities = []
+
+        for (s, t), paths in self._paths.items():
+            commodities = [self._path_to_comm[p] for p in paths]
+            merged_flow = merge_commodities(merged_flow, self.network, commodities)
+            merged_network.add_commodity({s.id: self._inflows[(s, t)]}, t.id, PredictorType.CONSTANT)
+
+        return merged_flow, merged_network
+
+    def run(self, num_iterations, log_every=10):
         """
         Main cycle
         """
+        with TimedStatusLogger(f"Performing {num_iterations} iterations") as status:
+            for i in range(num_iterations):
 
-        if self._iter == 0:
+                self._iteration()
 
-            self._initialize_paths()
-            self._compute_flow()
-            self._run_bellman_ford()
+                if i % log_every == 0:
+                    print()
+                    print(f"Iteration: {self._iter}")
+                    print(f"Normalized average delays:")
+                    for (s, t) in self._paths.keys():
+                        avg_delay = self._metrics[(s.id, t.id)]['avg_delays'][self._iter]
+                        print(f"({s.id} -> {t.id}): {round(avg_delay, 4)}")
 
-            print(f"Initial normalized average delays:")
-            for (s, t), avg_delay in self._get_route_avg_delays(normalize=True).items():
-                print(f"({s.id} -> {t.id}): {round(avg_delay, 4)}")
+                self._iter += 1
+            status.finish_msg = ""
 
-        while self._iter < num_iterations:
-
-            self._reassign_inflows()
-            self._compute_flow()
-            self._run_bellman_ford()
-
-            self._iter += 1
-
-            if self._iter % eval_every == 0:
-                print()
-                print(f"Iterations completed: {self._iter}/{num_iterations}")
-                print(f"Normalized average delays:")
-                for (s, t), avg_delay in self._get_route_avg_delays(normalize=True).items():
-                    print(f"({s.id} -> {t.id}): {round(avg_delay, 4)}")
-
-                self._compute_metrics()
-
-        merged_flow = self._flow
-        for paths in self._paths.values():
-            commodities = [self._path_to_comm[p] for p in paths]
-            merged_flow = merge_commodities(merged_flow, self.network, commodities)
-
-        return merged_flow, self._path_metrics
+        return self._merge_commodities(), self._metrics
 
 
 def compute_path_metrics(path, path_inflow, network_data):
-
     costs, optimal_travel_time, fastest_travel_time, total_inflow, inflow_horizon, delay_threshold = network_data
 
     metrics = {'path': str(path)}
@@ -416,11 +440,15 @@ class AlphaFlowIterator(BaseFlowIterator):
                  alpha_fun: Callable[[float], float] = lambda d: 0.01,
                  delay_threshold: float = eps,
                  min_path_active_time: float = 1000*eps,
-                 approx_inflows: bool = True):
-        super().__init__(network, reroute_interval, horizon, inflow_horizon, delay_threshold)
+                 approx_inflows: bool = True,
+                 parallelize: bool = True):
+        super().__init__(network, reroute_interval, horizon, inflow_horizon, delay_threshold, parallelize)
         self.alpha_fun = alpha_fun
         self.min_path_active_time = min_path_active_time
         self.approx_inflows = approx_inflows
+
+        for s, t in self._paths.keys():
+            self._metrics[(s.id, t.id)]['inflow_changes'] = [1.0]
 
     def _determine_new_inflow(self,
                               route: Tuple[Node, Node],
@@ -443,7 +471,7 @@ class AlphaFlowIterator(BaseFlowIterator):
             path_delay = compute_path_travel_time(path, costs) - opt_travel_time
             path_delay_approx = approximate_linear(path_delay, self.reroute_interval, self.inflow_horizon)
             alpha_vals = [
-                self.alpha_fun(d / self._fastest_travel_times[route]) if d > 0 else self.alpha_fun(0)
+                self.alpha_fun(d / self._free_flow_travel_times[route]) if d > 0 else self.alpha_fun(0)
                 for d in path_delay_approx.values
             ]
             alpha = RightConstant(path_delay_approx.times, alpha_vals, (0, float('inf')))
@@ -469,19 +497,30 @@ class AlphaFlowIterator(BaseFlowIterator):
     def _reassign_inflows(self):
 
         costs = self._flow.get_edge_costs()
-        print()
 
         def process_route(route):
             s, t = route
-            active_paths = all_active_paths_parallel(
-                self._earliest_arrivals_to[t],
-                costs,
-                s,
-                t,
-                self.inflow_horizon,
-                delay_threshold=self.delay_threshold * self._fastest_travel_times[route],
-                min_active_time=self.min_path_active_time
-            )
+            if self.parallelize:
+                active_paths = all_active_paths_parallel(
+                    self._earliest_arrivals_to[t],
+                    costs,
+                    s,
+                    t,
+                    self.inflow_horizon,
+                    delay_threshold=self.delay_threshold * self._free_flow_travel_times[route],
+                    min_active_time=self.min_path_active_time
+                )
+            else:
+                active_paths = compute_all_active_paths(
+                    self._earliest_arrivals_to[t],
+                    costs,
+                    s,
+                    t,
+                    self.inflow_horizon,
+                    delay_threshold=self.delay_threshold * self._free_flow_travel_times[route],
+                    min_active_time=self.min_path_active_time
+                )
+
             new_inflow = self._determine_new_inflow(route, costs, active_paths.coverage())
             self._assign_new_paths(active_paths, new_inflow)
 
@@ -492,11 +531,13 @@ class AlphaFlowIterator(BaseFlowIterator):
                         approximation = inflow.project_to_grid(self.reroute_interval, self.inflow_horizon)
                         self._set_path_inflow(path, approximation)
 
-            redis = new_inflow.integral()(self.inflow_horizon) / self._inflows[(s, t)].integral()(self.inflow_horizon)
-            print(f"({s.id} -> {t.id}): {round(100 * redis, 2)}% of inflow redistributed to {len(active_paths)} active paths")
+            redistributed = new_inflow.integral()(self.inflow_horizon) / self._inflows[(s, t)].integral()(self.inflow_horizon)
+            self._metrics[(s.id, t.id)]['inflow_changes'].append(redistributed)
+            # print(f"({s.id} -> {t.id}): {round(100 * redistributed, 2)}% of inflow redistributed to {len(active_paths)} active paths")
 
-        # for route in self._paths.keys():
-        #     process_route(route)
-
-        with ThreadPoolExecutor() as executor:
-            executor.map(process_route, self._paths.keys())
+        if self.parallelize:
+            with ThreadPoolExecutor() as executor:
+                executor.map(process_route, self._paths.keys())
+        else:
+            for route in self._paths.keys():
+                process_route(route)
