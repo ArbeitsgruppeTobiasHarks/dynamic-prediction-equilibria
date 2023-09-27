@@ -5,10 +5,9 @@ from core.convergence import AlphaFlowIterator
 from core.predictors.predictor_type import PredictorType
 from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
+from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.get_tn_path import get_tn_path
 from visualization.to_json import merge_commodities, to_visualization_json
-
-from utilities.combine_commodities import combine_commodities_with_same_sink
 
 
 def run_scenario(scenario_dir: str):
@@ -39,17 +38,17 @@ def run_scenario(scenario_dir: str):
 
     inflow = get_demand_with_inflow_horizon(demand, inflow_horizon)
     network.add_commodity(
-        {1: inflow*0.2},
+        {1: inflow * 0.2},
         14,
         PredictorType.CONSTANT,
     )
     network.add_commodity(
-        {5: inflow*0.3},
+        {5: inflow * 0.3},
         23,
         PredictorType.CONSTANT,
     )
     network.add_commodity(
-        {15: inflow*0.5},
+        {15: inflow * 0.5},
         3,
         PredictorType.CONSTANT,
     )
@@ -63,13 +62,13 @@ def run_scenario(scenario_dir: str):
         delay_threshold,
         min_path_active_time,
         approx_inflows,
-        parallelize
+        parallelize,
     )
 
     (merged_flow, merged_network), metrics = flow_iter.run(num_iterations, log_every)
 
     metrics_path = os.path.join(out_dir, f"conv_metrics.pickle")
-    with open(metrics_path, 'wb') as f:
+    with open(metrics_path, "wb") as f:
         pickle.dump(metrics, f)
 
     visualization_path = os.path.join(out_dir, f"merged_flow.vis.json")

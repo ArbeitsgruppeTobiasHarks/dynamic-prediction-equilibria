@@ -223,7 +223,7 @@ class RightConstant:
         """
         assert horizon <= self.domain[1]
         n_nodes = floor((horizon - self.domain[0]) / delta) + 1
-        new_times = [self.domain[0] + delta*n for n in range(n_nodes)]
+        new_times = [self.domain[0] + delta * n for n in range(n_nodes)]
         new_values = []
 
         if new_times == self.times:  # already is an approximation itself
@@ -231,7 +231,9 @@ class RightConstant:
 
         integral = self.integral()
         for i in range(n_nodes - 1):
-            new_values.append((integral(new_times[i+1]) - integral(new_times[i])) / delta)
+            new_values.append(
+                (integral(new_times[i + 1]) - integral(new_times[i])) / delta
+            )
         new_values.append(self.values[-1])
         return RightConstant(new_times, new_values, self.domain)
 
@@ -239,7 +241,7 @@ class RightConstant:
         return RightConstant(
             self.times,
             [1.0 / v if v > eps else 1.0 / eps for v in self.values],
-            self.domain
+            self.domain,
         )
 
 
@@ -247,9 +249,10 @@ class Indicator(RightConstant):
     """
     Allows only values of 0 and 1
     """
+
     @staticmethod
     def from_interval(start: float, end: float):
-        domain = (0, float('inf'))
+        domain = (0, float("inf"))
         assert domain[0] <= start <= end <= domain[1]
 
         times = [start]
