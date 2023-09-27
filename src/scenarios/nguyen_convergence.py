@@ -14,26 +14,27 @@ from utilities.combine_commodities import combine_commodities_with_same_sink
 
 def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
-    flows_dir = os.path.join(scenario_dir, "flows")
+    out_dir = os.path.join(scenario_dir, f"run_{len(os.listdir(scenario_dir))}")
+    os.makedirs(out_dir)
 
     reroute_interval = 0.125
     inflow_horizon = 12.0
     horizon = 60.0
     demand = 100
 
-    num_iterations = 500
+    num_iterations = 2500
 
     def alpha_fun(delay):
-        return min(delay**2, 0.5)
+        return min(0.1 * delay, 0.5)
 
     delay_threshold = 1e-6
     min_path_active_time = reroute_interval
     approx_inflows = True
     parallelize = False
-    log_every = 50
+    log_every = 100
 
     network = build_nguyen_network()
-    for s, t in [(1, 2), (1, 3), (4, 2), (4, 3)]:
+    for s, t in [(1, 3), (4, 2), (4, 3)]:
         network.add_commodity(
             {s: get_demand_with_inflow_horizon(demand, inflow_horizon)},
             t,
@@ -54,11 +55,11 @@ def run_scenario(scenario_dir: str):
 
     (merged_flow, merged_network), metrics = flow_iter.run(num_iterations, log_every)
 
-    metrics_path = os.path.join(scenario_dir, f"conv_metrics.pickle")
+    metrics_path = os.path.join(out_dir, f"conv_metrics.pickle")
     with open(metrics_path, 'wb') as f:
         pickle.dump(metrics, f)
 
-    visualization_path = os.path.join(flows_dir, f"merged_flow.vis.json")
+    visualization_path = os.path.join(out_dir, f"merged_flow.vis.json")
     to_visualization_json(
         visualization_path,
         merged_flow,

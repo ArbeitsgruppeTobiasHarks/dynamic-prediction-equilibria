@@ -13,20 +13,20 @@ from utilities.combine_commodities import combine_commodities_with_same_sink
 
 def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
-    network_path = os.path.join(scenario_dir, "network.pickle")
-    flows_dir = os.path.join(scenario_dir, "flows")
+    out_dir = os.path.join(scenario_dir, f"run_{len(os.listdir(scenario_dir))}")
+    os.makedirs(out_dir)
 
     reroute_interval = 0.125
     inflow_horizon = 20.0
     horizon = 200.0
-    demand = 1e5
+    demand = 5e4
 
-    num_iterations = 250
+    num_iterations = 500
 
     def alpha_fun(delay):
         return min(0.1 * delay, 0.5)
 
-    delay_threshold = 1e-4
+    delay_threshold = 1e-3
     min_path_active_time = reroute_interval
     approx_inflows = True
     parallelize = True
@@ -36,8 +36,6 @@ def run_scenario(scenario_dir: str):
     edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
     nodes_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_node.tntp")
     network = import_sioux_falls(edges_tntp_path, nodes_tntp_path)
-    os.makedirs(os.path.dirname(network_path), exist_ok=True)
-    network.to_file(network_path)
 
     inflow = get_demand_with_inflow_horizon(demand, inflow_horizon)
     network.add_commodity(
@@ -70,11 +68,11 @@ def run_scenario(scenario_dir: str):
 
     (merged_flow, merged_network), metrics = flow_iter.run(num_iterations, log_every)
 
-    metrics_path = os.path.join(scenario_dir, f"conv_metrics.pickle")
+    metrics_path = os.path.join(out_dir, f"conv_metrics.pickle")
     with open(metrics_path, 'wb') as f:
         pickle.dump(metrics, f)
 
-    visualization_path = os.path.join(flows_dir, f"merged_flow.vis.json")
+    visualization_path = os.path.join(out_dir, f"merged_flow.vis.json")
     to_visualization_json(
         visualization_path,
         merged_flow,
