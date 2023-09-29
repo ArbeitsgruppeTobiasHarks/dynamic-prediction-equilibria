@@ -71,7 +71,7 @@ class BaseFlowIterator:
     _comm_to_path: Dict[int, Path]
     _path_to_comm: Dict[Path, int]
     _paths: Dict[Tuple[Node, Node], List[Path]]  # all used s-t paths
-    _metrics: Dict[Tuple[int, int], Dict[str, List]]
+    _metrics: Dict[str, Dict[str, List]]
     _important_nodes: Dict[Tuple[Node, Node], Set[Node]]
     _free_flow_travel_times: Dict[
         Tuple[Node, Node], float
@@ -112,7 +112,7 @@ class BaseFlowIterator:
             s, inflow = next(iter(com.sources.items()))
             t = com.sink
             self._paths[(s, t)] = []
-            self._metrics[(s.id, t.id)] = {"avg_delays": [], "path_metrics": []}
+            self._metrics[str((s.id, t.id))] = {"avg_delays": [], "path_metrics": []}
             self._important_nodes[(s, t)] = network.graph.get_nodes_reaching(
                 t
             ) & network.graph.get_reachable_nodes(s)
@@ -234,7 +234,7 @@ class BaseFlowIterator:
             if normalize:
                 avg_delay /= self._free_flow_travel_times[(s, t)]
 
-            self._metrics[(s.id, t.id)]["avg_delays"].append(avg_delay)
+            self._metrics[str((s.id, t.id))]["avg_delays"].append(avg_delay)
 
     def _compute_path_metrics(self):
         for s, t in self._paths.keys():
@@ -264,7 +264,7 @@ class BaseFlowIterator:
                     for path in self._paths[(s, t)]
                 ]
 
-            self._metrics[(s.id, t.id)]["path_metrics"].append(path_metrics)
+            self._metrics[str((s.id, t.id))]["path_metrics"].append(path_metrics)
 
     def _iteration(self):
         if self._iter == 0:
@@ -305,7 +305,7 @@ class BaseFlowIterator:
                     print(f"Iteration: {self._iter}")
                     print(f"Normalized average delays:")
                     for s, t in self._paths.keys():
-                        avg_delay = self._metrics[(s.id, t.id)]["avg_delays"][
+                        avg_delay = self._metrics[str((s.id, t.id))]["avg_delays"][
                             self._iter
                         ]
                         print(f"({s.id} -> {t.id}): {round(avg_delay, 4)}")
@@ -480,8 +480,8 @@ class AlphaFlowIterator(BaseFlowIterator):
         self.min_path_active_time = min_path_active_time
         self.approx_inflows = approx_inflows
 
-        for s, t in self._paths.keys():
-            self._metrics[(s.id, t.id)]["inflow_changes"] = [1.0]
+        # for s, t in self._paths.keys():
+        #     self._metrics[(s.id, t.id)]["inflow_changes"] = [1.0]
 
     def _determine_new_inflow(
         self,
@@ -493,14 +493,16 @@ class AlphaFlowIterator(BaseFlowIterator):
         new_inflow = RightConstant([0.0], [0.0], (0, float("inf")))
 
         opt_travel_time = self._earliest_arrivals_to[route[1]][route[0]] - identity
-        # opt_travel_time_approx = approximate_linear(opt_travel_time, self.reroute_interval, self.inflow_horizon)
 
         for path in self._paths[route]:
             path_inflow = self._get_path_inflow(path)
+
             if path_inflow.integral()(self.inflow_horizon) < eps * total_inflow:
+                self._set_path_inflow(
+                    path, RightConstant([0.0], [0.0], (0, float("inf")))
+                )
                 continue
 
-            # travel_time = compute_path_travel_time(path, costs)
             path_delay = compute_path_travel_time(path, costs) - opt_travel_time
             path_delay_approx = approximate_linear(
                 path_delay, self.reroute_interval, self.inflow_horizon
@@ -566,20 +568,17 @@ class AlphaFlowIterator(BaseFlowIterator):
             self._assign_new_paths(active_paths, new_inflow)
 
             if self.approx_inflows:
-                with TimedStatusLogger(
-                    f"Approximating inflows for route ({s.id} -> {t.id})..."
-                ):
-                    for path in self._paths[route]:
-                        inflow = self._get_path_inflow(path)
-                        approximation = inflow.project_to_grid(
-                            self.reroute_interval, self.inflow_horizon
-                        )
-                        self._set_path_inflow(path, approximation)
+                for path in self._paths[route]:
+                    inflow = self._get_path_inflow(path)
+                    approximation = inflow.project_to_grid(
+                        self.reroute_interval, self.inflow_horizon
+                    )
+                    self._set_path_inflow(path, approximation)
 
-            redistributed = new_inflow.integral()(self.inflow_horizon) / self._inflows[
-                (s, t)
-            ].integral()(self.inflow_horizon)
-            self._metrics[(s.id, t.id)]["inflow_changes"].append(redistributed)
+            # redistributed = new_inflow.integral()(self.inflow_horizon) / self._inflows[
+            #     (s, t)
+            # ].integral()(self.inflow_horizon)
+            # self._metrics[(s.id, t.id)]["inflow_changes"].append(redistributed)
             # print(f"({s.id} -> {t.id}): {round(100 * redistributed, 2)}% of inflow redistributed to {len(active_paths)} active paths")
 
         if self.parallelize:

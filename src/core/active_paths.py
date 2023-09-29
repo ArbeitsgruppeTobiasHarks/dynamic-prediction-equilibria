@@ -53,12 +53,12 @@ class PathsOverTime(Dict):
 
     def add_path(self, path, activity_indicator):
         if path in self.keys():
-            self[path] += activity_indicator
+            self[path] |= activity_indicator
         else:
             self[path] = activity_indicator
 
     def coverage(self):
-        return sum(self.values())
+        return RightConstant.sum(list(self.values())).indicator()
 
 
 #
