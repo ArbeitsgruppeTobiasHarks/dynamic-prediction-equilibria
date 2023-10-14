@@ -17,18 +17,18 @@ def run_scenario(scenario_dir: str):
     os.makedirs(out_dir)
 
     run_parameters = dict(
-        reroute_interval=0.125,
+        reroute_interval=0.1,
         horizon=100.0,
         inflow_horizon=12.0,
-        alpha_fun=PiecewiseLinear([0.0, 5.0], [0.0, 0.5], 0.0, 0.0),
+        alpha_fun=PiecewiseLinear([0.0, 0.1, 5.0], [0.0, 0.001, 0.5], 0.0, 0.0),
         delay_threshold=1e-4,
         min_path_active_time=1e-2,
         approx_inflows=True,
         parallelize=False,
     )
 
-    num_iterations = 1000
-    log_every = 50
+    num_iterations = 2500
+    log_every = 100
 
     demands = {(1, 2): 200, (1, 3): 100, (4, 2): 100, (4, 3): 100}
     network = build_nguyen_network()
@@ -47,13 +47,18 @@ def run_scenario(scenario_dir: str):
 
     merged_flow, merged_network, metrics = flow_iter.run(num_iterations, log_every)
 
-    json_path = os.path.join(scenario_dir, f"run_data.json")
+    json_path = os.path.join(out_dir, f"run_data.json")
     with open(json_path, "w") as f:
         JSONEncoder().dump(
-            {"parameters": run_parameters, "convergence_metrics": metrics}, f
+            {
+                "demands": demands,
+                "parameters": run_parameters,
+                "convergence_metrics": metrics,
+            },
+            f,
         )
 
-    iterator_path = os.path.join(scenario_dir, f"flow_iterator.pickle")
+    iterator_path = os.path.join(out_dir, f"flow_iterator.pickle")
     with open(iterator_path, "wb") as f:
         pickle.dump(flow_iter, f)
 
@@ -61,7 +66,7 @@ def run_scenario(scenario_dir: str):
     # with open(metrics_path, "w") as f:
     #     json.dump(metrics, f)
 
-    visualization_path = os.path.join(scenario_dir, f"merged_flow.vis.json")
+    visualization_path = os.path.join(out_dir, f"merged_flow.vis.json")
     to_visualization_json(
         visualization_path,
         merged_flow,

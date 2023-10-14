@@ -18,24 +18,24 @@ def run_scenario(scenario_dir: str):
     os.makedirs(out_dir)
 
     run_parameters = dict(
-        reroute_interval=0.125,
+        reroute_interval=0.1,
         horizon=200.0,
         inflow_horizon=20.0,
-        alpha_fun=PiecewiseLinear([0.0, 5.0], [0.0, 0.5], 0.0, 0.0),
+        alpha_fun=PiecewiseLinear([0.0, 0.1, 5.0], [0.0, 0.001, 0.5], 0.0, 0.0),
         delay_threshold=1e-4,
         min_path_active_time=1e-2,
         approx_inflows=True,
         parallelize=False,
     )
     num_iterations = 500
-    log_every = 10
+    log_every = 25
 
     tn_path = get_tn_path()
     edges_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_net.tntp")
     nodes_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_node.tntp")
     network = import_sioux_falls(edges_tntp_path, nodes_tntp_path)
 
-    demands = {(1, 4): 1e4, (5, 25): 2e4, (15, 3): 3e4}
+    demands = {(1, 4): 5e4, (5, 23): 2e4, (15, 3): 3e4}
     for (s, t), demand in demands.items():
         network.add_commodity(
             {
@@ -51,17 +51,22 @@ def run_scenario(scenario_dir: str):
 
     merged_flow, merged_network, metrics = flow_iter.run(num_iterations, log_every)
 
-    json_path = os.path.join(scenario_dir, f"run_data.json")
+    json_path = os.path.join(out_dir, f"run_data.json")
     with open(json_path, "w") as f:
         JSONEncoder().dump(
-            {"parameters": run_parameters, "convergence_metrics": metrics}, f
+            {
+                "demands": demands,
+                "parameters": run_parameters,
+                "convergence_metrics": metrics,
+            },
+            f,
         )
 
     # metrics_path = os.path.join(out_dir, f"conv_metrics.json")
     # with open(metrics_path, "w") as f:
     #     json.dump(metrics, f)
 
-    iterator_path = os.path.join(scenario_dir, f"flow_iterator.pickle")
+    iterator_path = os.path.join(out_dir, f"flow_iterator.pickle")
     with open(iterator_path, "wb") as f:
         pickle.dump(flow_iter, f)
 
