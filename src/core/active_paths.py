@@ -61,6 +61,27 @@ class PathsOverTime(Dict):
         return RightConstant.sum(list(self.values())).indicator()
 
 
+def get_one_path_coverage(
+    active_paths: PathsOverTime, inflow_horizon: float
+) -> PathsOverTime:
+    coverage = ~active_paths.coverage()
+    active_paths = active_paths.items()
+    result = PathsOverTime([], [])
+
+    while coverage.integral()(inflow_horizon) < inflow_horizon - eps:
+        active_paths = sorted(
+            active_paths,
+            key=lambda x: (~coverage * x[1]).integral()(inflow_horizon),
+            reverse=True,
+        )
+        path, indicator = active_paths.pop(0)
+
+        result[path] = ~coverage * indicator
+        coverage |= indicator
+
+    return result
+
+
 #
 # @dataclass
 # class LabelledPathEntry:

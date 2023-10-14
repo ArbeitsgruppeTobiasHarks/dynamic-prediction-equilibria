@@ -13,6 +13,7 @@ from core.active_paths import (
     compute_all_active_paths,
     compute_path_travel_time,
     get_activity_indicator,
+    get_one_path_coverage,
 )
 from core.bellman_ford import bellman_ford
 from core.dijkstra import reverse_dijkstra
@@ -41,7 +42,7 @@ def integrate_with_weights(
     if rnk == len(weights.times) - 1:
         return weights.values[rnk] * lin.integrate(start, end)
 
-    value += weights.values[0] * lin.integrate(start, weights.times[rnk + 1])
+    value += weights.values[rnk] * lin.integrate(start, weights.times[rnk + 1])
     rnk += 1
     while rnk < len(weights.times) - 1 and weights.times[rnk + 1] <= end:
         value += weights.values[rnk] * lin.integrate(
@@ -296,7 +297,9 @@ class BaseFlowIterator:
         """
         Main cycle
         """
-        with TimedStatusLogger(f"Performing {num_iterations} iterations") as status:
+        with TimedStatusLogger(
+            f"Performing {num_iterations} iterations", finish_msg=""
+        ):
             for i in range(num_iterations):
                 self._iteration()
 
@@ -311,16 +314,17 @@ class BaseFlowIterator:
                         print(f"({s.id} -> {t.id}): {round(avg_delay, 4)}")
 
                 self._iter += 1
-            status.finish_msg = ""
 
-        return self._merge_commodities(), self._metrics
+            merged_flow, merged_network = self._merge_commodities()
+
+        return merged_flow, merged_network, self._metrics
 
 
 def compute_path_metrics(path, path_inflow, network_data):
     (
         costs,
         optimal_travel_time,
-        fastest_travel_time,
+        free_flow_travel_time,
         total_inflow,
         inflow_horizon,
         delay_threshold,
@@ -329,18 +333,25 @@ def compute_path_metrics(path, path_inflow, network_data):
     metrics = {"path": str(path)}
 
     accum_path_inflow = path_inflow.integral()
-    path_delay = compute_path_travel_time(path, costs) - optimal_travel_time
-    activity_ind = get_activity_indicator(
-        path_delay, threshold=delay_threshold * fastest_travel_time
-    )
-
-    metrics["avg_delay_normalized"] = integrate_with_weights(
-        path_delay, path_inflow, 0, inflow_horizon
-    ) / (accum_path_inflow(inflow_horizon) * fastest_travel_time)
 
     metrics["share_of_total_inflow"] = accum_path_inflow(
         inflow_horizon
     ) / total_inflow.integral()(inflow_horizon)
+
+    if metrics["share_of_total_inflow"] < eps:
+        metrics["avg_delay_normalized"] = 0.0
+        metrics["active_inflow_share"] = 0.0
+        return metrics
+
+    path_delay = compute_path_travel_time(path, costs) - optimal_travel_time
+    activity_ind = get_activity_indicator(
+        path_delay, threshold=delay_threshold * free_flow_travel_time
+    )
+
+    metrics["avg_delay_normalized"] = integrate_with_weights(
+        path_delay, path_inflow, 0, inflow_horizon
+    ) / (accum_path_inflow(inflow_horizon) * free_flow_travel_time)
+
     metrics["active_inflow_share"] = (path_inflow * activity_ind).integral()(
         inflow_horizon
     ) / accum_path_inflow(inflow_horizon)
@@ -348,7 +359,7 @@ def compute_path_metrics(path, path_inflow, network_data):
     return metrics
 
 
-# class AlphaFlowIterator(BaseFlowIterator): old version, uncommenting will probably result in errors
+# class AlphaFlowIterator(BaseFlowIterator):  # old version, uncommenting will probably result in errors
 #     alpha: float    # fraction of inflow to be redistributed
 #     approx_inflows: bool    # option to project inflows to regular grid after each iteration
 #     """
@@ -501,6 +512,7 @@ class AlphaFlowIterator(BaseFlowIterator):
                 self._set_path_inflow(
                     path, RightConstant([0.0], [0.0], (0, float("inf")))
                 )
+                new_inflow += path_inflow
                 continue
 
             path_delay = compute_path_travel_time(path, costs) - opt_travel_time
@@ -561,6 +573,8 @@ class AlphaFlowIterator(BaseFlowIterator):
                     * self._free_flow_travel_times[route],
                     min_active_time=self.min_path_active_time,
                 )
+
+            # active_paths = get_one_path_coverage(active_paths, self.inflow_horizon)
 
             new_inflow = self._determine_new_inflow(
                 route, costs, active_paths.coverage()
