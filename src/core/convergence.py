@@ -477,7 +477,7 @@ class AlphaFlowIterator(BaseFlowIterator):
         delay_threshold: float = eps,
         min_path_active_time: float = 1000 * eps,
         approx_inflows: bool = True,
-        parallelize: bool = True,
+        parallelize: bool = False,
     ):
         super().__init__(
             network,
@@ -491,8 +491,8 @@ class AlphaFlowIterator(BaseFlowIterator):
         self.min_path_active_time = min_path_active_time
         self.approx_inflows = approx_inflows
 
-        # for s, t in self._paths.keys():
-        #     self._metrics[(s.id, t.id)]["inflow_changes"] = [1.0]
+        for s, t in self._paths.keys():
+            self._metrics[str((s.id, t.id))]["inflow_changes"] = [1.0]
 
     def _determine_new_inflow(
         self,
@@ -518,7 +518,7 @@ class AlphaFlowIterator(BaseFlowIterator):
             path_delay = compute_path_travel_time(path, costs) - opt_travel_time
             path_delay_approx = approximate_linear(
                 path_delay, self.reroute_interval, self.inflow_horizon
-            )
+            )  # if path inflows are defined on same grid, this yields avg experienced delay on time intervals
             alpha_vals = [
                 self.alpha_fun(d / self._free_flow_travel_times[route])
                 if d > 0
@@ -551,28 +551,21 @@ class AlphaFlowIterator(BaseFlowIterator):
 
         def process_route(route):
             s, t = route
-            if self.parallelize:
-                active_paths = all_active_paths_parallel(
-                    self._earliest_arrivals_to[t],
-                    costs,
-                    s,
-                    t,
-                    self.inflow_horizon,
-                    delay_threshold=self.delay_threshold
-                    * self._free_flow_travel_times[route],
-                    min_active_time=self.min_path_active_time,
-                )
-            else:
-                active_paths = compute_all_active_paths(
-                    self._earliest_arrivals_to[t],
-                    costs,
-                    s,
-                    t,
-                    self.inflow_horizon,
-                    delay_threshold=self.delay_threshold
-                    * self._free_flow_travel_times[route],
-                    min_active_time=self.min_path_active_time,
-                )
+            compute_active_paths_fun = (
+                all_active_paths_parallel
+                if self.parallelize
+                else compute_all_active_paths
+            )
+            active_paths = compute_active_paths_fun(
+                self._earliest_arrivals_to[t],
+                costs,
+                s,
+                t,
+                self.inflow_horizon,
+                delay_threshold=self.delay_threshold
+                * self._free_flow_travel_times[route],
+                min_active_time=self.min_path_active_time,
+            )
 
             # active_paths = get_one_path_coverage(active_paths, self.inflow_horizon)
 
@@ -589,10 +582,10 @@ class AlphaFlowIterator(BaseFlowIterator):
                     )
                     self._set_path_inflow(path, approximation)
 
-            # redistributed = new_inflow.integral()(self.inflow_horizon) / self._inflows[
-            #     (s, t)
-            # ].integral()(self.inflow_horizon)
-            # self._metrics[(s.id, t.id)]["inflow_changes"].append(redistributed)
+            redistributed = new_inflow.integral()(self.inflow_horizon) / self._inflows[
+                (s, t)
+            ].integral()(self.inflow_horizon)
+            self._metrics[str((s.id, t.id))]["inflow_changes"].append(redistributed)
             # print(f"({s.id} -> {t.id}): {round(100 * redistributed, 2)}% of inflow redistributed to {len(active_paths)} active paths")
 
         if self.parallelize:
