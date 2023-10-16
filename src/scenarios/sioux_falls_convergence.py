@@ -19,7 +19,7 @@ def run_scenario(scenario_dir: str):
         reroute_interval=0.1,
         horizon=200.0,
         inflow_horizon=20.0,
-        alpha_fun=PiecewiseLinear([0.0, 0.1, 5.0], [0.0, 0.001, 0.5], 0.0, 0.0),
+        alpha_fun=PiecewiseLinear([0.0, 0.01, 5.0], [0.0, 0.0, 0.5], 0.0, 0.0),
         delay_threshold=1e-4,
         min_path_active_time=1e-2,
         approx_inflows=True,
@@ -65,7 +65,7 @@ def run_scenario(scenario_dir: str):
 
     iterator_path = os.path.join(out_dir, f"flow_iterator.pickle")
     with open(iterator_path, "wb") as f:
-        pickle.dump(flow_iter, f)
+        pickle.dump(flow_iter, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     visualization_path = os.path.join(out_dir, f"merged_flow.vis.json")
     to_visualization_json(
