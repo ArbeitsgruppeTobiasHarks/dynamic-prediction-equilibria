@@ -70,8 +70,8 @@ class TFFullNetPredictor(Predictor):
             ]
         )
 
-        future_queues_raw = self._model.predict(
-            np.array([[prediction_time, *(data.flatten())]]), verbose=0
+        future_queues_raw = self._model(
+            np.array([[prediction_time, *(data.flatten())]]), training=False
         )[0]
         future_queues_raw = np.maximum(
             future_queues_raw, np.zeros_like(future_queues_raw)
@@ -161,7 +161,7 @@ class TFFullNetPredictor(Predictor):
                 for prediction_time in prediction_times
             ]
         )
-        future_queues_raw = self._model.predict(raw_predictions_input, verbose=0)
+        future_queues_raw = self._model(raw_predictions_input, training=False)
         future_queues_raw = np.maximum(
             future_queues_raw, np.zeros_like(future_queues_raw)
         )
