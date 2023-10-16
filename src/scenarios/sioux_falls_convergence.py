@@ -14,8 +14,6 @@ from visualization.to_json import to_visualization_json
 
 def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
-    out_dir = os.path.join(scenario_dir, f"run_{len(os.listdir(scenario_dir))}")
-    os.makedirs(out_dir)
 
     run_parameters = dict(
         reroute_interval=0.1,
@@ -25,9 +23,9 @@ def run_scenario(scenario_dir: str):
         delay_threshold=1e-4,
         min_path_active_time=1e-2,
         approx_inflows=True,
-        parallelize=False,
+        parallelize=True,
     )
-    num_iterations = 500
+    num_iterations = 1000
     log_every = 25
 
     tn_path = get_tn_path()
@@ -35,7 +33,7 @@ def run_scenario(scenario_dir: str):
     nodes_tntp_path = os.path.join(tn_path, "SiouxFalls/SiouxFalls_node.tntp")
     network = import_sioux_falls(edges_tntp_path, nodes_tntp_path)
 
-    demands = {(1, 4): 5e4, (5, 23): 2e4, (15, 3): 3e4}
+    demands = {(1, 4): 1e5, (5, 23): 2e4, (15, 3): 3e4}
     for (s, t), demand in demands.items():
         network.add_commodity(
             {
@@ -51,20 +49,19 @@ def run_scenario(scenario_dir: str):
 
     merged_flow, merged_network, metrics = flow_iter.run(num_iterations, log_every)
 
+    out_dir = os.path.join(scenario_dir, f"run_{len(os.listdir(scenario_dir))}")
+    os.makedirs(out_dir)
+
     json_path = os.path.join(out_dir, f"run_data.json")
     with open(json_path, "w") as f:
         JSONEncoder().dump(
             {
-                "demands": demands,
+                "demands": {str(k): v for k, v in demands.items()},
                 "parameters": run_parameters,
                 "convergence_metrics": metrics,
             },
             f,
         )
-
-    # metrics_path = os.path.join(out_dir, f"conv_metrics.json")
-    # with open(metrics_path, "w") as f:
-    #     json.dump(metrics, f)
 
     iterator_path = os.path.join(out_dir, f"flow_iterator.pickle")
     with open(iterator_path, "wb") as f:

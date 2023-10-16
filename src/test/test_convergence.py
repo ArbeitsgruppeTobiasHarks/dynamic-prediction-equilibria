@@ -15,19 +15,6 @@ from utilities.right_constant import RightConstant
 from visualization.to_json import merge_commodities, to_visualization_json
 
 
-def linear_alpha_fun(delay):
-    return min(0.1 * delay, 0.5)
-
-
-# def alpha_fun(delay):
-#     if delay < 1e-4:
-#         return 0.0
-#     elif delay < 1e-2:
-#         return 1e-3
-#     else:
-#         return 1e-2
-
-
 def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
 
@@ -43,7 +30,7 @@ def run_scenario(scenario_dir: str):
     )
 
     num_iterations = 100
-    log_every = 50
+    log_every = 10
 
     demands = {(1, 2): 200, (1, 3): 100, (4, 2): 100, (4, 3): 100}
     network = build_nguyen_network()
@@ -66,7 +53,7 @@ def run_scenario(scenario_dir: str):
     with open(json_path, "w") as f:
         JSONEncoder().dump(
             {
-                "demands": demands,
+                "demands": {str(k): v for k, v in demands.items()},
                 "parameters": run_parameters,
                 "convergence_metrics": metrics,
             },
@@ -76,10 +63,6 @@ def run_scenario(scenario_dir: str):
     iterator_path = os.path.join(scenario_dir, f"flow_iterator.pickle")
     with open(iterator_path, "wb") as f:
         pickle.dump(flow_iter, f)
-
-    # metrics_path = os.path.join(scenario_dir, f"conv_metrics.json")
-    # with open(metrics_path, "w") as f:
-    #     json.dump(metrics, f)
 
     visualization_path = os.path.join(scenario_dir, f"merged_flow.vis.json")
     to_visualization_json(
