@@ -15,8 +15,8 @@ class Path:
     def __init__(self, edges):
         self.edges = edges
         if len(edges) > 0:
-            self.start = edges[0]._node_from
-            self.end = edges[-1]._node_to
+            self.start = edges[0].node_from
+            self.end = edges[-1].node_to
         else:
             self.start = None
             self.end = None

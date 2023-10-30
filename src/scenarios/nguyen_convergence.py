@@ -16,21 +16,21 @@ def run_scenario(scenario_dir: str):
     out_dir = os.path.join(scenario_dir, f"run_{len(os.listdir(scenario_dir))}")
     os.makedirs(out_dir)
 
-    reroute_interval = 0.125
+    reroute_interval = 0.1
     inflow_horizon = 12.0
     horizon = 60.0
     demand = 100
 
-    num_iterations = 2500
+    num_iterations = 100
 
     def alpha_fun(delay):
-        return min(0.1 * delay, 0.5)
+        return min(0.1 * delay, 0.1)
 
-    delay_threshold = 1e-6
+    delay_threshold = 1e-4
     min_path_active_time = reroute_interval
     approx_inflows = True
     parallelize = False
-    log_every = 100
+    log_every = 10
 
     network = build_nguyen_network()
     for s, t in [(1, 3), (4, 2), (4, 3)]:
