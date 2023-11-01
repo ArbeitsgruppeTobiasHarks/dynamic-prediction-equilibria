@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 
@@ -10,6 +11,7 @@ from scenarios.nguyen_scenario import build_nguyen_network
 from scenarios.scenario_utils import get_demand_with_inflow_horizon
 from utilities.combine_commodities import combine_commodities_with_same_sink
 from utilities.get_tn_path import get_tn_path
+from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
 from visualization.to_json import merge_commodities, to_visualization_json
 
@@ -18,10 +20,8 @@ def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
 
     reroute_interval = 0.1
-    inflow_horizon = 10.0
-    demand = 5
-
-    horizon = 60.0
+    window_size = 1.0
+    horizon = 100.0
 
     network = Network()
     network.add_edge(0, 1, 1.0, 2.0)
@@ -31,9 +31,12 @@ def run_scenario(scenario_dir: str):
     network.add_commodity(
         {0: RightConstant([0.0], [5.0])}, 1, PredictorType.CONSTANT,
     )
-    initial_distribution = [([0], 0.9), ([1], 0.1)]
-    replicator = ReplicatorFlowBuilder(network, reroute_interval, initial_distribution)
-    flow = replicator.run(horizon)
+    initial_distribution = [([0], 0.5), ([1], 0.5)]
+    replicator = ReplicatorFlowBuilder(network, reroute_interval, initial_distribution, window_size)
+    flow, inflow_distribution = replicator.run(horizon)
+
+    with open(os.path.join(scenario_dir, f"inflow_distribution.json"), 'w') as f:
+        JSONEncoder().dump(inflow_distribution, f)
 
     visualization_path = os.path.join(scenario_dir, f"merged_flow.vis.json")
     to_visualization_json(
