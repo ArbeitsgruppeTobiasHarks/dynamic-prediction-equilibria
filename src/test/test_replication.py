@@ -20,8 +20,9 @@ def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
 
     reroute_interval = 0.1
+    replication_coef = -1e-3
     window_size = 1.0
-    horizon = 100.0
+    horizon = 500.0
 
     network = Network()
     network.add_edge(0, 1, 1.0, 2.0)
@@ -32,7 +33,7 @@ def run_scenario(scenario_dir: str):
         {0: RightConstant([0.0], [5.0])}, 1, PredictorType.CONSTANT,
     )
     initial_distribution = [([0], 0.5), ([1], 0.5)]
-    replicator = ReplicatorFlowBuilder(network, reroute_interval, initial_distribution, window_size)
+    replicator = ReplicatorFlowBuilder(network, reroute_interval, initial_distribution, replication_coef, window_size)
     flow, inflow_distribution = replicator.run(horizon)
 
     with open(os.path.join(scenario_dir, f"inflow_distribution.json"), 'w') as f:

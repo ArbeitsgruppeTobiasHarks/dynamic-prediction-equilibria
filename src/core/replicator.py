@@ -16,7 +16,8 @@ import numpy as np
 
 class ReplicatorFlowBuilder(PathFlowBuilder):
     inflow: RightConstant
-    replication_window: float
+    rep_window: float
+    rep_coef: float
     _source: Node
     _free_flow_dist: float
     _path_distribution: Dict[int, RightConstant]
@@ -26,7 +27,8 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
                  network: Network,
                  reroute_interval: float,
                  initial_distribution: List[Tuple[List[int], float]],
-                 replication_window: Optional[float] = None
+                 rep_coef: float = -1,
+                 rep_window: Optional[float] = None
                  ):
 
         network_copy = deepcopy(network)
@@ -36,7 +38,8 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         paths = dict()
 
         self._free_flow_dist = float('inf')
-        self.replication_window = replication_window if replication_window is not None else float('inf')
+        self.rep_coef = rep_coef
+        self.rep_window = rep_window if rep_window is not None else float('inf')
         self._path_distribution = dict()
         self._path_fitnesses = dict()
 
@@ -53,6 +56,24 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
             paths[i] = path
 
         super().__init__(network_copy, paths, reroute_interval)
+
+    def _get_last_travel_times(self):
+        """ Compute travel time of the last particle that completed the route."""
+
+        tt = {i: 0.0 for i in range(len(self.paths))}
+        if self._route_time < eps:
+            return tt
+
+        costs = self._flow.get_edge_costs()
+
+        for com_id, path in self.paths.items():
+            particle_entry = self._route_time
+            for e in path.edges[::-1]:
+                particle_entry = identity.plus(costs[e.id]).max_t_below(particle_entry, 0.0)
+
+            tt[com_id] = self._route_time - particle_entry
+
+        return tt
 
     def _get_avg_travel_times_in_window(self, window_size: float):
 
@@ -86,8 +107,8 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         return avg_tt
 
     def _compute_path_fitnesses(self):
-        for com_id, avg_tt in self._get_avg_travel_times_in_window(self.replication_window).items():
-            fitness = avg_tt  # / self._free_flow_dist
+        for com_id, tt in self._get_last_travel_times().items():
+            fitness = tt  # / self._free_flow_dist
             self._path_fitnesses[com_id].extend(self._route_time, fitness)
 
     def _replicate(self):
@@ -95,7 +116,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
 
         path_probs = np.array([self._path_distribution[i](self._route_time) for i in range(len(self.paths))])
         path_fitnesses = np.array([self._path_fitnesses[i](self._route_time) for i in range(len(self.paths))])
-        log_der = -1 * (path_fitnesses - np.sum(path_probs * path_fitnesses))
+        log_der = self.rep_coef * (path_fitnesses - np.sum(path_probs * path_fitnesses))
         path_probs *= np.exp(log_der * self.reroute_interval)
         path_probs /= path_probs.sum()
 
