@@ -90,7 +90,6 @@ class PathFlowBuilder:
                 self.reroute_interval is None
                 or self._flow.phi >= self._next_reroute_time
             ):
-
                 self._route_time = self._next_reroute_time
                 self._next_reroute_time += self.reroute_interval
                 self._handle_nodes = set(self.network.graph.nodes.values())

@@ -20,8 +20,8 @@ def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
 
     reroute_interval = 0.1
-    replication_coef = -1e-3
-    window_size = 1.0
+    replication_coef = -1e-2
+    window_size = None
     horizon = 500.0
 
     network = Network()
@@ -30,13 +30,17 @@ def run_scenario(scenario_dir: str):
     network.graph.positions = {0: (0, 0), 1: (1, 1)}
 
     network.add_commodity(
-        {0: RightConstant([0.0], [5.0])}, 1, PredictorType.CONSTANT,
+        {0: RightConstant([0.0], [5.0])},
+        1,
+        PredictorType.CONSTANT,
     )
     initial_distribution = [([0], 0.5), ([1], 0.5)]
-    replicator = ReplicatorFlowBuilder(network, reroute_interval, initial_distribution, replication_coef, window_size)
+    replicator = ReplicatorFlowBuilder(
+        network, reroute_interval, initial_distribution, replication_coef, window_size
+    )
     flow, inflow_distribution = replicator.run(horizon)
 
-    with open(os.path.join(scenario_dir, f"inflow_distribution.json"), 'w') as f:
+    with open(os.path.join(scenario_dir, f"inflow_distribution.json"), "w") as f:
         JSONEncoder().dump(inflow_distribution, f)
 
     visualization_path = os.path.join(scenario_dir, f"merged_flow.vis.json")
