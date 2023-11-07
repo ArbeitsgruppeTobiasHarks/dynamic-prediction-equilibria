@@ -1,28 +1,15 @@
-import json
 import os
-import pickle
 
-from core.convergence import AlphaFlowIterator
 from core.network import Network
 from core.predictors.predictor_type import PredictorType
 from core.replicator import ReplicatorFlowBuilder
-from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
-from scenarios.nguyen_scenario import build_nguyen_network
-from scenarios.scenario_utils import get_demand_with_inflow_horizon
-from utilities.combine_commodities import combine_commodities_with_same_sink
-from utilities.get_tn_path import get_tn_path
 from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
-from visualization.to_json import merge_commodities, to_visualization_json
+from visualization.to_json import to_visualization_json
 
 
 def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
-
-    reroute_interval = 0.1
-    replication_coef = -1e-2
-    window_size = None
-    horizon = 500.0
 
     network = Network()
     network.add_edge(0, 1, 1.0, 2.0)
@@ -34,16 +21,33 @@ def run_scenario(scenario_dir: str):
         1,
         PredictorType.CONSTANT,
     )
-    initial_distribution = [([0], 0.5), ([1], 0.5)]
-    replicator = ReplicatorFlowBuilder(
-        network, reroute_interval, initial_distribution, replication_coef, window_size
+
+    run_params = dict(
+        reroute_interval=0.01,
+        horizon=100.0,
+        initial_distribution=[([0], 0.5), ([1], 0.5)],
+        fitness='neg_avg_tt',
+        rep_coef=1e-1,
+        rep_window=10,
     )
-    flow, inflow_distribution = replicator.run(horizon)
 
-    with open(os.path.join(scenario_dir, f"inflow_distribution.json"), "w") as f:
-        JSONEncoder().dump(inflow_distribution, f)
+    replicator = ReplicatorFlowBuilder(network, **run_params)
+    flow, dynamics = replicator.run()
 
-    visualization_path = os.path.join(scenario_dir, f"merged_flow.vis.json")
+    with open(os.path.join(scenario_dir, f"run_data.json"), "w") as f:
+        JSONEncoder().dump(
+        {
+            "run_parameters": run_params,
+            "dynamics": dynamics,
+            "means": {
+                "fitness": sum(d["fitness"] * d["inflow share"] for d in dynamics.values()),
+                "travel time": sum(d["travel time"] * d["inflow share"] for d in dynamics.values())
+                },
+            },
+            f
+        )
+
+    visualization_path = os.path.join(scenario_dir, f"flow.vis.json")
     to_visualization_json(
         visualization_path,
         flow,
