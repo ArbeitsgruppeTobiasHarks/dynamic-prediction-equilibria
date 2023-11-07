@@ -26,7 +26,7 @@ def run_scenario(scenario_dir: str):
         reroute_interval=0.01,
         horizon=100.0,
         initial_distribution=[([0], 0.5), ([1], 0.5)],
-        fitness='neg_avg_tt',
+        fitness="neg_avg_tt",
         rep_coef=1e-1,
         rep_window=10,
     )
@@ -36,15 +36,19 @@ def run_scenario(scenario_dir: str):
 
     with open(os.path.join(scenario_dir, f"run_data.json"), "w") as f:
         JSONEncoder().dump(
-        {
-            "run_parameters": run_params,
-            "dynamics": dynamics,
-            "means": {
-                "fitness": sum(d["fitness"] * d["inflow share"] for d in dynamics.values()),
-                "travel time": sum(d["travel time"] * d["inflow share"] for d in dynamics.values())
+            {
+                "run_parameters": run_params,
+                "dynamics": dynamics,
+                "means": {
+                    "fitness": sum(
+                        d["fitness"] * d["inflow share"] for d in dynamics.values()
+                    ),
+                    "travel time": sum(
+                        d["travel time"] * d["inflow share"] for d in dynamics.values()
+                    ),
                 },
             },
-            f
+            f,
         )
 
     visualization_path = os.path.join(scenario_dir, f"flow.vis.json")

@@ -4,7 +4,7 @@ from typing import Dict, Generator, List, Optional, Tuple
 import numpy as np
 
 from core.active_paths import Path, compute_path_travel_time
-from core.convergence import integrate_with_weights, approximate_linear
+from core.convergence import approximate_linear, integrate_with_weights
 from core.dynamic_flow import DynamicFlow
 from core.graph import Edge, Node
 from core.machine_precision import eps
@@ -50,9 +50,9 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
 
         for i, (e_ids, path_prob) in enumerate(initial_distribution):
             path = Path([network.graph.edges[e_id] for e_id in e_ids])
-            #self._free_flow_dist = min(
+            # self._free_flow_dist = min(
             #    sum(network.travel_time[e_id] for e_id in e_ids), self._free_flow_dist
-            #)
+            # )
             self._path_distribution[i] = RightConstant(
                 [0.0], [path_prob], (0, float("inf"))
             )
@@ -72,7 +72,11 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         queues = [q(self._route_time) for q in self._flow.queues]
 
         for com_id, path in self.paths.items():
-            tt[com_id] = sum(self.network.travel_time[e.id] + queues[e.id] / self.network.capacity[e.id] for e in path.edges)
+            tt[com_id] = sum(
+                self.network.travel_time[e.id]
+                + queues[e.id] / self.network.capacity[e.id]
+                for e in path.edges
+            )
 
         return tt
 
@@ -130,11 +134,16 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         return avg_tt
 
     def _compute_path_fitnesses(self):
-        if self.fitness == 'neg_avg_tt':
-            fitnesses = {k: -v for k, v in self._get_avg_travel_times_in_window(self.rep_window).items()}
-        elif self.fitness == 'neg_last_tt':
+        if self.fitness == "neg_avg_tt":
+            fitnesses = {
+                k: -v
+                for k, v in self._get_avg_travel_times_in_window(
+                    self.rep_window
+                ).items()
+            }
+        elif self.fitness == "neg_last_tt":
             fitnesses = {k: -v for k, v in self._get_last_travel_times().items()}
-        elif self.fitness == 'neg_pred_tt':
+        elif self.fitness == "neg_pred_tt":
             fitnesses = {k: -v for k, v in self._get_pred_travel_times().items()}
 
         for com_id, fitness in fitnesses.items():
@@ -144,14 +153,19 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         """Update path distribution"""
 
         path_probs = np.array(
-            [self._path_distribution[i](self._route_time) for i in range(len(self.paths))]
+            [
+                self._path_distribution[i](self._route_time)
+                for i in range(len(self.paths))
+            ]
         )
         path_fitnesses = np.array(
             [self._path_fitnesses[i](self._route_time) for i in range(len(self.paths))]
         )
         log_der = self.rep_coef * (path_fitnesses - np.sum(path_probs * path_fitnesses))
         path_probs *= np.exp(log_der * self.reroute_interval)
-        path_probs /= path_probs.sum()  # normalization required, since path_probs.sum() slightly differs from 1
+        path_probs /= (
+            path_probs.sum()
+        )  # normalization required, since path_probs.sum() slightly differs from 1
 
         for i in range(len(self.paths)):
             self._path_distribution[i].extend(self._next_reroute_time, path_probs[i])
@@ -210,7 +224,11 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
                 "path": str(self.paths[i]),
                 "inflow share": self._path_distribution[i],
                 "fitness": self._path_fitnesses[i],
-                "travel time":  approximate_linear(compute_path_travel_time(self.paths[i], costs), self.reroute_interval, self.horizon)
+                "travel time": approximate_linear(
+                    compute_path_travel_time(self.paths[i], costs),
+                    self.reroute_interval,
+                    self.horizon,
+                ),
             }
             for i in range(len(self.paths))
         }
