@@ -41,6 +41,9 @@ class Path:
     def __hash__(self):
         return hash(tuple(self.edges))
 
+    # def avg_capacity(self, capacities, travel_times):
+    #     pass
+
 
 class PathsOverTime(Dict):
     """

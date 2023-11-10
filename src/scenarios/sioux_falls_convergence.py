@@ -16,7 +16,7 @@ def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
 
     run_parameters = dict(
-        reroute_interval=0.1,
+        reroute_interval=0.025,
         horizon=200.0,
         inflow_horizon=20.0,
         alpha_fun=PiecewiseLinear([0.0, 0.01, 5.0], [0.0, 0.0, 0.5], 0.0, 0.0),
@@ -25,7 +25,7 @@ def run_scenario(scenario_dir: str):
         approx_inflows=True,
         parallelize=True,
     )
-    num_iterations = 1000
+    num_iterations = 500
     log_every = 25
 
     tn_path = get_tn_path()
@@ -63,9 +63,9 @@ def run_scenario(scenario_dir: str):
             f,
         )
 
-    iterator_path = os.path.join(out_dir, f"flow_iterator.pickle")
-    with open(iterator_path, "wb") as f:
-        pickle.dump(flow_iter, f, protocol=pickle.HIGHEST_PROTOCOL)
+    # iterator_path = os.path.join(out_dir, f"flow_iterator.pickle")
+    # with open(iterator_path, "wb") as f:
+    #     pickle.dump(flow_iter, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     visualization_path = os.path.join(out_dir, f"merged_flow.vis.json")
     to_visualization_json(

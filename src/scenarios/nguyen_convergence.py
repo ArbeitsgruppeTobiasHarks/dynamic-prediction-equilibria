@@ -15,18 +15,18 @@ def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
 
     run_parameters = dict(
-        reroute_interval=0.5,
+        reroute_interval=0.05,
         horizon=100.0,
         inflow_horizon=12.0,
-        alpha_fun=PiecewiseLinear([0.0, 0.01, 5.0], [0.0, 0.0, 0.25], 0.0, 0.0),
+        alpha_fun=PiecewiseLinear([0.0, 5.0], [0.0, 0.5], 0.0, 0.0),
         delay_threshold=1e-3,
         min_path_active_time=1e-2,
         approx_inflows=True,
         parallelize=False,
     )
 
-    num_iterations = 10000
-    log_every = 500
+    num_iterations = 2500
+    log_every = 50
 
     demands = {(1, 2): 200, (1, 3): 100, (4, 2): 100, (4, 3): 100}
     network = build_nguyen_network()
@@ -59,9 +59,9 @@ def run_scenario(scenario_dir: str):
             f,
         )
 
-    iterator_path = os.path.join(out_dir, f"flow_iterator.pickle")
-    with open(iterator_path, "wb") as f:
-        pickle.dump(flow_iter, f, protocol=pickle.HIGHEST_PROTOCOL)
+    # iterator_path = os.path.join(out_dir, f"flow_iterator.pickle")
+    # with open(iterator_path, "wb") as f:
+    #     pickle.dump(flow_iter, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     visualization_path = os.path.join(out_dir, f"merged_flow.vis.json")
     to_visualization_json(
