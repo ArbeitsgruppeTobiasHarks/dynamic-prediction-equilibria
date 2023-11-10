@@ -15,7 +15,6 @@ class PathFlowBuilder:
     network: Network
     paths: Dict[int, Path]  # each commodity is associated with a single path
     reroute_interval: Optional[float]
-    _active_edges: List[Dict[Node, List[Edge]]]
     _built: bool
     _handle_nodes: Set[Node]
     _flow: DynamicFlow
@@ -91,7 +90,6 @@ class PathFlowBuilder:
                 self.reroute_interval is None
                 or self._flow.phi >= self._next_reroute_time
             ):
-                self._active_edges = [{} for _ in self.network.commodities]
                 self._route_time = self._next_reroute_time
                 self._next_reroute_time += self.reroute_interval
                 self._handle_nodes = set(self.network.graph.nodes.values())
@@ -107,8 +105,8 @@ class PathFlowBuilder:
 
             yield self._flow
 
-    def _get_next_edge(self, i: int, v: Node):
-        path = self.paths[i]
+    def _get_next_edge(self, com_id: int, v: Node):
+        path = self.paths[com_id]
         edge = None
         for e in path.edges:
             if e.node_from == v:
