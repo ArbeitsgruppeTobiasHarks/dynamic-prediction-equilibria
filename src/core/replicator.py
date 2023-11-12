@@ -11,7 +11,7 @@ from core.machine_precision import eps
 from core.network import Network
 from core.path_flow_builder import PathFlowBuilder
 from core.predictors.predictor_type import PredictorType
-from utilities.piecewise_linear import identity, zero
+from utilities.piecewise_linear import PiecewiseLinear, identity, zero
 from utilities.right_constant import RightConstant
 
 
@@ -67,9 +67,27 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         super().__init__(network_copy, paths, reroute_interval)
 
     def _get_pred_travel_times(self):
-        tt = {i: 0.0 for i in range(len(self.paths))}
+        tt = {i: 0.0 for i in self.paths.keys()}
 
         queues = [q(self._route_time) for q in self._flow.queues]
+
+        for com_id, path in self.paths.items():
+            tt[com_id] = sum(
+                self.network.travel_time[e.id]
+                + queues[e.id] / self.network.capacity[e.id]
+                for e in path.edges
+            )
+
+        return tt
+
+    def _get_proj_travel_times(self, delta: float):
+        tt = {i: 0.0 for i in self.paths.keys()}
+
+        def project(queue: PiecewiseLinear):
+            phi_prev = max(0.0, self._route_time - delta)
+            return 2 * queue(self._route_time) - queue(phi_prev)
+
+        queues = [project(q) for q in self._flow.queues]
 
         for com_id, path in self.paths.items():
             tt[com_id] = sum(
@@ -83,7 +101,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
     def _get_last_travel_times(self):
         """Compute travel time of the last particle that completed the route."""
 
-        tt = {i: 0.0 for i in range(len(self.paths))}
+        tt = {i: 0.0 for i in self.paths.keys()}
         if self._route_time < eps:
             return tt
 
@@ -100,12 +118,12 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
 
         return tt
 
-    def _get_avg_travel_times_in_window(self, window_size: float):
-        avg_tt = {i: 0.0 for i in range(len(self.paths))}
+    def _get_avg_travel_times_in_window(self, rep_window: float):
+        avg_tt = {i: 0.0 for i in self.paths.keys()}
         if self._route_time < eps:
             return avg_tt
 
-        window_start = max(self._route_time - window_size, 0.0)
+        window_start = max(self._route_time - rep_window, 0.0)
         costs = self._flow.get_edge_costs()
 
         for com_id, path in self.paths.items():
@@ -133,20 +151,89 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
 
         return avg_tt
 
+    def _get_mixed_travel_times(self, history_coef: float = 0.5):
+        """Computes history_coef * avg_tt + (1-history_coef) * pred_tt"""
+
+        avg_tt = self._get_avg_travel_times_in_window(self.rep_window)
+        pred_tt = self._get_pred_travel_times()
+
+        tt = {
+            k: history_coef * avg_tt[k] + (1 - history_coef) * pred_tt[k]
+            for k in avg_tt.keys()
+        }
+
+        return tt
+
+    def _get_avg_shares(self, window: float):
+        avg_shares = {i: 0.0 for i in range(len(self.paths))}
+        if self._route_time < eps:
+            return avg_shares
+
+        window_start = max(0.0, self._route_time - window)
+        for com_id in self.paths.keys():
+            share_int = self._path_distribution[com_id].integral()
+            avg_shares[com_id] = (
+                share_int(self._route_time) - share_int(window_start)
+            ) / (self._route_time - window_start)
+
+        return avg_shares
+
+    def _get_fluctuation_regularizations(self):
+        return {
+            com_id: abs(self._path_distribution[com_id](self._route_time) - avg_share)
+            for com_id, avg_share in self._get_avg_shares(self.rep_window).items()
+        }
+
+    def _get_capacity_regularizations(self, cap_coef: float = 1.0):
+        edge_loads = self._flow.get_edge_loads()
+        regularizations = {
+            com_id: cap_coef
+            * (
+                max(
+                    edge_loads[e.id](self._route_time) - self.network.capacity[e.id]
+                    for e in path.edges
+                )
+            )
+            for com_id, path in self.paths.items()
+        }
+        return regularizations
+
+    # def _get_decayed_travel_times(self, decay_coef: float=-1.0):
+    #     """ Inflow at moment theta is weighted with exp(decay_coef * (self._route_time - theta) """
+    #
+    #     costs = self._flow.get_edge_costs()
+    #
+    #     for com_id, path in self.paths.items():
+    #         inflow = self.network.commodities[com_id].sources[self._source]
+    #         travel_time = compute_path_travel_time(path, costs)
+
     def _compute_path_fitnesses(self):
         if self.fitness == "neg_avg_tt":
             fitnesses = {
                 k: -v
                 for k, v in self._get_avg_travel_times_in_window(
-                    self.rep_window
+                    rep_window=self.rep_window
                 ).items()
             }
         elif self.fitness == "neg_last_tt":
             fitnesses = {k: -v for k, v in self._get_last_travel_times().items()}
         elif self.fitness == "neg_pred_tt":
             fitnesses = {k: -v for k, v in self._get_pred_travel_times().items()}
+        elif self.fitness == "neg_proj_tt":
+            fitnesses = {
+                k: -v
+                for k, v in self._get_proj_travel_times(
+                    delta=2 * self.reroute_interval
+                ).items()
+            }
+        else:
+            fitnesses = {i: 0.0 for i in self.paths.keys()}
+
+        # regularization = self._get_capacity_regularizations(cap_coef=5.0)
 
         for com_id, fitness in fitnesses.items():
+            # fitness -= regularization[com_id] * np.exp(-0.05*self._route_time)
+            # fitness *= np.exp(-0.05*self._route_time)
             self._path_fitnesses[com_id].extend(self._route_time, fitness)
 
     def _replicate(self):
