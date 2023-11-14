@@ -35,9 +35,9 @@ def run_scenario(scenario_dir: str):
         initial_distribution=[([0, 2, 4], 0.4), ([0, 3], 0.3), ([1, 4], 0.3)],
         fitness="neg_proj_tt",
         regularization="logit",
-        regularization_decay=1e-2,
+        regularization_decay=1e-1,
         replication_coef=1e-1,
-        window_size=0.01,
+        window_size=0.5,
     )
 
     replicator = ReplicatorFlowBuilder(network, **run_params)

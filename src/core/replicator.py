@@ -107,7 +107,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         for com_id, path in self.paths.items():
             theta = theta_start = self._route_time + proj_horizon
             for e in path.edges:
-                tt[com_id] += (
+                theta += (
                     self.network.travel_time[e.id]
                     + queues[e.id](theta) / self.network.capacity[e.id]
                 )
