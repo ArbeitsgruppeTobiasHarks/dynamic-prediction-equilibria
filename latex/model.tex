@@ -107,7 +107,7 @@ By construction of the initial dynamic $\sum_{P'}  h_{P'}(\theta) \cdot e^{ R \c
 
 \subsubsection*{Stabilizing dynamic}
 
-If we use try to estimate upcoming travel times using  queue values $\hat{q}_e = 2q_e(\theta) - q(\theta - 2 \Delta \theta)$, fluctuation decay over time, see Figure \ref{fig:fluctuations_proj}
+If we use try to estimate upcoming travel times using projected queue values $\hat{q}_e = q_e(\theta) + \frac{q_e(\theta) - q_e(\theta - \delta)}{\delta} \cdot w$, fluctuation decays over time, see Figure \ref{fig:fluctuations_proj}. Decay seems to be present only if $w > \Delta \theta$.	
 
 \begin{center}
 	\begin{figure}
