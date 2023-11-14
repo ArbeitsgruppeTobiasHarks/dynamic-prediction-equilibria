@@ -12,23 +12,32 @@ def run_scenario(scenario_dir: str):
     os.makedirs(scenario_dir, exist_ok=True)
 
     network = Network()
-    network.add_edge(0, 1, 1.0, 2.0)
-    network.add_edge(0, 1, 2.0, 3.0)
-    network.graph.positions = {0: (0, 0), 1: (1, 1)}
+    network.add_edge(0, 1, 1.0, 3.0)
+    network.add_edge(0, 2, 2.0, 2.0)
+    network.add_edge(1, 2, 1.0, 1.0)
+    network.add_edge(1, 3, 2.0, 2.0)
+    network.add_edge(2, 3, 1.0, 3.0)
+    network.graph.positions = {0: (0, 1), 1: (1, 2), 2: (1, 0), 3: (2, 1)}
+
+    # network.add_edge(0, 1, 1.0, 2.0)
+    # network.add_edge(0, 1, 2.0, 3.0)
+    # network.graph.positions = {0: (0, 0), 1: (1, 1)}
 
     network.add_commodity(
         {0: RightConstant([0.0], [5.0])},
-        1,
+        3,
         PredictorType.CONSTANT,
     )
 
     run_params = dict(
-        reroute_interval=0.05,
+        reroute_interval=0.01,
         horizon=100.0,
-        initial_distribution=[([0], 0.5), ([1], 0.5)],
+        initial_distribution=[([0, 2, 4], 0.4), ([0, 3], 0.3), ([1, 4], 0.3)],
         fitness="neg_proj_tt",
-        rep_coef=1e0,
-        rep_window=None,
+        regularization="logit",
+        regularization_decay=1e-2,
+        replication_coef=1e-1,
+        window_size=0.01,
     )
 
     replicator = ReplicatorFlowBuilder(network, **run_params)
