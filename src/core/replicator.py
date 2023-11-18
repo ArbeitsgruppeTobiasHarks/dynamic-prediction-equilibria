@@ -18,8 +18,8 @@ from utilities.right_constant import RightConstant
 class ReplicatorFlowBuilder(PathFlowBuilder):
     inflow: RightConstant
     horizon: float
-    fitness: str
-    regularization: str
+    fitness: Optional[str]
+    regularization: Optional[str]
     replication_coef: float
     regularization_decay: float
     window_size: float
@@ -33,11 +33,11 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         reroute_interval: float,
         horizon: float,
         initial_distribution: List[Tuple[List[int], float]],
-        fitness: str,
-        regularization: str,
+        fitness: Optional[str] = None,
         replication_coef: float = 1.0,
-        regularization_decay: float = 1.0,
         window_size: Optional[float] = None,
+        regularization: Optional[str] = None,
+        regularization_decay: float = 1.0,
     ):
         network_copy = deepcopy(network)
         self._source, self.inflow = next(iter(network.commodities[0].sources.items()))
@@ -47,18 +47,16 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
 
         self.horizon = horizon
         self.fitness = fitness
-        self.regularization = regularization
         self.replication_coef = replication_coef
-        self.regularization_decay = regularization_decay
         self.window_size = window_size if window_size is not None else float("inf")
+        self.regularization = regularization
+        self.regularization_decay = regularization_decay
+
         self._path_distribution = dict()
         self._path_fitnesses = dict()
 
         for i, (e_ids, path_prob) in enumerate(initial_distribution):
             path = Path([network.graph.edges[e_id] for e_id in e_ids])
-            # self._free_flow_dist = min(
-            #    sum(network.travel_time[e_id] for e_id in e_ids), self._free_flow_dist
-            # )
             self._path_distribution[i] = RightConstant(
                 [0.0], [path_prob], (0, float("inf"))
             )
@@ -71,6 +69,25 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
             paths[i] = path
 
         super().__init__(network_copy, paths, reroute_interval)
+
+    def _get_tt_grad_approx(self):
+        grads = {i: 0.0 for i in self.paths.keys()}
+
+        def grad_approx(queue: PiecewiseLinear, delta: float):
+            if self._route_time < delta + eps:
+                return 0.0
+            return (queue(self._route_time) - queue(self._route_time - delta)) / delta
+
+        avg_grads = [
+            grad_approx(q, 2 * self.reroute_interval) for q in self._flow.queues
+        ]
+
+        for com_id, path in self.paths.items():
+            grads[com_id] = sum(
+                avg_grads[e.id] / self.network.capacity[e.id] for e in path.edges
+            )
+
+        return grads
 
     def _get_pred_travel_times(self):
         tt = {i: 0.0 for i in self.paths.keys()}
@@ -238,6 +255,8 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
                     proj_horizon=self.window_size
                 ).items()
             }
+        elif self.fitness == "neg_grad_tt":
+            fitnesses = {k: -v for k, v in self._get_tt_grad_approx().items()}
         else:
             fitnesses = {i: 0.0 for i in self.paths.keys()}
 
@@ -326,7 +345,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
 
         costs = flow.get_edge_costs()
 
-        paths_dict = {
+        dynamics_out = {
             i: {
                 "path": str(self.paths[i]),
                 "inflow share": self._path_distribution[i],
@@ -337,7 +356,13 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
                     self.horizon,
                 ),
             }
-            for i in range(len(self.paths))
+            for i in self.paths.keys()
         }
+        #  add last value in case function was constant in the end
+        for i in self.paths.keys():
+            for k in ["inflow share", "fitness"]:
+                if dynamics_out[i][k].times[-1] < self.horizon - eps:
+                    dynamics_out[i][k].times.append(self.horizon)
+                    dynamics_out[i][k].values.append(dynamics_out[i][k].values[-1])
 
-        return flow, paths_dict
+        return flow, dynamics_out
