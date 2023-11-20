@@ -25,14 +25,14 @@ def run_scenario(scenario_dir: str):
     )
 
     run_params = dict(
-        reroute_interval=0.01,
+        reroute_interval=0.001,
         horizon=250.0,
         initial_distribution=[([0], 0.5), ([1], 0.5)],
         fitness="neg_proj_tt",
-        regularization="logit",
-        regularization_decay=1e-2,
-        replication_coef=1.0,
-        window_size=10.0,
+        regularization=None,
+        regularization_decay=1e-3,
+        replication_coef=0.1,
+        window_size=300,
     )
 
     replicator = ReplicatorFlowBuilder(network, **run_params)

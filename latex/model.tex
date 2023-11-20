@@ -39,7 +39,7 @@ Finally, utilising constant predictors for queues, one can predict path exit tim
 $$ \phi^{p.t.}_P(\theta, h) = - (\hat{T}_P(\theta) - \theta) .$$
 If path $P$ has only one edge, then $ \hat{T}_P(\cdot) \equiv T_P(\cdot) $.
 
-\subsection*{Unstable instance}
+\subsection*{Considered Instance}
 
 Consider simple network with two parallel edges on Figure \ref{fig:instance} and inflow $u(\theta) = 5$. Let upper edge have index $0$ and lower $1$.
 
@@ -67,13 +67,64 @@ The equilibrium flow is achieved as follows: all the inflow is redirected to the
 $$ h^*_0(\theta) = \begin{cases} 1, & 0 \leq \theta < \frac{2}{3} \\ \frac{2}{5}, &\theta \geq \frac{2}{3} \end{cases}, \quad h^*_1(\theta) = 1 - h^*_0(\theta) .$$
 
 
-\subsubsection*{Numerical approximation}
+\subsection*{Numerical Approximation}
 
 Figures \ref{fig:fluctuations_avg}, \ref{fig:fluctuations_last} and \ref{fig:fluctuations_pred} show numerically computed inflow shares and fitness of replicator flow with initial condition $h_0(0) = h_1(0) = \frac{1}{2}$. The following approximation was used:
 
 $$ h_P(\theta + \Delta\theta) \approx \frac{ h_P(\theta) \cdot e^{ R \cdot a_P \cdot \Delta \theta }} { \sum_{P'}  h_{P'}(\theta) \cdot e^{ R \cdot a_{P'} \cdot \Delta\theta } } .$$
 
 By construction of the initial dynamic $\sum_{P'}  h_{P'}(\theta) \cdot e^{ R \cdot a_{P'} \cdot \Delta\theta } = 1 + o(\Delta \theta)$. Normalisation is required to remain on simplex.
+
+
+\subsection*{Stabilizing Dynamics}
+
+\subsubsection*{Logit Regularization}
+
+One can use modify the fitness using logit regularizer:
+$$ \phi^{\text{reg}}_P(\theta, h) = \phi_P(\theta, h) - \lambda e^{-\gamma \cdot \theta} \ln{ h_P(\theta) }, $$
+where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay.
+
+\begin{figure}
+	\includegraphics[width=0.9\textwidth]{img/reg_pred_tt.eps}
+	\caption{Predicted travel time with logit regularization $\lambda=1$}
+	\label{fig:reg_pred_tt}
+
+\end{figure}
+
+\subsubsection*{Projected Travel Times}
+
+If we use use projected queue values $\hat{q}^{\delta}_e(\theta') = q_e(\theta) + \frac{q_e(\theta) - q_e(\theta - \delta)}{\delta} \cdot (\theta' - \theta)$ to estimate upcoming travel times, we can use fitness $ \phi^{\text{proj t.t.}}(\theta, h) = - \hat{t}^{\delta} ( \theta + w) $ for different values of projection window $w$. See Figure \ref{fig:fluctuations_proj}.	
+
+\begin{figure}
+	\includegraphics[width=0.9\textwidth]{img/replicator_proj_tt.eps}
+	\caption{ $ \phi = -\hat{t}^{2\Delta \theta}(\theta + w), R=0.1, \Delta \theta = 0.01$}
+	\label{fig:fluctuations_proj}
+
+\end{figure}
+	
+\begin{figure}
+	\includegraphics[width=0.9\textwidth]{img/amplitudes_proj_tt.eps}
+	\caption{ Inflow amplitudes for path 0 }
+	\label{fig:amplitudes_proj}
+
+\end{figure}
+
+\begin{figure}
+	\includegraphics[width=0.9\textwidth]{img/final_tt_proj.eps}
+	\caption{ Final travel times }
+	\label{fig:final_tt_proj}
+
+\end{figure}
+
+\begin{figure}
+	\includegraphics[width=0.9\textwidth]{img/replicator_grad_tt.eps}
+	\caption{ Travel time gradient as fitness }
+	\label{fig:replicator_grad_tt}
+
+\end{figure}
+
+
+\subsection*{Unstable dynamics}
 
 \begin{center}
 	\begin{figure}
@@ -100,20 +151,6 @@ By construction of the initial dynamic $\sum_{P'}  h_{P'}(\theta) \cdot e^{ R \c
 	\includegraphics[scale=0.5]{img/replicator_pred_tt.eps}
 	\caption{Fluctuations, predicted travel time }
 	\label{fig:fluctuations_pred}
-
-	\end{figure}
-	
-\end{center}
-
-\subsubsection*{Stabilizing dynamic}
-
-If we use try to estimate upcoming travel times using projected queue values $\hat{q}_e = q_e(\theta) + \frac{q_e(\theta) - q_e(\theta - \delta)}{\delta} \cdot w$, fluctuation decays over time, see Figure \ref{fig:fluctuations_proj}. Decay seems to be present only if $w > \Delta \theta$.	
-
-\begin{center}
-	\begin{figure}
-	\includegraphics[scale=0.5]{img/replicator_proj_tt.eps}
-	\caption{Stabilization, projected travel time }
-	\label{fig:fluctuations_proj}
 
 	\end{figure}
 	
