@@ -19,10 +19,11 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
     inflow: RightConstant
     horizon: float
     fitness: Optional[str]
-    regularization: Optional[str]
     replication_coef: float
-    regularization_decay: float
     window_size: float
+    regularization: Optional[str]
+    regularization_coef: float
+    regularization_decay: float
     _source: Node
     _path_distribution: Dict[int, RightConstant]
     _path_fitnesses: Dict[int, RightConstant]
@@ -37,6 +38,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         replication_coef: float = 1.0,
         window_size: Optional[float] = None,
         regularization: Optional[str] = None,
+        regularization_coef: float = 1.0,
         regularization_decay: float = 1.0,
     ):
         network_copy = deepcopy(network)
@@ -50,6 +52,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         self.replication_coef = replication_coef
         self.window_size = window_size if window_size is not None else float("inf")
         self.regularization = regularization
+        self.regularization_coef = regularization_coef
         self.regularization_decay = regularization_decay
 
         self._path_distribution = dict()
@@ -268,8 +271,10 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
             regularization = {i: 0.0 for i in self.paths.keys()}
 
         for com_id, fitness in fitnesses.items():
-            fitness -= regularization[com_id] * np.exp(
-                -self.regularization_decay * self._route_time
+            fitness -= (
+                regularization[com_id]
+                * self.regularization_coef
+                * np.exp(-self.regularization_decay * self._route_time)
             )
             self._path_fitnesses[com_id].extend(self._route_time, fitness)
 

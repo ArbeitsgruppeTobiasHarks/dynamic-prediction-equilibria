@@ -29,9 +29,10 @@ def run_scenario(scenario_dir: str):
         horizon=250.0,
         initial_distribution=[([0], 0.5), ([1], 0.5)],
         fitness="neg_proj_tt",
-        regularization=None,
-        regularization_decay=1e-3,
         replication_coef=0.1,
+        regularization=None,
+        regularization_coef=1.0,
+        regularization_decay=1e-3,
         window_size=300,
     )
 
