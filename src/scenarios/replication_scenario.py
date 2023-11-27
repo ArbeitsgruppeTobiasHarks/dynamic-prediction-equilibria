@@ -7,55 +7,11 @@ from core.predictors.predictor_type import PredictorType
 from core.replicator import ReplicatorFlowBuilder
 from utilities.json_encoder import JSONEncoder
 from utilities.right_constant import RightConstant
+from utilities.status_logger import TimedStatusLogger
 from visualization.to_json import to_visualization_json
 
 
-def run_scenario(scenario_dir: str):
-    os.makedirs(scenario_dir, exist_ok=True)
-
-    network = Network()
-    network.add_edge(0, 1, 1.0, 2.0)
-    network.add_edge(0, 1, 2.0, 3.0)
-    network.graph.positions = {0: (0, 0), 1: (1, 1)}
-
-    network.add_commodity(
-        {0: RightConstant([0.0], [5.0])},
-        1,
-        PredictorType.CONSTANT,
-    )
-
-    run_params = dict(
-        reroute_interval=0.001,
-        horizon=250.0,
-        initial_distribution=[([0], 0.5), ([1], 0.5)],
-        fitness="neg_proj_tt",
-        replication_coef=0.1,
-        regularization=None,
-        regularization_coef=1.0,
-        regularization_decay=1e-3,
-        window_size=300,
-    )
-
-    replicator = ReplicatorFlowBuilder(network, **run_params)
-    flow, dynamics = replicator.run()
-
-    out_dir = os.path.join(scenario_dir, f"run_{len(os.listdir(scenario_dir))}")
-    os.makedirs(out_dir)
-
-    run_data = {
-        "run_parameters": run_params,
-        "dynamics": dynamics,
-        "means": {
-            "fitness": sum(d["fitness"] * d["inflow share"] for d in dynamics.values()),
-            "travel time": sum(
-                d["travel time"] * d["inflow share"] for d in dynamics.values()
-            ),
-        },
-    }
-
-    with open(os.path.join(out_dir, f"run_data.json"), "w") as f:
-        JSONEncoder().dump(run_data, f)
-
+def plot_dynamics(out_dir: str, run_data: dict):
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 10), sharex=True)
 
     for k, d in run_data["dynamics"].items():
@@ -84,6 +40,58 @@ def run_scenario(scenario_dir: str):
     ax2.legend(loc="upper right")
 
     plt.savefig(os.path.join(out_dir, f"replicator.eps"), format="eps")
+
+
+def run_scenario(scenario_dir: str):
+    os.makedirs(scenario_dir, exist_ok=True)
+
+    network = Network()
+    network.add_edge(0, 1, 1.0, 2.0)
+    network.add_edge(0, 1, 2.0, 3.0)
+    network.graph.positions = {0: (0, 0), 1: (1, 1)}
+
+    network.add_commodity(
+        {0: RightConstant([0.0], [5.0])},
+        1,
+        PredictorType.CONSTANT,
+    )
+
+    run_params = dict(
+        reroute_interval=0.001,
+        horizon=250.0,
+        initial_distribution=[([0], 0.5), ([1], 0.5)],
+        fitness="neg_proj_tt",
+        replication_coef=0.1,
+        regularization=None,
+        regularization_coef=1.0,
+        regularization_decay=0.05,
+        window_size=300,
+    )
+    replicator = ReplicatorFlowBuilder(network, **run_params)
+
+    with TimedStatusLogger(
+        f"Running with parameters: \n{run_params}", finish_msg="Run successful"
+    ):
+        flow, dynamics = replicator.run()
+
+    out_dir = os.path.join(scenario_dir, f"run_{len(os.listdir(scenario_dir))}")
+    os.makedirs(out_dir)
+
+    run_data = {
+        "run_parameters": run_params,
+        "dynamics": dynamics,
+        "means": {
+            "fitness": sum(d["fitness"] * d["inflow share"] for d in dynamics.values()),
+            "travel time": sum(
+                d["travel time"] * d["inflow share"] for d in dynamics.values()
+            ),
+        },
+    }
+
+    with open(os.path.join(out_dir, f"run_data.json"), "w") as f:
+        JSONEncoder().dump(run_data, f)
+
+    plot_dynamics(out_dir, run_data)
 
     visualization_path = os.path.join(out_dir, f"flow.vis.json")
     to_visualization_json(
