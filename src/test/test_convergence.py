@@ -2,7 +2,7 @@ import json
 import os
 import pickle
 
-from core.convergence import AlphaFlowIterator
+from core.iterator import AlphaFlowIterator
 from core.predictors.predictor_type import PredictorType
 from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
 from scenarios.nguyen_scenario import build_nguyen_network
