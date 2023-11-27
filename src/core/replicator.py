@@ -4,9 +4,9 @@ from typing import Dict, Generator, List, Optional, Tuple
 import numpy as np
 
 from core.active_paths import Path, compute_path_travel_time
-from core.convergence import approximate_linear, integrate_with_weights
 from core.dynamic_flow import DynamicFlow
 from core.graph import Edge, Node
+from core.iterator import approximate_linear, integrate_with_weights
 from core.machine_precision import eps
 from core.network import Network
 from core.path_flow_builder import PathFlowBuilder
