@@ -41,7 +41,7 @@ If path $P$ has only one edge, then $ \hat{T}_P(\cdot) \equiv T_P(\cdot) $.
 
 \subsection*{Considered Instance}
 
-Consider simple network with two parallel edges on Figure \ref{fig:instance} and inflow $u(\theta) = 5$. Let upper edge have index $0$ and lower $1$.
+Consider simple network with two parallel edges on Figure \ref{fig:instance}. Let upper edge have index $0$ and lower $1$. We consider inflow $u(\theta) \leq 5 =  \nu_0 + \nu_1 $ with  two options:  $u(\theta) = 5$(max demand) and $u(\theta) = 4.5 > \nu_0$ (medium demand).
 
 \begin{figure}
 	\begin{center}
@@ -69,20 +69,21 @@ $$ h^*_0(\theta) = \begin{cases} 1, & 0 \leq \theta < \frac{2}{3} \\ \frac{2}{5}
 
 \subsection*{Numerical Approximation}
 
-Figures \ref{fig:fluctuations_avg}, \ref{fig:fluctuations_last} and \ref{fig:fluctuations_pred} show numerically computed inflow shares and fitness of replicator flow with initial condition $h_0(0) = h_1(0) = \frac{1}{2}$. The following approximation was used:
+ show numerically computed inflow shares and fitness of replicator flow with initial condition $h_0(0) = h_1(0) = \frac{1}{2}$. The following approximation was used:
 
 $$ h_P(\theta + \Delta\theta) \approx \frac{ h_P(\theta) \cdot e^{ R \cdot a_P \cdot \Delta \theta }} { \sum_{P'}  h_{P'}(\theta) \cdot e^{ R \cdot a_{P'} \cdot \Delta\theta } } .$$
 
 By construction of the initial dynamic $\sum_{P'}  h_{P'}(\theta) \cdot e^{ R \cdot a_{P'} \cdot \Delta\theta } = 1 + o(\Delta \theta)$. Normalisation is required to remain on simplex.
 
+\newpage
 
-\subsection*{Stabilizing Dynamics}
+\subsection*{Stabilizing Dynamics (max demand)}
 
 \subsubsection*{Logit Regularization}
 
 One can use modify the fitness using logit regularizer:
 $$ \phi^{\text{reg}}_P(\theta, h) = \phi_P(\theta, h) - \lambda e^{-\gamma \cdot \theta} \ln{ h_P(\theta) }, $$
-where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay.
+where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay. Figure \ref{fig:reg_pred_tt} shows
 
 \begin{figure}
 	\includegraphics[width=0.9\textwidth]{img/reg_pred_tt.eps}
@@ -93,7 +94,8 @@ where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay.
 
 \subsubsection*{Projected Travel Times}
 
-If we use use projected queue values $\hat{q}^{\delta}_e(\theta') = q_e(\theta) + \frac{q_e(\theta) - q_e(\theta - \delta)}{\delta} \cdot (\theta' - \theta)$ to estimate upcoming travel times, we can use fitness $ \phi^{\text{proj t.t.}}(\theta, h) = - \hat{t}^{\delta} ( \theta + w) $ for different values of projection window $w$. See Figure \ref{fig:fluctuations_proj}.	
+If we use projected queue values $\hat{q}^{\delta}_e(\theta') = q_e(\theta) + \frac{q_e(\theta) - q_e(\theta - \delta)}{\delta} \cdot (\theta' - \theta)$ to estimate upcoming travel times, we can use fitness $$ \phi^{\text{proj t.t.}}(\theta, h) = - \hat{t}^{\delta} ( \theta + w) \approx -(t_P(\theta) + \frac{\partial t_P}{\partial \theta}(\theta) \cdot w ). $$  
+Projection window $w$ is a paramater. See Figure \ref{fig:fluctuations_proj}. Figures \ref{fig:amplitudes_proj} and \ref{fig:final_tt_proj} show inflow amplitude decays and final travel times for different projection windows.
 
 \begin{figure}
 	\includegraphics[width=0.9\textwidth]{img/replicator_proj_tt.eps}
@@ -123,8 +125,66 @@ If we use use projected queue values $\hat{q}^{\delta}_e(\theta') = q_e(\theta) 
 
 \end{figure}
 
+\newpage
+\subsection*{Stabilizing Dynamics (medium demand)}
 
+\subsubsection*{Projected Travel Times}
+
+Figure \ref{fig:replicator_medium_demand} shows dynamics for the faster edge 0 with different projection windows. 
+Both fitnesses eventually stabilize to values $\phi = -\tau_1$ (negative cost of slower edge).
+It also appears that the queue doesn't form on edge 1, so it has constant fitness $\phi_1(\theta) \equiv - \tau_1 $.
+
+\begin{figure}
+	\includegraphics[width=0.9\textwidth]{img/replicator_medium_demand.eps}
+	\caption{ Medium demand }
+	\label{fig:replicator_medium_demand}
+
+\end{figure}
+
+Now assume that edge 0 operates on full capacity and  edge 1 always operates below capacity, i.e.
+
+$$q_0(\theta) = \int_0^\theta (U\cdot h_0(z) - \nu_0) dz, \quad
+ q_1(\theta) \equiv 0 .$$
+
+This  allows to write the replication equation
+$$ \dot{h}_0 = R \cdot h_0 \cdot (\phi_0 - h_0\phi_0 - (1-h_0)\phi_1) = -R \cdot h_0 \cdot ( 1- h_0 ) \cdot \left( \tau_0 + \frac{1}{\nu_0} (q_0 + w \cdot \frac{\partial q_0}{\partial \theta}) - \tau_1 \right) $$
+in the form
+$$ \ddot{\Phi} = - R \cdot (\Phi + w \dot{\Phi}) \cdot  h^* (1+ \dot{\Phi}) \cdot (1 -  h^* (1+ \dot{\Phi})),$$
+ where the following notation is used: 
+ $$h^* := \frac{\nu_0}{U}, \quad \Phi(\theta) := t_0(\theta) - t_1(\theta) = \int_0^{\theta} \frac{h_0(z) - h^*}{h^*} dz + \tau_0  - \tau_1 .$$
+  We have $ h_0(\theta) = h^* (1 + \dot{\Phi}(\theta))$ and the assumptions can be written as 
+ $$\Phi(\theta) - \Phi(0) \geq 0; \quad \dot{\Phi}(\theta) \geq \frac{U - \nu_1 - \nu_0}{\nu_0} .$$
+
+If we further assume that $\dot{\Phi}$ is small (i.e. $h_0$ is close to $h^*$), we can make a simplification and analyze the linear equation
+$$ \ddot{F} = - R \cdot(F + w \dot{F}) \cdot  h^*(1-h^*) \quad \Leftrightarrow \quad \ddot{F} + kw\dot{F} + kF = 0 , \quad k = Rh^*(1-h^*).$$
+
+This yields a theoretical estimate of decay rate:
+$$ w \leq \frac{2}{\sqrt{k}}: \quad h_0 - h^* \propto e^{-\frac{kw}{2} \theta}$$ 
+$$w > \frac{2}{\sqrt{k}}: \quad h_0 - h^* \propto e^{-\frac{kw - \sqrt{(kw)^2 - 4k}}{2}\theta}$$
+
+Figure \ref{fig:amplitudes_decay} shows that the estimate is good in case $w > \frac{2}{\sqrt{k}}$.
+
+\begin{figure}
+	\includegraphics[scale=0.5]{img/amplitudes_decay.eps}
+	\caption{Amplitudes decay }
+	\label{fig:amplitudes_decay}
+
+\end{figure}	
+
+Figure \ref{fig:de_comparison} shows the difference between theoretical and observed dynamics. Used parameters: $ U = 4.5; \Delta\theta = 0.01;  h_0(0) = 0.5;  R = 0.1; w = 1.0 $
+
+\begin{figure}
+	\includegraphics[scale=0.75]{img/de_comparison.eps}
+	\caption{Solution of DEs compared to the experiment; gray dashed lines show illustrate fulfillment of assumptions }
+	\label{fig:de_comparison}
+
+\end{figure}	
+
+
+\newpage
 \subsection*{Unstable dynamics}
+
+Figures \ref{fig:fluctuations_avg}, \ref{fig:fluctuations_last} and \ref{fig:fluctuations_pred} show how using bad fitness leads to divergence.
 
 \begin{center}
 	\begin{figure}
@@ -163,7 +223,6 @@ In cases of average travel time and last travel, influence of inflows on fitness
 
 Sufficient condition for stability for non-aggregated travel times: queues have to not change for the period of delay. This guarantees that fitnesses don't change once equality is reached.
 \\
-%So, stability condition can be maintained only if it was already present on the moment of last influence, and hence should have been fulfilled from the very start. 
 
 Even when we use undelayed travel times, inflows tend to get in antiphase with fitnesses.
 In this example, we need inflows to equalize with edge capacities at the moment when both path have same costs.
