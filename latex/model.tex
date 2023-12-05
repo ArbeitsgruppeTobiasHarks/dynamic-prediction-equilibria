@@ -41,7 +41,7 @@ If path $P$ has only one edge, then $ \hat{T}_P(\cdot) \equiv T_P(\cdot) $.
 
 \subsection*{Considered Instance}
 
-Consider simple network with two parallel edges on Figure \ref{fig:instance}. Let upper edge have index $0$ and lower $1$. We consider inflow $u(\theta) \leq 5 =  \nu_0 + \nu_1 $ with  two options:  $u(\theta) = 5$(max demand) and $u(\theta) = 4.5 > \nu_0$ (medium demand).
+Consider simple network with two parallel edges on Figure \ref{fig:instance}. Let upper edge have index $0$ and lower $1$. We consider inflow $u(\theta) \equiv U$.
 
 \begin{figure}
 	\begin{center}
@@ -94,8 +94,52 @@ where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay.
 
 \subsubsection*{Projected Travel Times}
 
-If we use projected queue values $\hat{q}^{\delta}_e(\theta') = q_e(\theta) + \frac{q_e(\theta) - q_e(\theta - \delta)}{\delta} \cdot (\theta' - \theta)$ to estimate upcoming travel times, we can use fitness $$ \phi^{\text{proj t.t.}}(\theta, h) = - \hat{t}^{\delta} ( \theta + w) \approx -(t_P(\theta) + \frac{\partial t_P}{\partial \theta}(\theta) \cdot w ). $$  
-Projection window $w$ is a paramater. See Figure \ref{fig:fluctuations_proj}. Figures \ref{fig:amplitudes_proj} and \ref{fig:final_tt_proj} show inflow amplitude decays and final travel times for different projection windows.
+If we use projected queue values $\hat{q}^{\delta}_e(\theta') = q_e(\theta) + \frac{q_e(\theta) - q_e(\theta - \delta)}{\delta} \cdot (\theta' - \theta)$ to estimate upcoming travel times, we can use fitness $$ \phi^{\text{proj t.t.}}(\theta, h) = -(t_P(\theta) + w \cdot \frac{\partial t_P}{\partial \theta}(\theta)) \approx - ( \tau_P + \frac{1}{\nu_P} \hat{q}^{\delta}_e(\theta + w) ). $$  Projection window $w$ is a paramater. 
+
+\subsubsection*{Analysis}
+
+We denote $\Phi(\theta) := t_0(\theta) - t_1(\theta)$, 
+
+ $$ , \quad \dot{\Phi} = \left(\frac{U h_0}{\nu_0} - 1 \right) \mathbb{I}_{[q_0 > 0]} - \left(\frac{U (1 - h_0)}{\nu_1} - 1 \right)\mathbb{I}_{[q_1 > 0]} . $$
+ 
+ $$ \phi_0(\theta) - \phi_1(\theta) = \Phi(\theta) + w \cdot \dot{\Phi} (\theta)$$
+ 
+ \begin{itemize}
+ 
+	\item $ q_0 > 0, q_1 > 0 $
+		
+	$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \to \frac{\nu_0}{\nu_0 + \nu_1 },\quad 1 - h_0 = \frac{\frac{U}{\nu_0} - \dot{\Phi}}{{\frac{U}{\nu_0} + \frac{U}{\nu_1}}} . $$
+
+$$ \frac{\ddot{\Phi}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = -R \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \cdot \frac{\frac{U}{\nu_0} - \dot{\Phi}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \cdot (\Phi + w \dot{\Phi}) $$
+
+$$ \ddot{\Phi} \approx - k (\Phi + w \dot{\Phi}), \quad k = R \frac{U}{\nu_0 + \nu_1} $$
+
+ 
+	
+	\item $ q_0 > 0, q_1 = 0 $ 
+	
+		$$ h_0 = \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0}} ,\quad 1 - h_0 = \frac{\frac{U}{\nu_0} - 1 - \dot{\Phi}}{{\frac{U}{\nu_0} }} . $$
+
+$$ \frac{\ddot{\Phi}}{\frac{U}{\nu_0} } = -R \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0} } \cdot \frac{\frac{U}{\nu_0} - 1 - \dot{\Phi}}{{\frac{U}{\nu_0} }} \cdot (\Phi + w \dot{\Phi}) $$
+
+$$ \ddot{\Phi} \approx - k (\Phi + w \dot{\Phi}), \quad k = R( 1 -\frac{\nu_0}{U}) $$
+
+	\item $ q_0 = 0, q_1 > 0 $ 
+	
+		$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} ,\quad 1 - h_0 = \frac{ 1 - \dot{\Phi}}{{\frac{U}{\nu_1} }} . $$
+
+$$ \frac{\ddot{\Phi}}{\frac{U}{\nu_1} } = -R \frac{\dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} \cdot \frac{ 1 - \dot{\Phi}}{{\frac{U}{\nu_1} }} \cdot (\Phi + w \dot{\Phi}) $$
+
+$$ \ddot{\Phi} \approx - k (\Phi + w \dot{\Phi}), \quad k = R( 1 -\frac{\nu_1}{U}) $$
+
+ 
+ \end{itemize}
+
+\subsubsection*{Max demand}
+
+$U = \nu_0 + \nu_1$
+
+See Figure \ref{fig:fluctuations_proj}. Figures \ref{fig:amplitudes_proj} and \ref{fig:final_tt_proj} show inflow amplitude decays and final travel times for different projection windows.
 
 \begin{figure}
 	\includegraphics[width=0.9\textwidth]{img/replicator_proj_tt.eps}
@@ -126,9 +170,9 @@ Projection window $w$ is a paramater. See Figure \ref{fig:fluctuations_proj}. Fi
 \end{figure}
 
 \newpage
-\subsection*{Stabilizing Dynamics (medium demand)}
+\subsubsection*{Medium Demand}
 
-\subsubsection*{Projected Travel Times}
+$ \nu_0 < U < \nu_0 + \nu_1$
 
 Figure \ref{fig:replicator_medium_demand} shows dynamics for the faster edge 0 with different projection windows. 
 Both fitnesses eventually stabilize to values $\phi = -\tau_1$ (negative cost of slower edge).
@@ -149,14 +193,14 @@ $$q_0(\theta) = \int_0^\theta (U\cdot h_0(z) - \nu_0) dz, \quad
 This  allows to write the replication equation
 $$ \dot{h}_0 = R \cdot h_0 \cdot (\phi_0 - h_0\phi_0 - (1-h_0)\phi_1) = -R \cdot h_0 \cdot ( 1- h_0 ) \cdot \left( \tau_0 + \frac{1}{\nu_0} (q_0 + w \cdot \frac{\partial q_0}{\partial \theta}) - \tau_1 \right) $$
 in the form
-$$ \ddot{\Phi} = - R \cdot (\Phi + w \dot{\Phi}) \cdot  h^* (1+ \dot{\Phi}) \cdot (1 -  h^* (1+ \dot{\Phi})),$$
+$$ \ddot{\Phi} = - R \cdot (\Phi + w \dot{\Phi}) \cdot  (1+ \dot{\Phi}) \cdot (1 -  h^* (1+ \dot{\Phi})),$$
  where the following notation is used: 
  $$h^* := \frac{\nu_0}{U}, \quad \Phi(\theta) := t_0(\theta) - t_1(\theta) = \int_0^{\theta} \frac{h_0(z) - h^*}{h^*} dz + \tau_0  - \tau_1 .$$
   We have $ h_0(\theta) = h^* (1 + \dot{\Phi}(\theta))$ and the assumptions can be written as 
  $$\Phi(\theta) - \Phi(0) \geq 0; \quad \dot{\Phi}(\theta) \geq \frac{U - \nu_1 - \nu_0}{\nu_0} .$$
 
 If we further assume that $\dot{\Phi}$ is small (i.e. $h_0$ is close to $h^*$), we can make a simplification and analyze the linear equation
-$$ \ddot{F} = - R \cdot(F + w \dot{F}) \cdot  h^*(1-h^*) \quad \Leftrightarrow \quad \ddot{F} + kw\dot{F} + kF = 0 , \quad k = Rh^*(1-h^*).$$
+$$ \ddot{F} = - R \cdot(F + w \dot{F}) \cdot (1-h^*) \quad \Leftrightarrow \quad \ddot{F} + kw\dot{F} + kF = 0 , \quad k = R(1-h^*).$$
 
 This yields a theoretical estimate of decay rate:
 $$ w \leq \frac{2}{\sqrt{k}}: \quad h_0 - h^* \propto e^{-\frac{kw}{2} \theta}$$ 
