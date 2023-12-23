@@ -3,6 +3,8 @@
 \usepackage{amsmath}
 \usepackage{tikz}
 
+\newtheorem{theorem}{Theorem}
+
 
 \begin{document}
 
@@ -64,7 +66,7 @@ Consider simple network with two parallel edges on Figure \ref{fig:instance}. Le
 \end{figure}
 
 The equilibrium flow is achieved as follows: all the inflow is redirected to the shorter edge, until both edges achieve equal costs, then the distribution is proportional to the capacities.
-$$ h^*_0(\theta) = \begin{cases} 1, & 0 \leq \theta < \frac{2}{3} \\ \frac{2}{5}, &\theta \geq \frac{2}{3} \end{cases}, \quad h^*_1(\theta) = 1 - h^*_0(\theta) .$$
+$$ h^*_0(\theta) = \begin{cases} 1, & 0 \leq \theta < (\tau_1 - \tau_0) \frac{\nu_0}{U - \nu_0} \\  \frac{\nu_0}{U}, &\theta \geq (\tau_1 - \tau_0) \frac{\nu_0}{U - \nu_0} \end{cases}, \quad h^*_1(\theta) = 1 - h^*_0(\theta) .$$
 
 
 \subsection*{Numerical Approximation}
@@ -83,7 +85,7 @@ By construction of the initial dynamic $\sum_{P'}  h_{P'}(\theta) \cdot e^{ R \c
 
 One can use modify the fitness using logit regularizer:
 $$ \phi^{\text{reg}}_P(\theta, h) = \phi_P(\theta, h) - \lambda e^{-\gamma \cdot \theta} \ln{ h_P(\theta) }, $$
-where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay. Figure \ref{fig:reg_pred_tt} shows
+where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay. Figure \ref{fig:reg_pred_tt} shows amplitude drops for different 
 
 \begin{figure}
 	\includegraphics[width=0.9\textwidth]{img/reg_pred_tt.eps}
@@ -97,18 +99,21 @@ where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay.
 If we use projected queue values $\hat{q}^{\delta}_e(\theta') = q_e(\theta) + \frac{q_e(\theta) - q_e(\theta - \delta)}{\delta} \cdot (\theta' - \theta)$ to estimate upcoming travel times, we can use fitness $$ \phi^{\text{proj t.t.}}(\theta, h) = -(t_P(\theta) + w \cdot \frac{\partial t_P}{\partial \theta}(\theta)) \approx - ( \tau_P + \frac{1}{\nu_P} \hat{q}^{\delta}_e(\theta + w) ). $$  Projection window $w$ is a paramater. 
 
 \subsubsection*{Analysis}
+Denote  $\Phi(\theta) := t_0(\theta) - t_1(\theta)$,  $\mathbb{I}_{q_e}(\theta) := \begin{cases} 1, q_e(\theta) > 0 \text{ or } f_e^+(\theta) \geq \nu_e \\ 0, \text{ otherwise}\end{cases}$.
+\\
+Queue $q_e$ "activates" at the moment $ \theta_{q_e} $ s.t. $f_e^+( \theta_{q_e}) = \nu_e $ and deactivates at the moment $\theta'_{q_e}$ s.t. $\int_{\theta_{q_e}}^{ \theta'_{q_e}} (f_e^+(z) - \nu_e)  dz  = 0$.
+\\
+We can write the derivative of $\Phi$ as
 
-We denote $\Phi(\theta) := t_0(\theta) - t_1(\theta)$, 
-
- $$ , \quad \dot{\Phi} = \left(\frac{U h_0}{\nu_0} - 1 \right) \mathbb{I}_{[q_0 > 0]} - \left(\frac{U (1 - h_0)}{\nu_1} - 1 \right)\mathbb{I}_{[q_1 > 0]} . $$
+ $$ \quad \dot{\Phi} = \left(\frac{U h_0}{\nu_0} - 1 \right) \mathbb{I}_{q_0} - \left(\frac{U (1 - h_0)}{\nu_1} - 1 \right)\mathbb{I}_{q_1} $$
+and substitute in replication DE with projected travel times as fitnesses:
+ $$ \dot{h_0} = Rh(\phi_0 - h_0\phi_0 -(1-h_0)\phi_1) = Rh_0(1-h_0)(\phi_0 - \phi_1) = -Rh_0(1-h_0)(\Phi + w \dot{\Phi} ) $$
+There are 4 different cases:
+ \begin{enumerate}
  
- $$ \phi_0(\theta) - \phi_1(\theta) = \Phi(\theta) + w \cdot \dot{\Phi} (\theta)$$
- 
- \begin{itemize}
- 
-	\item $ q_0 > 0, q_1 > 0 $
+	\item $  \mathbb{I}_{q_0} = 1,  \mathbb{I}_{q_1} = 1 $
 		
-	$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \to \frac{\nu_0}{\nu_0 + \nu_1 },\quad 1 - h_0 = \frac{\frac{U}{\nu_0} - \dot{\Phi}}{{\frac{U}{\nu_0} + \frac{U}{\nu_1}}} . $$
+	$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \stackrel{\dot \Phi \to 0}{\to} \frac{\nu_0}{\nu_0 + \nu_1 },\quad 1 - h_0 = \frac{\frac{U}{\nu_0} - \dot{\Phi}}{{\frac{U}{\nu_0} + \frac{U}{\nu_1}}} . $$
 
 $$ \frac{\ddot{\Phi}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = -R \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \cdot \frac{\frac{U}{\nu_0} - \dot{\Phi}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \cdot (\Phi + w \dot{\Phi}) $$
 
@@ -116,34 +121,131 @@ $$ \ddot{\Phi} \approx - k (\Phi + w \dot{\Phi}), \quad k = R \frac{U}{\nu_0 + \
 
  
 	
-	\item $ q_0 > 0, q_1 = 0 $ 
+	\item  $  \mathbb{I}_{q_0} = 1,  \mathbb{I}_{q_1} = 0 $
 	
-		$$ h_0 = \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0}} ,\quad 1 - h_0 = \frac{\frac{U}{\nu_0} - 1 - \dot{\Phi}}{{\frac{U}{\nu_0} }} . $$
+		$$ h_0 = \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0}} \stackrel{\dot \Phi \to 0}{\to} \frac{\nu_0}{U},\quad 1 - h_0 = \frac{\frac{U}{\nu_0} - 1 - \dot{\Phi}}{{\frac{U}{\nu_0} }} . $$
 
 $$ \frac{\ddot{\Phi}}{\frac{U}{\nu_0} } = -R \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0} } \cdot \frac{\frac{U}{\nu_0} - 1 - \dot{\Phi}}{{\frac{U}{\nu_0} }} \cdot (\Phi + w \dot{\Phi}) $$
 
 $$ \ddot{\Phi} \approx - k (\Phi + w \dot{\Phi}), \quad k = R( 1 -\frac{\nu_0}{U}) $$
 
-	\item $ q_0 = 0, q_1 > 0 $ 
+	\item  $  \mathbb{I}_{q_0} = 0,  \mathbb{I}_{q_1} = 1 $
 	
-		$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} ,\quad 1 - h_0 = \frac{ 1 - \dot{\Phi}}{{\frac{U}{\nu_1} }} . $$
+		$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} \stackrel{\dot \Phi \to 0}{\to} \frac{U - \nu_1}{U} ,\quad 1 - h_0 = \frac{ 1 - \dot{\Phi}}{{\frac{U}{\nu_1} }} . $$
 
 $$ \frac{\ddot{\Phi}}{\frac{U}{\nu_1} } = -R \frac{\dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} \cdot \frac{ 1 - \dot{\Phi}}{{\frac{U}{\nu_1} }} \cdot (\Phi + w \dot{\Phi}) $$
 
 $$ \ddot{\Phi} \approx - k (\Phi + w \dot{\Phi}), \quad k = R( 1 -\frac{\nu_1}{U}) $$
 
+	\item  $  \mathbb{I}_{q_0} = 0,  \mathbb{I}_{q_1} = 0 $ 
+	
+	$$ \frac{d}{d\theta} \ln \frac{h_0}{1-h_0} = \frac{\dot{h_0}}{h_0 (1-h_0)} = R(\tau_1 - \tau_0)$$
+	
+	$$ h_0(\theta) = \sigma \left( \ln \frac{h_0(\theta_0)}{1 - h_0(\theta_0)} + R(\tau_1 - \tau_0)(\theta - \theta_0) \right) \stackrel{\theta \to  \infty}{\to} 1, \quad \sigma(x) = \frac{1}{1 + e^{-x}}$$
  
- \end{itemize}
+ \end{enumerate}
 
-\subsubsection*{Max demand}
+For equation $\ddot{\Phi} + k (\Phi + w \dot{\Phi}) = 0$ we can estimate the solution decay rate:
+$$ w \leq \frac{2}{\sqrt{k}}: \quad t_0 - t_1, h_0 - h^* \propto e^{-\frac{kw}{2} \theta}$$ 
+$$w > \frac{2}{\sqrt{k}}: \quad t_0 - t_1, h_0 - h^* \propto e^{-\frac{kw - \sqrt{(kw)^2 - 4k}}{2}\theta}$$
 
-$U = \nu_0 + \nu_1$
+\subsection*{Case switching}
 
+We have invariants $\Phi$, and $h_0$. Below we study the derivative switch $ \dot{\Phi} \to \dot{\Phi'} $. 
+
+\begin{itemize}
+
+	\item $1 \to 2$. Necessary condition: $h_0 > 1 - \frac{\nu_1}{U}$.
+$$ \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = \frac{\dot{\Phi'} + 1}{\frac{U}{\nu_0}}$$		
+$$ \dot{\Phi'} = \frac{\dot{\Phi} - \frac{ \nu_0 + \nu_1 - U }{\nu_1} }{\frac{\nu_0 + \nu_1}{\nu_1}} $$
+We are either close to equilibrium, or decrease $|\dot{\Phi}|$:
+$$ - \frac{\nu_0 + \nu_1 - U}{\nu_0} < \dot{\Phi} < \frac{\nu_0 + \nu_1 - U}{\nu_0 + 2\nu_1} \quad \Rightarrow \quad  | \dot{\Phi'}| < \frac{\nu_0 + \nu_1 - U}{\nu_0} $$
+$$ \dot{\Phi} \geq \frac{\nu_0 + \nu_1 - U}{\nu_0 + 2\nu_1}  \quad \Rightarrow \quad |\dot{\Phi'}| \leq |\dot{\Phi}| $$
+
+	\item $1 \to 3$. Necessary condition: $h_0 < \frac{\nu_0}{U}$.
+$$  \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = \frac{\dot{\Phi'} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} $$
+$$ \dot{\Phi'} = \frac{ \dot{\Phi} + \frac{\nu_0 + \nu_1 - U}{\nu_0} }{ \frac{\nu_0 + \nu_1}{\nu_0} } $$
+ $|\dot{\Phi}|$ decreases:
+$$ \dot{\Phi} > \frac{\nu_0 + \nu_1 - U}{\nu_1} \quad \Rightarrow \quad |\dot{\Phi'}| < | \dot{\Phi} | $$
+
+	\item $2 \to 1$. Necessary condition: $h_0 = 1 - \frac{\nu_1}{U}$.
+$$     \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0}} = \frac{\dot{\Phi'} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = 1 - \frac{\nu_1}{U} $$
+ $$ \dot{\Phi}= \dot{\Phi'} = - \frac{\nu_0 + \nu_1 - U}{\nu_0}$$
+
+	\item $3 \to 1$. Necessary condition: $h_0 = \frac{\nu_0}{U}$.
+$$ \frac{ \dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} = \frac{\dot{\Phi'} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = \frac{\nu_0}{U} $$
+$$ \dot{\Phi}= \dot{\Phi'} = \frac{\nu_0 + \nu_1 - U}{\nu_1}$$
+
+
+	\item $ 2/3 \to 4 \to 2$. Necessary condition: $h_0 = \frac{\nu_0}{U}$.
+	\\
+	Since there are no queues during case 4, we have $\Phi = \Phi' = \tau_0 -\tau_1$. Also, $\dot{\Phi'} = 0$, so we come closer to the equillibrium
+
+	
+
+\end{itemize}
+
+\subsubsection*{Lyapunov Theory}
+Our differential equation has form $ \ddot{\Phi} = f(\Phi, \dot{\Phi})$, where $f$ is a polynomial. We view it as autnomous system with Lipshitz RHS
+$$  \frac{d}{d\theta} \begin{bmatrix} \Phi \\ \dot{\Phi} \end{bmatrix} = \begin{bmatrix} \dot{\Phi} \\ f(\Phi, \dot{\Phi}) \end{bmatrix} $$
+In this case Lyapunov Theory is applicable
+\begin{theorem}(Global asymptotic stability) 
+Let $V: \mathbb{R}^2 \to \mathbb{R}$ be a continuously differentiable function, s.t. :
+$$V(0,0) = 0 \text{ and } \forall (\Phi, \dot{\Phi}) \neq (0, 0): ~V(\Phi, \dot{\Phi}) > 0  , $$
+$$ \sqrt{\Phi^2 + \dot{\Phi}^2 } \to \infty \quad \Rightarrow \quad V(\Phi, \dot{\Phi}) \to \infty, $$
+$$ \forall (\Phi, \dot{\Phi}) \neq (0, 0):  ~\dot{V}(\Phi, \dot{\Phi}) = \frac{\partial V}{\partial \Phi} \dot{\Phi} + \frac{\partial V}{\partial \dot{\Phi}} f(\Phi, \dot{\Phi}) < 0 $$
+Then $(\Phi, \dot{\Phi}) = (0, 0)$ is globally asymptotically stable.
+\end{theorem}
+
+\begin{theorem}(Local asymptotic stability)
+Let $A = \begin{bmatrix} 0 & 1 \\ \frac{\partial f}{\partial \Phi}(0,0) & \frac{\partial f}{\partial \dot{\Phi}}(0,0) \end{bmatrix}$. If we have $\mathrm{Re} (\lambda_i(A)) < 0$ for both eigenvalues, then $(\Phi, \dot{\Phi}) = (0, 0)$ is locally asymptotically stable.
+
+\end{theorem}
+
+\subsubsection*{Local stability}
+Linearized equation $\ddot{\Phi} = \frac{\partial f}{\partial \Phi}(0,0) \cdot \Phi + \frac{\partial f}{\partial \dot{\Phi}}(0,0) \cdot \dot{\Phi} = -k\Phi - kw\dot{\Phi}$.
+
+$$ \mathrm{det} \left( \begin{bmatrix} -\lambda & 1 \\ -k & -kw - \lambda \end{bmatrix} \right) = \lambda^2 + kw \lambda + k; \quad D = k^2w^2 - 4k. $$
+Since $k, w > 0$, both eiganvalues have negative real parts for any $D$.
+\\
+Hence, we always have local asymptotic stability.
+
+\subsubsection*{Sufficient conditions for global stability}
+In case $i \in \{ 1, 2, 3 \}$ we can write the equation as
+$$ \ddot{\Phi} = - C_i h_0(1-h_0)(\Phi + w \dot{\Phi}).$$ 
+Denote 
+$$ C := \min_{i \in \{ 1, 2, 3 \}} C_i = \min \left\{ R \left( \frac{U}{\nu_0} + \frac{U}{\nu_1} \right) , R \frac{U}{\nu_0} , R \frac{U}{\nu_1} \right\} = \frac{R U}{\max \{ \nu_0, \nu_1 \}}.$$
+Further, assume that
+ $$ \forall \theta \geq 0: \quad h_0(\theta) \in [a, b] \text{ with } a > 0, b < 1$$
+  and denote  $m := \min_{x \in [a,b]} x(1-x) > 0 $.
+\\
+Consider $V(\Phi, \dot{\Phi}) = \Phi^2 + (\Phi + w \dot{\Phi}) ^2 >0 $.
+$$ \dot{V} = \frac{\partial V}{\partial \Phi} \dot{\Phi} + \frac{\partial V}{\partial \dot{\Phi}} \cdot \left( -C_i  h_0(1-h_0)(\Phi + w \dot{\Phi}) \right)  = $$
+$$ = \left( 4\Phi\dot{\Phi} + 2w\dot{\Phi}^2 \right) - 2w C_i h_0(1-h_0)(\Phi + w \dot{\Phi})^2 \leq \left(  4\Phi\dot{\Phi} + 2w\dot{\Phi}^2 \right) - 2wCm (\Phi + w \dot{\Phi})^2 = $$
+$$ = 2w \left( \frac{1}{w^2} - Cm \right)  (\Phi + w \dot{\Phi})^2 - \frac{2}{w} \Phi^2  .$$
+\\
+We can guarantee $\dot{V} < 0$ if $w \geq \frac{1}{\sqrt{Cm}}$.
+\\
+For $R = 0.1, U = 4.5, [a,b] = [0.01, 0.99]$ we need $w \geq \frac{1}{\sqrt{ \frac{0.1 \cdot 4.5}{3} \cdot 0.01 \cdot .99}} \approx 25.95 $.
+\\
+Suppose we have $V = \Phi^2 + (\Phi + w\dot{\Phi})^2 \leq B^2$. Then it follows that $ |\Phi| \leq B $, $ | \dot{\Phi} | \leq \frac{\sqrt{2}B}{w} $. I
+\\
+If we can reach $V = B^2$ s.t. $\frac{\sqrt{2}B}{w} = \frac{\nu_0 + \nu_1 - U}{\nu_0} $ with case switching phase, it guarantees that  we stop case switching and converge to zero.
+
+\newpage
+
+\subsubsection*{Max demand ($U = \nu_0 + \nu_1$)}
+
+
+Case 4 not possible; Case 1-3 all converge to $h^* := \frac{\nu_0}{U}$.
+\\
+During the dynamic, queues may form
+\\
 See Figure \ref{fig:fluctuations_proj}. Figures \ref{fig:amplitudes_proj} and \ref{fig:final_tt_proj} show inflow amplitude decays and final travel times for different projection windows.
 
 \begin{figure}
 	\includegraphics[width=0.9\textwidth]{img/replicator_proj_tt.eps}
-	\caption{ $ \phi = -\hat{t}^{2\Delta \theta}(\theta + w), R=0.1, \Delta \theta = 0.01$}
+	\caption{ $ U = 5, R=0.1, \Delta \theta = 0.01$}
 	\label{fig:fluctuations_proj}
 
 \end{figure}
@@ -162,51 +264,62 @@ See Figure \ref{fig:fluctuations_proj}. Figures \ref{fig:amplitudes_proj} and \r
 
 \end{figure}
 
-\begin{figure}
-	\includegraphics[width=0.9\textwidth]{img/replicator_grad_tt.eps}
-	\caption{ Travel time gradient as fitness }
-	\label{fig:replicator_grad_tt}
-
-\end{figure}
+%\begin{figure}
+%	\includegraphics[width=0.9\textwidth]{img/replicator_grad_tt.eps}
+%	\caption{ Travel time gradient as fitness }
+%	\label{fig:replicator_grad_tt}
+%
+%\end{figure}
 
 \newpage
-\subsubsection*{Medium Demand}
+\subsubsection*{Medium Demand ($ \nu_0 < U < \nu_0 + \nu_1$)}
 
-$ \nu_0 < U < \nu_0 + \nu_1$
+Different cases have different equilibria:
+$$ \frac{\nu_0}{U} > \frac{\nu_0}{\nu_0 + \nu_1} > \frac{U - \nu_1}{U}$$
+
+Figure \ref{fig:case_switching} shows how cases switch until amplitude drops enough and we end up in case $q_0 > 0, q_1 = 0$.
 
 Figure \ref{fig:replicator_medium_demand} shows dynamics for the faster edge 0 with different projection windows. 
 Both fitnesses eventually stabilize to values $\phi = -\tau_1$ (negative cost of slower edge).
-It also appears that the queue doesn't form on edge 1, so it has constant fitness $\phi_1(\theta) \equiv - \tau_1 $.
+%It also appears that the queue doesn't form on edge 1, so it has constant fitness $\phi_1(\theta) \equiv - \tau_1 $.
+
+\begin{figure}
+	\includegraphics[width=0.9\textwidth]{img/case_switching.pdf}
+	\caption{ Case switching }
+	\label{fig:case_switching}
+\end{figure}
+
 
 \begin{figure}
 	\includegraphics[width=0.9\textwidth]{img/replicator_medium_demand.eps}
-	\caption{ Medium demand }
+	\caption{ Medium demand. $U = 4.5; \Delta\theta = 0.01; R = 0.1$ }
 	\label{fig:replicator_medium_demand}
 
 \end{figure}
 
 Now assume that edge 0 operates on full capacity and  edge 1 always operates below capacity, i.e.
 
-$$q_0(\theta) = \int_0^\theta (U\cdot h_0(z) - \nu_0) dz, \quad
- q_1(\theta) \equiv 0 .$$
+$$\dot{t_0}(\theta) = \frac{U\cdot h_0(\theta) - \nu_0}{\nu_0}, \quad
+ \dot{t_1}(\theta) \equiv 0 .$$
 
-This  allows to write the replication equation
-$$ \dot{h}_0 = R \cdot h_0 \cdot (\phi_0 - h_0\phi_0 - (1-h_0)\phi_1) = -R \cdot h_0 \cdot ( 1- h_0 ) \cdot \left( \tau_0 + \frac{1}{\nu_0} (q_0 + w \cdot \frac{\partial q_0}{\partial \theta}) - \tau_1 \right) $$
-in the form
-$$ \ddot{\Phi} = - R \cdot (\Phi + w \dot{\Phi}) \cdot  (1+ \dot{\Phi}) \cdot (1 -  h^* (1+ \dot{\Phi})),$$
- where the following notation is used: 
- $$h^* := \frac{\nu_0}{U}, \quad \Phi(\theta) := t_0(\theta) - t_1(\theta) = \int_0^{\theta} \frac{h_0(z) - h^*}{h^*} dz + \tau_0  - \tau_1 .$$
-  We have $ h_0(\theta) = h^* (1 + \dot{\Phi}(\theta))$ and the assumptions can be written as 
- $$\Phi(\theta) - \Phi(0) \geq 0; \quad \dot{\Phi}(\theta) \geq \frac{U - \nu_1 - \nu_0}{\nu_0} .$$
+%This  allows to write the replication equation
+%$$ \dot{h}_0 = R \cdot h_0 \cdot (\phi_0 - h_0\phi_0 - (1-h_0)\phi_1) = -R \cdot h_0 \cdot ( 1- h_0 ) \cdot \left( \tau_0 + \frac{1}{\nu_0} (q_0 + w \cdot \frac{\partial q_0}{\partial \theta}) - \tau_1 \right) $$
+%in the form
+%$$ \ddot{\Phi} = - R \cdot (\Phi + w \dot{\Phi}) \cdot  (1+ \dot{\Phi}) \cdot (1 -  h^* (1+ \dot{\Phi})),$$
+% where the following notation is used: 
+% $$h^* := \frac{\nu_0}{U}, \quad \Phi(\theta) := t_0(\theta) - t_1(\theta) = \int_0^{\theta} \frac{h_0(z) - h^*}{h^*} dz + \tau_0  - \tau_1 .$$
+%  We have $ h_0(\theta) = h^* (1 + \dot{\Phi}(\theta))$ and the assumptions can be written as 
+Sufficient conditions of the solution to fulfill the assumptions:
+ $$\Phi(\theta) - \Phi(0) \geq 0; \quad \dot{\Phi}(\theta) \geq  - \frac{ \nu_0 + \nu_1 - U}{\nu_0} .$$
 
-If we further assume that $\dot{\Phi}$ is small (i.e. $h_0$ is close to $h^*$), we can make a simplification and analyze the linear equation
-$$ \ddot{F} = - R \cdot(F + w \dot{F}) \cdot (1-h^*) \quad \Leftrightarrow \quad \ddot{F} + kw\dot{F} + kF = 0 , \quad k = R(1-h^*).$$
+%If we further assume that $\dot{\Phi}$ is small (i.e. $h_0$ is close to $h^*$), we can make a simplification and analyze the linear equation
+%$$ \ddot{F} = - R \cdot(F + w \dot{F}) \cdot (1-h^*) \quad \Leftrightarrow \quad \ddot{F} + kw\dot{F} + kF = 0 , \quad k = R(1-h^*).$$
+%
+%This yields a theoretical estimate of decay rate:
+%$$ w \leq \frac{2}{\sqrt{k}}: \quad h_0 - h^* \propto e^{-\frac{kw}{2} \theta}$$ 
+%$$w > \frac{2}{\sqrt{k}}: \quad h_0 - h^* \propto e^{-\frac{kw - \sqrt{(kw)^2 - 4k}}{2}\theta}$$
 
-This yields a theoretical estimate of decay rate:
-$$ w \leq \frac{2}{\sqrt{k}}: \quad h_0 - h^* \propto e^{-\frac{kw}{2} \theta}$$ 
-$$w > \frac{2}{\sqrt{k}}: \quad h_0 - h^* \propto e^{-\frac{kw - \sqrt{(kw)^2 - 4k}}{2}\theta}$$
-
-Figure \ref{fig:amplitudes_decay} shows that the estimate is good in case $w > \frac{2}{\sqrt{k}}$.
+Figure \ref{fig:amplitudes_decay} shows that that theoretical decay estimate is good.
 
 \begin{figure}
 	\includegraphics[scale=0.5]{img/amplitudes_decay.eps}
@@ -223,6 +336,38 @@ Figure \ref{fig:de_comparison} shows the difference between theoretical and obse
 	\label{fig:de_comparison}
 
 \end{figure}	
+
+Figures \ref{fig:replicator_inits_w_1} and \ref{fig:replicator_inits_w_opt} show dynamics for edge 0 with parameters $U = 4.5; \Delta\theta = 0.01; R = 0.1$ for different initial share with $ w = 1.0 $ and $w = \frac{2}{\sqrt{k}} = 8.49$
+
+\begin{figure}
+	\includegraphics[scale=0.5]{img/replicator_inits_w_1.eps}
+	\caption{ $ w = 1.0 $ }
+	\label{fig:replicator_inits_w_1}
+
+\end{figure}	
+
+\begin{figure}
+	\includegraphics[scale=0.5]{img/replicator_inits_w_opt.eps}
+	\caption{ $w = \frac{2}{\sqrt{k}} = 8.49$ }
+	\label{fig:replicator_inits_w_opt}
+
+\end{figure}	
+
+%\subsection*{Sufficient conditions for convergence}
+%
+%Suppose we are in case 2 of medium demand setting and assume inflow rate always stays in the neighbourhood of $h^* = \frac{\nu_0}{U}$:
+%$$ |h_0(\theta) - h^* | \leq | \frac{\nu_0}{U} - (1 - \frac{\nu_1}{U}) |= \frac{\nu_0 + \nu_1 - U}{U} .$$
+%This guarantees no cases switching, as $U (1 - h_0(\theta)) \leq \nu_1$.   
+%\\
+%Denote $ m := \min_{\theta} h_0(\theta)(1 - h_0(\theta)) > 0 $
+%\\
+%Consider $V(\Phi, \dot{\Phi}) = \Phi^2 + (\Phi + w \dot{\Phi}) ^2 >0 $.
+%$$ \dot{V} = \frac{\partial V}{\partial \Phi} \dot{\Phi} + \frac{\partial V}{\partial \dot{\Phi}} \cdot \left( -\frac{R}{h^*} h_0(1-h_0)(\Phi + w \dot{\Phi}) \right)  = $$
+%$$ = \left( 4\Phi\dot{\Phi} + 2w\dot{\Phi}^2 \right) - 2w \frac{R}{h^*} h_0(1-h_0)(\Phi + w \dot{\Phi})^2 \leq \left(  4\Phi\dot{\Phi} + 2w\dot{\Phi}^2 \right) - 2w\frac{Rm}{h^*} (\Phi + w \dot{\Phi})^2 = $$
+%$$ = 2w \left( \frac{1}{w^2} - \frac{Rm}{h^*} \right)  (\Phi + w \dot{\Phi})^2 - \frac{2}{w} \Phi^2  .$$
+%\\
+%We can guarantee $\dot{V} < 0$ for $w \geq \sqrt{\frac{h^*}{Rm}}$. With used parameters that is:
+%$$w \geq \sqrt{ \frac{ 2/4.5 }{ 0.1 \cdot 3/4.5 \cdot (1-3/4.5)} } \approx 4.47 .$$
 
 
 \newpage
