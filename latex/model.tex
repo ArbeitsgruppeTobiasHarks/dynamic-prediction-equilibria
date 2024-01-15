@@ -84,7 +84,7 @@ By construction of the initial dynamic $\sum_{P'}  h_{P'}(\theta) \cdot e^{ R \c
 \subsubsection*{Logit Regularization}
 
 One can use modify the fitness using logit regularizer:
-$$ \phi^{\text{reg}}_P(\theta, h) = \phi_P(\theta, h) - \lambda e^{-\gamma \cdot \theta} \ln{ h_P(\theta) }, $$
+	$$ \phi^{\text{reg}}_P(\theta, h) = \phi_P(\theta, h) - \lambda e^{-\gamma \cdot \theta} \ln{ h_P(\theta) }, $$
 where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay. Figure \ref{fig:reg_pred_tt} shows amplitude drops for different 
 
 \begin{figure}
@@ -101,7 +101,7 @@ If we use projected queue values $\hat{q}^{\delta}_e(\theta') = q_e(\theta) + \f
 \subsubsection*{Analysis}
 Denote  $\Phi(\theta) := t_0(\theta) - t_1(\theta)$,  $\mathbb{I}_{q_e}(\theta) := \begin{cases} 1, q_e(\theta) > 0 \text{ or } f_e^+(\theta) \geq \nu_e \\ 0, \text{ otherwise}\end{cases}$.
 \\
-Queue $q_e$ "activates" at the moment $ \theta_{q_e} $ s.t. $f_e^+( \theta_{q_e}) = \nu_e $ and deactivates at the moment $\theta'_{q_e}$ s.t. $\int_{\theta_{q_e}}^{ \theta'_{q_e}} (f_e^+(z) - \nu_e)  dz  = 0$.
+Queue $q_e$ "activates" at the moment $ \theta_{q_e} $ s.t. $f_e^+( \theta_{q_e}) = \nu_e $ and deactivates at first the moment $\theta'_{q_e}$ s.t. $\int_{\theta_{q_e}}^{ \theta'_{q_e}} (f_e^+(z) - \nu_e)  dz  = 0$.
 \\
 We can write the derivative of $\Phi$ as
 
@@ -113,29 +113,29 @@ There are 4 different cases:
  
 	\item $  \mathbb{I}_{q_0} = 1,  \mathbb{I}_{q_1} = 1 $
 		
-	$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \stackrel{\dot \Phi \to 0}{\to} \frac{\nu_0}{\nu_0 + \nu_1 },\quad 1 - h_0 = \frac{\frac{U}{\nu_0} - \dot{\Phi}}{{\frac{U}{\nu_0} + \frac{U}{\nu_1}}} . $$
+	$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \stackrel{\dot \Phi \to 0}{\to} \frac{\nu_0}{\nu_0 + \nu_1 } =: h^{(1)} . $$
 
 $$ \frac{\ddot{\Phi}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = -R \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \cdot \frac{\frac{U}{\nu_0} - \dot{\Phi}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} \cdot (\Phi + w \dot{\Phi}) $$
 
-$$ \ddot{\Phi} \approx - k (\Phi + w \dot{\Phi}), \quad k = R \frac{U}{\nu_0 + \nu_1} $$
+$$ \ddot{\Phi} \approx - k_1 (\Phi + w \dot{\Phi}), \quad k_1 := R \frac{U}{\nu_0 + \nu_1} $$
 
  
 	
 	\item  $  \mathbb{I}_{q_0} = 1,  \mathbb{I}_{q_1} = 0 $
 	
-		$$ h_0 = \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0}} \stackrel{\dot \Phi \to 0}{\to} \frac{\nu_0}{U},\quad 1 - h_0 = \frac{\frac{U}{\nu_0} - 1 - \dot{\Phi}}{{\frac{U}{\nu_0} }} . $$
+		$$ h_0 = \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0}} \stackrel{\dot \Phi \to 0}{\to} \frac{\nu_0}{U}  =: h^{(2)} . $$
 
 $$ \frac{\ddot{\Phi}}{\frac{U}{\nu_0} } = -R \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0} } \cdot \frac{\frac{U}{\nu_0} - 1 - \dot{\Phi}}{{\frac{U}{\nu_0} }} \cdot (\Phi + w \dot{\Phi}) $$
 
-$$ \ddot{\Phi} \approx - k (\Phi + w \dot{\Phi}), \quad k = R( 1 -\frac{\nu_0}{U}) $$
+$$ \ddot{\Phi} \approx - k_2 (\Phi + w \dot{\Phi}), \quad k_2 := R( 1 -\frac{\nu_0}{U}) $$
 
 	\item  $  \mathbb{I}_{q_0} = 0,  \mathbb{I}_{q_1} = 1 $
 	
-		$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} \stackrel{\dot \Phi \to 0}{\to} \frac{U - \nu_1}{U} ,\quad 1 - h_0 = \frac{ 1 - \dot{\Phi}}{{\frac{U}{\nu_1} }} . $$
+		$$ h_0 = \frac{\dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} \stackrel{\dot \Phi \to 0}{\to} \frac{U - \nu_1}{U}  =: h^{(3)} . $$
 
 $$ \frac{\ddot{\Phi}}{\frac{U}{\nu_1} } = -R \frac{\dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} \cdot \frac{ 1 - \dot{\Phi}}{{\frac{U}{\nu_1} }} \cdot (\Phi + w \dot{\Phi}) $$
 
-$$ \ddot{\Phi} \approx - k (\Phi + w \dot{\Phi}), \quad k = R( 1 -\frac{\nu_1}{U}) $$
+$$ \ddot{\Phi} \approx - k_3 (\Phi + w \dot{\Phi}), \quad k_3 := R( 1 -\frac{\nu_1}{U}) $$
 
 	\item  $  \mathbb{I}_{q_0} = 0,  \mathbb{I}_{q_1} = 0 $ 
 	
@@ -155,18 +155,20 @@ We have invariants $\Phi$, and $h_0$. Below we study the derivative switch $ \do
 
 \begin{itemize}
 
-	\item $1 \to 2$. Necessary condition: $h_0 > 1 - \frac{\nu_1}{U}$.
+	\item $1 \to 2$. Necessary conditions: $h_0 > 1 - \frac{\nu_1}{U}$, $\Phi = \Phi' \geq \tau_0 - \tau_1$.
 $$ \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = \frac{\dot{\Phi'} + 1}{\frac{U}{\nu_0}}$$		
 $$ \dot{\Phi'} = \frac{\dot{\Phi} - \frac{ \nu_0 + \nu_1 - U }{\nu_1} }{\frac{\nu_0 + \nu_1}{\nu_1}} $$
 We are either close to equilibrium, or decrease $|\dot{\Phi}|$:
-$$ - \frac{\nu_0 + \nu_1 - U}{\nu_0} < \dot{\Phi} < \frac{\nu_0 + \nu_1 - U}{\nu_0 + 2\nu_1} \quad \Rightarrow \quad  | \dot{\Phi'}| < \frac{\nu_0 + \nu_1 - U}{\nu_0} $$
-$$ \dot{\Phi} \geq \frac{\nu_0 + \nu_1 - U}{\nu_0 + 2\nu_1}  \quad \Rightarrow \quad |\dot{\Phi'}| \leq |\dot{\Phi}| $$
+$$  |\dot{\Phi |} < \frac{\nu_0 + \nu_1 - U}{\nu_0} \quad \Rightarrow \quad  | \dot{\Phi'}| < \frac{\nu_0 + \nu_1 - U}{\nu_0} $$
+$$ \dot{\Phi} \geq \frac{\nu_0 + \nu_1 - U}{\nu_0}  \quad \Rightarrow \quad |\dot{\Phi'}| \leq |\dot{\Phi}| $$
 
-	\item $1 \to 3$. Necessary condition: $h_0 < \frac{\nu_0}{U}$.
+	\item $1 \to 3$. Necessary conditions: $h_0 < \frac{\nu_0}{U}$, $\Phi = \Phi' \leq \tau_0 - \tau_1$.
 $$  \frac{\dot{\Phi} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = \frac{\dot{\Phi'} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} $$
 $$ \dot{\Phi'} = \frac{ \dot{\Phi} + \frac{\nu_0 + \nu_1 - U}{\nu_0} }{ \frac{\nu_0 + \nu_1}{\nu_0} } $$
- $|\dot{\Phi}|$ decreases:
-$$ \dot{\Phi} > \frac{\nu_0 + \nu_1 - U}{\nu_1} \quad \Rightarrow \quad |\dot{\Phi'}| < | \dot{\Phi} | $$
+ We are either close to equilibrium, or decrease $|\dot{\Phi}|$:
+$$ |\dot{\Phi}| < \frac{\nu_0 + \nu_1 - U}{\nu_1} \quad \Rightarrow \quad |\dot{\Phi'}| < \frac{\nu_0 + \nu_1 - U}{\nu_1}$$
+
+$$ \dot{\Phi} < - \frac{\nu_0 + \nu_1 - U}{\nu_1} \quad \Rightarrow \quad |\dot{\Phi'}| < |\dot{\Phi}|$$
 
 	\item $2 \to 1$. Necessary condition: $h_0 = 1 - \frac{\nu_1}{U}$.
 $$     \frac{\dot{\Phi} + 1}{\frac{U}{\nu_0}} = \frac{\dot{\Phi'} + \frac{U}{\nu_1}}{\frac{U}{\nu_0} + \frac{U}{\nu_1}} = 1 - \frac{\nu_1}{U} $$
@@ -177,11 +179,14 @@ $$ \frac{ \dot{\Phi} + \frac{U}{\nu_1} - 1}{\frac{U}{\nu_1}} = \frac{\dot{\Phi'}
 $$ \dot{\Phi}= \dot{\Phi'} = \frac{\nu_0 + \nu_1 - U}{\nu_1}$$
 
 
-	\item $ 2/3 \to 4 \to 2$. Necessary condition: $h_0 = \frac{\nu_0}{U}$.
+	\item $ 2 \to 4 \to 2$. Necessary conditions: $h_0 < \frac{\nu_0}{U}$, $\Phi = \Phi' = \tau_0 -\tau_1 < 0 $ .
 	\\
-	Since there are no queues during case 4, we have $\Phi = \Phi' = \tau_0 -\tau_1$. Also, $\dot{\Phi'} = 0$, so we come closer to the equillibrium
+	$$ \dot{\Phi} < 0 , ~\dot{\Phi'} = 0 \quad \Rightarrow \quad |\Phi' + w\dot{\Phi'}| < |\Phi + w\dot{\Phi}| . $$
 
-	
+\item $ 3 \to 4 \to 2$. Necessary conditions: $ 1 - \frac{\nu_1}{U} < h_0 < \frac{\nu_0}{U}$, $\Phi = \Phi' = \tau_0 -\tau_1 < 0 $ .
+	\\
+	$$ 0 < \dot{\Phi} < \frac{\nu_0 + \nu_1 - U}{\nu_1} , ~\dot{\Phi'} = 0 . $$
+
 
 \end{itemize}
 
@@ -203,41 +208,114 @@ Let $A = \begin{bmatrix} 0 & 1 \\ \frac{\partial f}{\partial \Phi}(0,0) & \frac{
 \end{theorem}
 
 \subsubsection*{Local stability}
-Linearized equation $\ddot{\Phi} = \frac{\partial f}{\partial \Phi}(0,0) \cdot \Phi + \frac{\partial f}{\partial \dot{\Phi}}(0,0) \cdot \dot{\Phi} = -k\Phi - kw\dot{\Phi}$.
-
+We consider the linearized equation 
+$$\ddot{\Phi} = \frac{\partial f}{\partial \Phi}(0,0) \cdot \Phi + \frac{\partial f}{\partial \dot{\Phi}}(0,0) \cdot \dot{\Phi} = -k\Phi - kw\dot{\Phi} .$$
+Searching for eigenvalues yields
 $$ \mathrm{det} \left( \begin{bmatrix} -\lambda & 1 \\ -k & -kw - \lambda \end{bmatrix} \right) = \lambda^2 + kw \lambda + k; \quad D = k^2w^2 - 4k. $$
-Since $k, w > 0$, both eiganvalues have negative real parts for any $D$.
-\\
+ $ D \geq 0: \quad \mathrm{Re}(\lambda_{1,2}) = -\frac{kw}{2} \pm \sqrt{ \left( \frac{kw}{2} \right)^2  -k } < 0,$
+ \\
+ $ D < 0: \quad  \mathrm{Re}(\lambda_{1,2}) = -\frac{kw}{2} < 0.$
+ \\
 Hence, we always have local asymptotic stability.
 
-\subsubsection*{Sufficient conditions for global stability}
+\subsubsection*{Sufficient conditions for global stability (Quadratic potential)}
 In case $i \in \{ 1, 2, 3 \}$ we can write the equation as
-$$ \ddot{\Phi} = - C_i h_0(1-h_0)(\Phi + w \dot{\Phi}).$$ 
+$$ \ddot{\Phi} = - RC_i h_0(1-h_0)(\Phi + w \dot{\Phi}).$$ 
 Denote 
-$$ C := \min_{i \in \{ 1, 2, 3 \}} C_i = \min \left\{ R \left( \frac{U}{\nu_0} + \frac{U}{\nu_1} \right) , R \frac{U}{\nu_0} , R \frac{U}{\nu_1} \right\} = \frac{R U}{\max \{ \nu_0, \nu_1 \}}.$$
+$$ C := \min_{i \in \{ 1, 2, 3 \}} C_i = \min \left\{  \frac{U}{\nu_0} + \frac{U}{\nu_1} , \frac{U}{\nu_0} , \frac{U}{\nu_1} \right\} = \frac{ U}{\max \{ \nu_0, \nu_1 \}}.$$
+%We can bound $ \frac{U}{\nu_0} + \frac{U}{\nu_1} \leq 2\frac{\nu_0 + \nu_1}{\min\{ \nu_0, \nu_1 \}}$
 Further, assume that
  $$ \forall \theta \geq 0: \quad h_0(\theta) \in [a, b] \text{ with } a > 0, b < 1$$
   and denote  $m := \min_{x \in [a,b]} x(1-x) > 0 $.
 \\
-Consider $V(\Phi, \dot{\Phi}) = \Phi^2 + (\Phi + w \dot{\Phi}) ^2 >0 $.
-$$ \dot{V} = \frac{\partial V}{\partial \Phi} \dot{\Phi} + \frac{\partial V}{\partial \dot{\Phi}} \cdot \left( -C_i  h_0(1-h_0)(\Phi + w \dot{\Phi}) \right)  = $$
-$$ = \left( 4\Phi\dot{\Phi} + 2w\dot{\Phi}^2 \right) - 2w C_i h_0(1-h_0)(\Phi + w \dot{\Phi})^2 \leq \left(  4\Phi\dot{\Phi} + 2w\dot{\Phi}^2 \right) - 2wCm (\Phi + w \dot{\Phi})^2 = $$
-$$ = 2w \left( \frac{1}{w^2} - Cm \right)  (\Phi + w \dot{\Phi})^2 - \frac{2}{w} \Phi^2  .$$
+Consider Lyapunov function $V(\Phi, \dot{\Phi}) = \Phi^2 + (\Phi + w \dot{\Phi}) ^2 >0 $.
+$$ \dot{V} = \frac{\partial V}{\partial \Phi} \dot{\Phi} + \frac{\partial V}{\partial \dot{\Phi}} \cdot \left( -RC_i  h_0(1-h_0)(\Phi + w \dot{\Phi}) \right)  = $$
+$$ = \left( 4\Phi + 2w\dot{\Phi} \right)\dot{\Phi}  - 2w R C_i h_0(1-h_0)(\Phi + w \dot{\Phi})^2 \leq $$
+$$ \leq  4\Phi\dot{\Phi} + 2w\dot{\Phi}^2 - 2wRCm (\Phi + w \dot{\Phi})^2 = $$
+$$ = 2w \left( \frac{1}{w^2} - RCm \right)  (\Phi + w \dot{\Phi})^2 - \frac{2}{w} \Phi^2  .$$
 \\
-We can guarantee $\dot{V} < 0$ if $w \geq \frac{1}{\sqrt{Cm}}$.
+We can guarantee $\dot{V} < 0$ if $w \geq \frac{1}{\sqrt{RCm}}$.
 \\
-For $R = 0.1, U = 4.5, [a,b] = [0.01, 0.99]$ we need $w \geq \frac{1}{\sqrt{ \frac{0.1 \cdot 4.5}{3} \cdot 0.01 \cdot .99}} \approx 25.95 $.
+For $R = 0.1, U = 4.5, [a,b] = [0.01, 0.99]$ we need $w \geq \frac{1}{\sqrt{ 0.1 \cdot \frac{ 4.5}{3} \cdot 0.01 \cdot .99}} \approx 25.95 $.
 \\
-Suppose we have $V = \Phi^2 + (\Phi + w\dot{\Phi})^2 \leq B^2$. Then it follows that $ |\Phi| \leq B $, $ | \dot{\Phi} | \leq \frac{\sqrt{2}B}{w} $. 
+If we have $V = \Phi^2 + (\Phi + w\dot{\Phi})^2 \leq B^2$, then it follows that $ |\Phi| \leq B $, $ | \dot{\Phi} | \leq \frac{\sqrt{2}B}{w} $.  
 \\
-If we can reach $V = B^2$ s.t. $\frac{\sqrt{2}B}{w} = \frac{\nu_0 + \nu_1 - U}{\nu_0} $ with case switching phase, it guarantees that  we stop case switching and converge to zero.
+Suppose we can reach $V = B^2$ s.t. $\frac{\sqrt{2}B}{w} = \frac{\nu_0 + \nu_1 - U}{\nu_0} $ 
+Then we stop case switching?
+%
+%\newpage
+%
+%\subsubsection*{Search for V}
+%
+%Let $ \frac{\partial V}{\partial \Phi} = p(\Phi, \dot{\Phi})$, $ \frac{\partial V}{\partial \dot{\Phi}} = q(\Phi, \dot{\Phi})$. 
+%We need these conditions fulfilled:
+%$$ \frac{\partial p}{\partial \dot{\Phi}} = \frac{\partial q}{\partial \Phi}, \quad \begin{bmatrix} \frac{\partial p }{\partial \Phi} &  \frac{\partial p }{\partial \dot{\Phi}} \\  \frac{\partial q }{\partial \Phi} &  \frac{\partial q }{\partial \dot{\Phi}} \end{bmatrix} \succeq 0 $$
+%$$ \dot{V} = p \cdot \dot{\Phi} - q \cdot RC_ih(1-h)(\Phi + w \dot{\Phi}) < 0 $$
+%Quadratic V: 
+%%$$ V = 2\alpha \Phi^2 + \Phi\dot{\Phi} + 2\gamma \dot{\Phi}^2 $$
+%$$ p =  \alpha \Phi + \dot{\Phi}; \quad q = \Phi + \gamma \dot{\Phi}; \quad (\alpha, \gamma) \in \{ (\alpha, \gamma) \in \mathbb{R}^2_{>0} | ~ \alpha \gamma - 1 > 0  \} =: G. $$
+%$$ -\dot{V} = RC_ih_0(1-h_0) ( \Phi^2 + ( w + \gamma) \Phi\dot{\Phi} + \gamma w \dot{\Phi}^2) - \alpha \Phi \dot{\Phi} - \dot{\Phi} ^2 $$
+%We need the following matrix be positive semi-definite for any \\ $K \in \{  \frac{1}{RC_i h (1-h)} | ~i \in \{1,2,3\}; ~ h \in [a,b] \} =: \mathcal{K} \subseteq [\frac{4}{R C_1}, \frac{1}{R C m} ]$:
+%$$ \begin{bmatrix}
+%	1 & ( w + \gamma - \alpha K )/2 \\
+%	( w + \gamma - \alpha K )/2  &  \gamma w - K
+%\end{bmatrix} \succeq 0 $$
+%Hence, we need to find $(\alpha, \gamma ) \in G$ s.t.
+%$$ \inf_{ K \in \mathcal{K} } 4 ( \gamma w -  K ) - ( w + \gamma - \alpha K  )^2  > 0 $$
+%Since the function is quadratic, it sufficies to have $ \Delta > 0 $ for  $K \in \left \{ \frac{4}{R C_1}, \frac{1}{R C m} \right\} $. 
+%$$  4  ( \gamma w -  K ) - ( w + \gamma - \alpha K  )^2 = (  \alpha K  + w)^2 - (\alpha K - w)^2 - 4K - ( \gamma - w - \alpha K )^2 = $$
+%$$ =  4K(\alpha w - 1) - ( \gamma - w - \alpha K )^2  $$
+%$$ \Delta = 0 \quad \Rightarrow \quad \gamma = w + \alpha K \pm 2 \sqrt{K(\alpha w -1)} = 1/\alpha + \left( \sqrt{\alpha K} \pm \sqrt{ w - 1/\alpha } \right)^2$$
+%The larger root for $K = \frac{4}{R C_1}$ should be larger than smaller root for $K = \frac{1}{R C m}$:
+%$$ \sqrt{\alpha \cdot \frac{4}{R C_1} } + \sqrt{ w - 1/\alpha } > \sqrt{\alpha \cdot \frac{1}{R C m} } - \sqrt{ w - 1/\alpha }$$
+%$$ 2\sqrt{ 1/\alpha (w - 1/\alpha) } > \sqrt{\frac{1}{R C m} } -  \sqrt{\frac{4}{R C_1} }$$
+%LHS is maximized by $\alpha = 2/w$. The final condition is
+%$$ w > \sqrt{\frac{1}{R C m} } -  \sqrt{\frac{4}{R C_1} } $$
+%For $R = 0.1, U = 4.5, [a,b] = [0.01, 0.99]$ that is 
+%$$ w >  \frac{1}{\sqrt{ 0.1 \cdot \frac{ 4.5}{3} \cdot 0.01 \cdot 0.99}} -  \frac{2}{\sqrt{ 0.1 \cdot (\frac{ 4.5}{2} + \frac{ 4.5}{3}  )  }}  \approx 25.95 - 3.26 = 22.68$$
+%The choice of parameters:
+%$$ \alpha = \frac{2}{w}, \quad \gamma = \frac{w}{2} + \frac{1}{2w} \left( \sqrt{\frac{1}{R C m} } + \sqrt{\frac{4}{R C_1} } \right)^2 .$$
+
+
+\newpage
+
+\subsection*{Inflow potentials}
+Having the functional relation
+$$ \dot{\Phi}(h_0) = \left(\frac{U h_0}{\nu_0} - 1 \right) \mathbb{I}_{q_0} - \left(\frac{U (1 - h_0)}{\nu_1} - 1 \right)\mathbb{I}_{q_1} = C_i(h_0 - h^{(i)}),$$
+we can construct the Lyapunov function
+$$ V(\Phi, \dot{\Phi}) = \frac{1}{2} \Phi^2 + \frac{1}{R} \int_{\dot{\Phi}(h) = 0}^{h_0} \frac{\dot{\Phi}(h) dh}{h(1-h)} = \frac{1}{2} \Phi^2 + \frac{1}{R} \int_{h^{(i)}}^{h_0} \frac{C_i(h - h^{(i)}) }{h(1-h)} dh> 0.$$
+Then, for each case $i = 1,2,3$ we have
+$$ \dot{V} = \Phi \cdot \dot{\Phi} - \frac{ \dot{\Phi }}{R C_i h_0(1-h_0)} \cdot RC_i h_0(1-h_0) (\Phi + w\dot{\Phi}) = -w \dot{\Phi}^2 < 0$$
+The integral can be computed:
+$$ \int \frac{ C_i(h_0 - h^{(i)}) dh_0}{h_0(1-h_0)} = C_i \left( \ln \frac{1}{1-h_0} - h^{(i)} \ln \frac{h_0}{1-h_0} \right) + \mathrm{const} $$
+We introduce inflow potentials for the cases 2 and 3
+$$ \Pi_0 := \int_{ \frac{\nu_0}{U} }^{h_0} \frac{\frac{U}{\nu_0}(h - \frac{\nu_0}{U})}{h(1-h)} dh, \quad  \Pi_1 := \int_{ \frac{U - \nu_1}{U} }^{h_0} \frac{\frac{U}{\nu_1}(h - \frac{U - \nu_1}{U})}{h(1-h)} dh. $$
+One can observe that their sum plays a role of potential in the case 1
+$$ \Pi_0 + \Pi_1 = \int_{\frac{\nu_0}{\nu_0 + \nu_1}}^{h_0} \frac{(\frac{U}{\nu_0} + \frac{U}{\nu_1})(h - \frac{\nu_0}{\nu_0 + \nu_1})}{h(1-h)} dh + \Delta \Pi, $$
+where we have a constant
+$$ \Delta \Pi:= \int_{\frac{\nu_0}{\nu_0 + \nu_1}}^{\frac{\nu_0}{U}} \frac{\frac{U}{\nu_0}( \frac{\nu_0}{U} - h)}{h(1-h)} dh + \int_{\frac{U - \nu_1}{U}}^{\frac{\nu_0}{\nu_0 + \nu_1}} \frac{\frac{U}{\nu_1}(h - \frac{U - \nu_1}{U})}{h(1-h)} dh \geq 0,$$
+with property $\Delta \Pi =0 \Leftrightarrow U = \nu_0 + \nu_1$.
+\\
+Hence, function $V = \frac{1}{2} \Phi^2 + \Pi_0 \mathbb{I}_{q_0} + \Pi_1 \mathbb{I}_{q_1}$ has following propreties:
+\begin{itemize}
+	\item $V = 0$ only at the equillibrium, else $V > 0$;
+	\item $V \to \infty$ if $|\Phi| \to \infty$ or $h_0 \to 0,1$;
+	\item $ \dot{V} < 0 $ during the cases $1,2,3$.
+\end{itemize}
+There still remain a problem of case switching. Namely, we need to show that  particular case switches (e.g.  $2 \to 1 \to 2$, $2 \to 1 \to 3 \to 1 \to 2$, and others) can't lead to an increase in $V$.
+
+%$$ V = \frac{1}{2} \Phi^2 + K \int_{h^*}^{h_0} \frac{ h - h^* }{h(1-h)} dh > 0  $$
+%$$ \dot{V} = \Phi \cdot \left( C_i(h_0 - h^*) + r \mathbb{I}_{q_1} \right) - \frac{ K(h_0 - h^*) }{ C_i h_0(1-h_0)} \cdot RC_i h_0(1-h_0) \left( \Phi + w ( C_i(h_0 - h^*) +r \mathbb{I}_{q_1} ) \right) = $$
+%$$ = \Phi(h_0 - h^*) \cdot (C_i - KR) - KRC_iw(h_0 - h^*)^2  + \left( \Phi - KRw(h_0 - h^*)   \right) \cdot r\mathbb{I}_{q_1}  $$
+
+
 
 \newpage
 
 \subsubsection*{Max demand ($U = \nu_0 + \nu_1$)}
 
 
-Case 4 not possible; Case 1-3 all converge to $h^* := \frac{\nu_0}{U}$.
+Case 4 not possible; Case 1-3 all converge to $h^* = \frac{\nu_0}{U}$.
 \\
 During the dynamic, queues may form
 \\
