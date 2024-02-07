@@ -1,3 +1,4 @@
+
 \documentclass[12pt]{article}
 \usepackage{amssymb}
 \usepackage{amsmath}
@@ -98,7 +99,7 @@ where $\lambda > 0$ is a scaling constant, $\gamma > 0$ is regularization decay.
 
 If we use projected queue values $\hat{q}^{\delta}_e(\theta') = q_e(\theta) + \frac{q_e(\theta) - q_e(\theta - \delta)}{\delta} \cdot (\theta' - \theta)$ to estimate upcoming travel times, we can use fitness $$ \phi^{\text{proj t.t.}}(\theta, h) = -(t_P(\theta) + w \cdot \frac{\partial t_P}{\partial \theta}(\theta)) \approx - ( \tau_P + \frac{1}{\nu_P} \hat{q}^{\delta}_e(\theta + w) ). $$  Projection window $w$ is a paramater. 
 
-\subsubsection*{Analysis}
+\subsection*{Analysis}
 Denote  $\Phi(\theta) := t_0(\theta) - t_1(\theta)$,  $\mathbb{I}_{q_e}(\theta) := \begin{cases} 1, q_e(\theta) > 0 \text{ or } f_e^+(\theta) \geq \nu_e \\ 0, \text{ otherwise}\end{cases}$.
 \\
 Queue $q_e$ "activates" at the moment $ \theta_{q_e} $ s.t. $f_e^+( \theta_{q_e}) = \nu_e $ and deactivates at first the moment $\theta'_{q_e}$ s.t. $\int_{\theta_{q_e}}^{ \theta'_{q_e}} (f_e^+(z) - \nu_e)  dz  = 0$.
@@ -149,7 +150,7 @@ For equation $\ddot{\Phi} + k (\Phi + w \dot{\Phi}) = 0$ we can estimate the sol
 $$ w \leq \frac{2}{\sqrt{k}}: \quad t_0 - t_1, h_0 - h^* \propto e^{-\frac{kw}{2} \theta}$$ 
 $$w > \frac{2}{\sqrt{k}}: \quad t_0 - t_1, h_0 - h^* \propto e^{-\frac{kw - \sqrt{(kw)^2 - 4k}}{2}\theta}$$
 
-\subsection*{Case switching}
+\subsubsection*{Case switching}
 
 We have invariants $\Phi$, and $h_0$. Below we study the derivative switch $ \dot{\Phi} \to \dot{\Phi'} $. 
 
@@ -190,20 +191,63 @@ $$ \dot{\Phi}= \dot{\Phi'} = \frac{\nu_0 + \nu_1 - U}{\nu_1}$$
 
 \end{itemize}
 
-\subsubsection*{Lyapunov Theory}
-Our differential equation has form $ \ddot{\Phi} = f(\Phi, \dot{\Phi})$, where $f$ is a polynomial. We view it as autnomous system with Lipshitz RHS
-$$  \frac{d}{d\theta} \begin{bmatrix} \Phi \\ \dot{\Phi} \end{bmatrix} = \begin{bmatrix} \dot{\Phi} \\ f(\Phi, \dot{\Phi}) \end{bmatrix} $$
-In this case Lyapunov Theory is applicable
+\newpage
+
+\subsection*{Mupltiple links}
+
+Consider $n$ parallel links $\{(\tau_i, \nu_i)\}_{i=1}^n$ with strict ordering of travel times $\tau_1 < \dots < \tau_n$ and demand $\nu_1 < U < \sum_{i} \nu_i$. 
+
+$$ \dot{h_i} = R h_i( \phi_i - \sum_{j=1}^n h_j \phi_j ) = R h_i(1-h_i) \left( 
+\phi_i - \overline{\phi_{-i}} \right) , \quad i = 1 \dots n $$
+$$ \overline{\phi_{-i}} := \sum_{j \neq i} \frac{h_j}{\sum_{j' \neq i} h_{j'}} \phi_j  $$
+Where we use negative projected travel times as fitnesses:
+$$ \phi_i = - ( t_i + w \dot{t_i}) = -\left( \tau_i + \frac{q_i}{\nu_i} + w \cdot \left( \frac{Uh_i}{\nu_i} - 1 \right) \mathbb{I}_{q_i} \right) .$$
+Suppose there exists $k^* \leq n$, s.t.
+$$ \sum_{i=1}^{k^*-1} \nu_i < U < \sum_{i=1}^{k^*} \nu_i .$$
+Then one can show the following state is the equilibrium:
+$$ \mathbb{I}_{q_i} = \mathbb{I}_{[ i < k^* ]};  \quad t^*_i := \begin{cases} \tau_{k^*}, ~i \leq k^* \\ \tau_i, ~i > k^*  \end{cases}; \quad h^*_i = \begin{cases} \frac{\nu_i}{U}, i < k^* \\ 1 - \sum_{i < k^*} h^*_{i}, ~ i = k^*\\  0, ~i > k^*  \end{cases}. $$
+
+
+
+%First show for $k^* = n$, then try to generalize
+%$$ h_{> k^*} := \sum_{j > k^*} h_j; \quad \phi_{>k^*} := \sum_{j > k^*} \frac{h_j}{  h_{> k^*}  } \phi_j $$
+
+Assuming same queue configuration, we can linearize the system near the equillibrium. Below, we denote $\Delta h := h - h^*$, $\Delta t := t - t^*$.
+$$ \dot{ \Delta h_i} \approx -Rh^*_i \left( \left( \Delta t_i + \frac{w }{h^*_i} \Delta h_i \right) - \sum_{j < k^*} h^*_j \left( \Delta t_j + \frac{w }{h^*_j} \Delta h_j \right)  - \sum_{j > k^*} \Delta h_j \tau_j \right), ~i < k^*$$
+$$ \dot{ \Delta h_{k^*}} \approx -R h^*_{k^*} \left( 0 - \sum_{j < k^*} h^*_j \left( \Delta t_j + \frac{w }{h^*_j} \Delta h_j \right) - \sum_{j > k^*} \Delta h_j \tau_j \right) $$
+$$ \dot{\Delta h_i} \approx -R \Delta h_i( \tau_i - \tau_{k^*}), ~i > k^* $$
+$$ \dot{\Delta t_i} = \frac{1}{h^*_i} \Delta h_i, ~ i < k^*; \quad \dot{\Delta t_i} = 0, ~ i \geq k^*$$
+
+$$ \frac{d}{d \theta} \begin{bmatrix} \Delta h_{< k^*} \\ \Delta t_{< k^*} \\ \Delta h_{k*} \\ \Delta t_{k^*} \\ \Delta h_{> k^*} \\ \Delta t_{> k^*} \end{bmatrix} \approx 
+-R A
+ \begin{bmatrix} \Delta h_{< k^*} \\ \Delta t_{< k^*} \\ \Delta h_{k*} \\ \Delta t_{k^*} \\ \Delta h_{> k^*} \\ \Delta t_{> k^*} \end{bmatrix} ,$$
+ $$ A  = \begin{bmatrix} 
+ w(I - h^*_{< k^*} \textbf{1}^T) &  h^*_{< k^*} (I - (h^*_{< k^*})^T)  & 0 & - h^*_{< k^*} h^*_{k^*}  & - h^*_{< k^*} \tau_{> k^*}^T & 0 \\
+ \frac{1}{h^*_{<k^*}} & 0 & 0  & 0 & 0 & 0 \\
+  - h^*_{k^*} w h^*_{< k^*}   & 0 & h^*_{k^*} \tau & b^T & h^*{k^*}(1-h^*{k^*}) & 0 \\ 
+ 0 & 0 & 0 & 0 & 0 & 0 \\ 
+\frac{w}{h^*} I & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 &  (\tau - \tau_{k^*} ) I & 0 \\  \end{bmatrix} $$
+
+\newpage
+
+\subsection*{Lyapunov Theory}
+Our differential equation has form $ \ddot{\Phi} = g(\Phi, \dot{\Phi})$, where $g$ is a polynomial. We view it as autnomous system with Lipshitz RHS
+$$  \frac{d}{d\theta} \begin{bmatrix} \Phi \\ \dot{\Phi} \end{bmatrix} = \begin{bmatrix} \dot{\Phi} \\ g(\Phi, \dot{\Phi}) \end{bmatrix} $$
+In this case Lyapunov Theory is applicable. 
+\\
+In general, we consider autonomous system
+$$ \dot{x} = f(x), \quad f(0) = 0.$$
 \begin{theorem}(Global asymptotic stability) 
-Let $V: \mathbb{R}^2 \to \mathbb{R}$ be a continuously differentiable function, s.t. :
-$$V(0,0) = 0 \text{ and } \forall (\Phi, \dot{\Phi}) \neq (0, 0): ~V(\Phi, \dot{\Phi}) > 0  , $$
-$$ \sqrt{\Phi^2 + \dot{\Phi}^2 } \to \infty \quad \Rightarrow \quad V(\Phi, \dot{\Phi}) \to \infty, $$
-$$ \forall (\Phi, \dot{\Phi}) \neq (0, 0):  ~\dot{V}(\Phi, \dot{\Phi}) = \frac{\partial V}{\partial \Phi} \dot{\Phi} + \frac{\partial V}{\partial \dot{\Phi}} f(\Phi, \dot{\Phi}) < 0 $$
-Then $(\Phi, \dot{\Phi}) = (0, 0)$ is globally asymptotically stable.
+Let $V: \mathbb{R}^n \to \mathbb{R}$ be a continuously differentiable function, s.t. :
+$$V(0) = 0 \text{ and } \forall x \neq 0: ~V(x) > 0  , $$
+$$ \lVert x \rVert_2 \to \infty \quad \Rightarrow \quad V(x) \to \infty, $$
+$$ \forall x \neq 0 :  ~\dot{V} =  \nabla V(x) \cdot f(x) < 0 $$
+Then $x = 0$ is globally asymptotically stable.
 \end{theorem}
 
 \begin{theorem}(Local asymptotic stability)
-Let $A = \begin{bmatrix} 0 & 1 \\ \frac{\partial f}{\partial \Phi}(0,0) & \frac{\partial f}{\partial \dot{\Phi}}(0,0) \end{bmatrix}$. If we have $\mathrm{Re} (\lambda_i(A)) < 0$ for both eigenvalues, then $(\Phi, \dot{\Phi}) = (0, 0)$ is locally asymptotically stable.
+Let $A = \frac{\partial f}{\partial x}(0)$ be Jacobian matrix at $x=0$. If we have $\mathrm{Re} (\lambda_i(A)) < 0$ for all eigenvalues, then $x = 0$ is locally asymptotically stable.
 
 \end{theorem}
 
@@ -308,17 +352,36 @@ There still remain a problem of case switching. Namely, we need to show that  pa
 %$$ \dot{V} = \Phi \cdot \left( C_i(h_0 - h^*) + r \mathbb{I}_{q_1} \right) - \frac{ K(h_0 - h^*) }{ C_i h_0(1-h_0)} \cdot RC_i h_0(1-h_0) \left( \Phi + w ( C_i(h_0 - h^*) +r \mathbb{I}_{q_1} ) \right) = $$
 %$$ = \Phi(h_0 - h^*) \cdot (C_i - KR) - KRC_iw(h_0 - h^*)^2  + \left( \Phi - KRw(h_0 - h^*)   \right) \cdot r\mathbb{I}_{q_1}  $$
 
-
+%\newpage
+%
+%$$ \dot{q_0} = \left( Uh_0 - \nu_0 \right) \mathbb{I}_{q_0} $$
+%$$ \dot{q_1} = \left( U(1-h_0) - \nu_1 \right) \mathbb{I}_{q_1}  $$
+%$$ \dot{h_0} = -Rh_0(1-h_0)\left(\frac{\nu_0 \tau_0 + q_0 + w \dot{q_0}}{\nu_0} - \frac{\nu_1 \tau_1 + q_1 + w \dot{q_1}}{\nu_1} \right) $$
 
 \newpage
 
 \subsubsection*{Max demand ($U = \nu_0 + \nu_1$)}
 
+Denote $ Q := q_0 + q_1 $ and observe that
+$$ \dot{Q} = \dot{q_0} + \dot{q_1} = \left( Uh_0 - \nu_0 \right) \mathbb{I}_{q_0} +  \left( U(1-h_0) - \nu_1 \right) \mathbb{I}_{q_1} $$
+We have $\dot{Q} = 0$ in case 1 and $ \dot{Q} > 0$ in cases 2,3
+\\
+Suppose we start with $h_0 < h^*$ in case 3. 
+$$ \theta = s_0 = 0: \quad h_0 - h^* < 0, \quad \Phi = \tau_0 - \tau_1 < 0 \quad \Rightarrow \quad \dot{h_0} > 0 $$
+We increase $h_0$ until value $h^*$ is reached and switch to case 1. 
 
-Case 4 not possible; Case 1-3 all converge to $h^* = \frac{\nu_0}{U}$.
-\\
-During the dynamic, queues may form
-\\
+$$ q_0(s_1) = 0, \quad q_1(s_1) = \int_{s_0}^{s_1}  U(h^*-h_0) d \theta $$
+$$ \theta = s_1: \quad h_0 - h^* = 0, \quad \Phi = \tau_0 - (\tau_1 + \frac{q_1}{\nu_1}) < 0 \quad \Rightarrow \quad \dot{h_0} > 0 $$
+$$ \frac{1}{2}\Phi^2(s_1) < \frac{1}{2}\Phi^2(s_0) + \frac{1}{R} \Pi_1(s_0) $$
+There are two options: either we'll have $\Phi + w \dot{\Phi} = 0$
+$$ q_0(s_2) = \int_{s_1}^{s_2} U(h_0 - h^*)d\theta, \quad q_1(s_2) = q_1(s_1) - \int_{s_1}^{s_2} U(h_0 - h^*)d\theta $$
+$$ \theta = s_2: \quad h_0 - h^* > 0, \quad \Phi = \Phi(s_1) + q_0(s_2) \left(\frac{1}{\nu_0} + \frac{1}{\nu_1} \right) = -w U \left(\frac{1}{\nu_0} + \frac{1}{\nu_1} \right) (h_0 - h^*) $$
+$$ \frac{1}{2}\Phi^2(s_2) + \frac{1}{R} (\Pi_0(s_2) + \Pi_1(s_2))  < \frac{1}{2}\Phi^2(s_1) $$
+
+If $q_1$ vanishes, we would have
+$$ q_0(s_2) = \int_{s_1}^{s_2} U(h_0 - h^*)d\theta = q_1(s_1), \quad q_1(s_2) = q_1(s_1) - \int_{s_1}^{s_2} U(h_0 - h^*)d\theta = 0 $$
+
+%During the dynamic, queues may for
 See Figure \ref{fig:fluctuations_proj}. Figures \ref{fig:amplitudes_proj} and \ref{fig:final_tt_proj} show inflow amplitude decays and final travel times for different projection windows.
 
 \begin{figure}
