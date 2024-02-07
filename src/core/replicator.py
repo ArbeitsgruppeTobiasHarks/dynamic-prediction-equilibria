@@ -106,21 +106,31 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
 
         return tt
 
-    def _get_proj_travel_times(self, proj_horizon: float):
+    def _get_proj_travel_times(
+        self, proj_horizon: float, allow_negative_queues: bool = True
+    ):
         tt = {i: 0.0 for i in self.paths.keys()}
 
         def predictor(queue: PiecewiseLinear, delta: float):
             if self._route_time < delta + eps:
                 return zero
-            avg_grad = (
-                queue(self._route_time) - queue(self._route_time - delta)
-            ) / delta
-            return PiecewiseLinear(
-                [self._route_time],
-                [queue(self._route_time)],
-                0.0,
-                avg_grad,
+            # avg_grad = (
+            #     queue(self._route_time) - queue(self._route_time - delta)
+            # ) / delta
+            pl_init = dict(
+                times=[self._route_time],
+                values=[queue(self._route_time)],
+                first_slope=0.0,
+                last_slope=queue.last_slope,
             )
+            if not allow_negative_queues and queue.last_slope < 0:
+                pl_init["times"].append(
+                    pl_init["times"][-1] - pl_init["values"][-1] / pl_init["last_slope"]
+                )
+                pl_init["values"].append(0.0)
+                pl_init["last_slope"] = 0.0
+
+            return PiecewiseLinear(**pl_init)
 
         queues = [predictor(q, 2 * self.reroute_interval) for q in self._flow.queues]
 
@@ -187,6 +197,23 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
 
         return avg_tt
 
+    def _get_avg_travel_times_in_window_other(self, rep_window: float):
+        # Just integrate the travel time function
+        avg_tt = {i: 0.0 for i in self.paths.keys()}
+        if self._route_time < eps:
+            return avg_tt
+
+        window_start = max(self._route_time - rep_window, 0.0)
+        costs = self._flow.get_edge_costs()
+
+        for i, p in self.paths.items():
+            tt = compute_path_travel_time(p, costs)
+            avg_tt[i] = tt.integrate(window_start, self._route_time) / (
+                self._route_time - window_start
+            )
+
+        return avg_tt
+
     def _get_mixed_travel_times(self, history_coef: float = 0.5):
         """Computes history_coef * avg_tt + (1-history_coef) * pred_tt"""
 
@@ -243,7 +270,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         if self.fitness == "neg_avg_tt":
             fitnesses = {
                 k: -v
-                for k, v in self._get_avg_travel_times_in_window(
+                for k, v in self._get_avg_travel_times_in_window_other(
                     rep_window=self.window_size
                 ).items()
             }
@@ -255,7 +282,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
             fitnesses = {
                 k: -v
                 for k, v in self._get_proj_travel_times(
-                    proj_horizon=self.window_size
+                    proj_horizon=self.window_size, allow_negative_queues=False
                 ).items()
             }
         elif self.fitness == "neg_grad_tt":
