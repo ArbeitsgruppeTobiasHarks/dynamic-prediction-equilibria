@@ -1,4 +1,3 @@
-import gzip
 import os
 from typing import Collection, Dict
 
@@ -40,7 +39,7 @@ def to_visualization_json(
     path: str, flow: DynamicFlow, network: Network, color_by_comm_idx: Dict[int, str]
 ):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with gzip.open(path, "wt", encoding="UTF-8") as file:
+    with open(path, "wt", encoding="UTF-8") as file:
         JSONEncoder().dump(
             {
                 "network": {
@@ -63,8 +62,8 @@ def to_visualization_json(
                         for (id, e) in enumerate(network.graph.edges)
                     ],
                     "commodities": [
-                        {"id": id, "color": color_by_comm_idx[id]}
-                        for (id, comm) in enumerate(network.commodities)
+                        {"id": id, "color": color}
+                        for (id, color) in color_by_comm_idx.items()
                     ],
                 },
                 "flow": {

@@ -5,7 +5,7 @@ from typing import Dict
 import matplotlib.pyplot as plt
 import numpy as np
 
-from core.flow_builder import FlowBuilder
+from core.dpe_flow_builder import FlowBuilder
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType
 from core.predictors.reg_linear_predictor import RegularizedLinearPredictor

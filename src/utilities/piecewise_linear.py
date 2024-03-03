@@ -621,6 +621,21 @@ class PiecewiseLinear:
             (self.domain[0], other.domain[1]),
         )
 
+    def next_change_time(self, time: float):
+        rnk = elem_rank(self.times, time)
+        next_time = time
+        val = self._eval_with_rank(time, rnk)
+        while rnk < len(self.times) - 1:
+            if abs(val - self.values[rnk + 1]) > eps:
+                return next_time
+            next_time = self.times[rnk + 1]
+            rnk += 1
+
+        if self.last_slope == 0:
+            return float("inf")
+        else:
+            return self.times[-1]
+
 
 identity = PiecewiseLinear([0.0], [0.0], 1.0, 1.0)
 zero = PiecewiseLinear([0.0], [0.0], 0.0, 0.0)

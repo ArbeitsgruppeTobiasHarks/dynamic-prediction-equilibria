@@ -87,6 +87,51 @@
             },
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: Counter Example Uniqueness",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/scenarios/counter_example_uniqueness.py",
+            "env": {
+                "PYTHONOPTIMIZE": "TRUE",
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Nash Flow Approximation Simple",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/scenarios/nash_approximate_simple_test.py",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Nash Flow Approximation Advanced",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/scenarios/nash_approximate_advanced_test.py",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Nash Flow Sioux Falls",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/scenarios/nash_approximate_sioux_falls.py",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

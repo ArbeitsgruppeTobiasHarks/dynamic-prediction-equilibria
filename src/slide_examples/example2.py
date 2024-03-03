@@ -1,6 +1,6 @@
 from typing import Dict
 
-from core.flow_builder import FlowBuilder
+from core.dpe_flow_builder import FlowBuilder
 from core.network import Network
 from core.predictor import Predictor
 from core.predictors.predictor_type import PredictorType

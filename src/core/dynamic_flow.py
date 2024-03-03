@@ -10,7 +10,9 @@ from utilities.piecewise_linear import PiecewiseLinear
 from utilities.queues import PriorityQueue
 from utilities.right_constant import RightConstant
 
-ChangeEventValue = Tuple[Dict[int, float], float]
+ChangeEventValue = Tuple[
+    Dict[int, float], float
+]  # outflow by commodity, sum over outflow
 ChangeEvent = Optional[Tuple[float, ChangeEventValue]]
 
 
@@ -162,7 +164,7 @@ class DynamicFlow:
         self.depletions.set(e, depl_time, (planned_change_time, planned_change_value))
 
     def _process_depletions(self):
-        while self.depletions.min_depletion() <= self.phi:
+        while self.depletions.min_depletion() <= self.phi < float("inf"):
             (e, depl_time, change_event) = self.depletions.pop_by_depletion()
             self.queues[e].extend_with_slope(depl_time, 0.0)
             assert abs(self.queues[e].values[-1]) < 1000 * eps
@@ -207,7 +209,7 @@ class DynamicFlow:
         self._process_depletions()
 
         changed_edges: Set[int] = set()
-        while self.outflow_changes.min_key() <= self.phi:
+        while self.outflow_changes.min_key() <= self.phi < float("inf"):
             changed_edges.add(self.outflow_changes.pop()[0])
         return changed_edges
 

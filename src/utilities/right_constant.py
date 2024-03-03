@@ -120,6 +120,72 @@ class RightConstant:
 
         return RightConstant(new_times, new_values, self.domain)
 
+    def __rmul__(self, other):
+        if other == 0:
+            return self
+        if type(other) in [float, int]:
+            return RightConstant(
+                self.times, [value * other for value in self.values], self.domain
+            )
+        if not isinstance(other, RightConstant):
+            raise TypeError("Can only add a RightConstantFunction.")
+        assert self.domain == other.domain
+
+        new_times = merge_sorted(self.times, other.times)
+
+        new_values = [0.0] * len(new_times)
+
+        lptr = 0
+        rptr = 0
+        for i, time in enumerate(new_times):
+            while lptr < len(self.times) - 1 and self.times[lptr + 1] <= time:
+                lptr += 1
+            while rptr < len(other.times) - 1 and other.times[rptr + 1] <= time:
+                rptr += 1
+            new_values[i] = self.values[lptr] * other.values[rptr]
+
+        return RightConstant(new_times, new_values, self.domain)
+
+    @staticmethod
+    def characteristic_of(f: PiecewiseLinear) -> RightConstant:
+        """
+        Returns the characteristic function g with g(t) = 1 if abs(f(t)) >= eps and g(t) = 0 otherwise.
+        Singular points t with abs(f(t)) < eps are ignored and will also evaluate to g(t) = 1.
+        """
+        new_times = []
+        new_values = []
+        if f.times[0] > f.domain[0]:
+            # We have to add another point at the beginning.
+            new_time = f.domain[0] if f.domain[0] > float("-inf") else f.times[0] - 1
+            if f.first_slope == 0 and abs(f.values[0]) < eps:
+                new_times = [new_time]
+                new_values = [0.0]
+            else:
+                new_times = [f.domain[0]]
+                new_values = [1.0]
+
+        for i in range(len(f.times) - 1):
+            if abs(f.values[i]) < eps and abs(f.values[i + 1]) < eps:
+                new_times.append(f.times[i])
+                new_values.append(0.0)
+            else:
+                new_times.append(f.times[i])
+                new_values.append(1.0)
+        if f.times[-1] < f.domain[1]:
+            # We have to add another point at the end.
+            new_time = f.domain[1] if f.domain[1] < float("inf") else f.times[-1] + 1
+            if f.last_slope == 0 and abs(f.values[-1]) < eps:
+                new_times.append(
+                    f.domain[1] if f.domain[1] < float("inf") else f.times[-1] + 1
+                )
+                new_values.append(0.0)
+            else:
+                new_times.append(
+                    f.domain[1] if f.domain[1] < float("inf") else f.times[-1] + 1
+                )
+                new_values.append(1.0)
+        return RightConstant(new_times, new_values, f.domain)
+
     @staticmethod
     def sum(functions: List[RightConstant], domain=(0, float("inf"))) -> RightConstant:
         if len(functions) == 0:
@@ -142,6 +208,9 @@ class RightConstant:
 
     def __add__(self, other):
         return self.__radd__(other)
+
+    def __mul__(self, other):
+        return self.__rmul__(other)
 
     def __neg__(self):
         return RightConstant(self.times, [-v for v in self.values], self.domain)
