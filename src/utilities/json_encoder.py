@@ -21,4 +21,4 @@ class JSONEncoder(json.JSONEncoder):
 
     @abstractmethod
     def dumps(self, obj: Any):
-        json.dumps(obj, cls=JSONEncoder)
+        return json.dumps(obj, cls=JSONEncoder)
