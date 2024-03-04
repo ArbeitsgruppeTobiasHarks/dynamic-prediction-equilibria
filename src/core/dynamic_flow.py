@@ -210,7 +210,9 @@ class DynamicFlow:
         self._process_depletions()
 
         changed_edges: Set[int] = set()
-        while self.outflow_changes.min_key() <= self.phi:
+        while (
+            self.outflow_changes.min_key() <= self.phi and len(self.outflow_changes) > 0
+        ):
             changed_edges.add(self.outflow_changes.pop()[0])
         return changed_edges
 

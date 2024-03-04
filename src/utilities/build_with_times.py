@@ -62,10 +62,13 @@ def build_with_times(
         flow = next(generator)
         if flow.phi >= milestone:
             new_milestone_time = time()
-            remaining_time = (
-                (horizon - flow.phi)
-                * (new_milestone_time - last_milestone_time)
-                / milestone_interval
+            remaining_time = max(
+                0,
+                (
+                    (horizon - flow.phi)
+                    * (new_milestone_time - last_milestone_time)
+                    / milestone_interval
+                ),
             )
             finish_time = (
                 (
