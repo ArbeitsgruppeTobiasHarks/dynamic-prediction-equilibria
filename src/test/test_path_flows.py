@@ -1,7 +1,7 @@
 import os
 
-from core.network import Network
 from core.active_paths import Path
+from core.network import Network
 from core.path_flow_builder import PathFlowBuilder
 from core.predictors.predictor_type import PredictorType
 from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls

@@ -82,7 +82,7 @@ def run_scenario(scenario_dir: str):
         )
         path_exit_time = identity
 
-        for edge in path[::-1]:
+        for edge in path.edges[::-1]:
             path_exit_time = path_exit_time.compose(
                 identity.plus(costs[edge.id]).ensure_monotone(True)
             )
@@ -107,7 +107,7 @@ def run_scenario(scenario_dir: str):
         network,
         {0: "green", 1: "blue", 2: "red"},
     )
-    print(f"Successfully written visualization to disk!")
+    print(f"Successfully written visualization to {visualization_path}")
 
     Network.from_file(network_path).print_info()
 
