@@ -251,7 +251,12 @@ def compute_all_active_paths(
 
     shortest_paths = PathsOverTime([], [])
     subpaths = [
-        (Path([]), source, identity, Indicator.from_interval(0.0, float("inf")))
+        (
+            Path([]),
+            source,
+            identity.restrict((0, float("inf"))),
+            Indicator.from_interval(0.0, float("inf")),
+        )
     ]
 
     while len(subpaths) > 0:
@@ -267,6 +272,7 @@ def compute_all_active_paths(
 
                 new_path = path.add_edge(e)
                 new_exit_time = (identity + edge_costs[e.id]).compose(exit_time)
+                new_exit_time = new_exit_time.ensure_monotone(True)
                 delay = (
                     earliest_arrivals[new_dest].compose(new_exit_time)
                     - earliest_arrivals[source]

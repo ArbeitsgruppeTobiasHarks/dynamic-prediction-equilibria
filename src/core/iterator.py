@@ -35,6 +35,7 @@ def integrate_with_weights(
     lin: PiecewiseLinear, weights: RightConstant, start: float, end: float
 ):
     assert weights.domain[0] <= start < end <= weights.domain[1]
+    assert lin.domain[0] <= start < end <= lin.domain[1]
 
     value = 0.0
     rnk = elem_lrank(weights.times, start)
@@ -50,7 +51,8 @@ def integrate_with_weights(
         )
         rnk += 1
 
-    value += weights.values[rnk] * lin.integrate(weights.times[rnk], end)
+    if weights.times[rnk] != end:
+        value += weights.values[rnk] * lin.integrate(weights.times[rnk], end)
 
     return value
 
@@ -341,7 +343,12 @@ def compute_path_metrics(path, path_inflow, network_data):
         metrics["active_inflow_share"] = 0.0
         return metrics
 
-    path_delay = compute_path_travel_time(path, costs) - optimal_travel_time
+    path_delay: PiecewiseLinear = (
+        compute_path_travel_time(path, costs) - optimal_travel_time
+    )
+
+    # Ensure non-negative
+    path_delay.values = [max(0, d) for d in path_delay.values]
     activity_ind = get_activity_indicator(
         path_delay, threshold=delay_threshold * free_flow_travel_time
     )
@@ -514,6 +521,8 @@ class AlphaFlowIterator(BaseFlowIterator):
                 continue
 
             path_delay = compute_path_travel_time(path, costs) - opt_travel_time
+            # Ensure non-negative
+            path_delay.values = [max(0, d) for d in path_delay.values]
             path_delay_approx = approximate_linear(
                 path_delay, self.reroute_interval, self.inflow_horizon
             )  # if path inflows are defined on same grid, this yields avg experienced delay on time intervals
