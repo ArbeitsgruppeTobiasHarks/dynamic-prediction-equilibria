@@ -162,9 +162,7 @@ class BaseFlowIterator:
             self._earliest_arrivals_to[t].update(earliest_arrivals)
 
     def _compute_flow(self):
-        flow_builder = PathFlowBuilder(
-            self.network, self._comm_to_path, self.reroute_interval
-        )
+        flow_builder = PathFlowBuilder(self.network, self._comm_to_path)
         generator = flow_builder.build_flow()
         flow = next(generator)
         while flow.phi < self.horizon:
@@ -520,9 +518,11 @@ class AlphaFlowIterator(BaseFlowIterator):
                 path_delay, self.reroute_interval, self.inflow_horizon
             )  # if path inflows are defined on same grid, this yields avg experienced delay on time intervals
             alpha_vals = [
-                self.alpha_fun(d / self._free_flow_travel_times[route])
-                if d > 0
-                else self.alpha_fun(0)
+                (
+                    self.alpha_fun(d / self._free_flow_travel_times[route])
+                    if d > 0
+                    else self.alpha_fun(0)
+                )
                 for d in path_delay_approx.values
             ]
             alpha = RightConstant(

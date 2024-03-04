@@ -2,6 +2,7 @@ import os
 
 import matplotlib.pyplot as plt
 
+from core.active_paths import Path
 from core.bellman_ford import bellman_ford
 from core.network import Network
 from core.path_flow_builder import PathFlowBuilder
@@ -54,11 +55,11 @@ def run_scenario(scenario_dir: str):
     t = network.graph.nodes[14]
     paths_edge_ids = [[1, 5, 9, 33], [1, 6, 35, 33], [0, 3, 14, 10, 9, 33]]
     paths = {
-        i: [network.graph.edges[e_id] for e_id in e_ids]
+        i: Path([network.graph.edges[e_id] for e_id in e_ids])
         for i, e_ids in enumerate(paths_edge_ids)
     }
 
-    flow_builder = PathFlowBuilder(network, paths, reroute_interval)
+    flow_builder = PathFlowBuilder(network, paths)
     flow, _ = build_with_times(flow_builder, flow_index, reroute_interval, horizon)
 
     costs = [

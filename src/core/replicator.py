@@ -24,6 +24,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
     regularization: Optional[str]
     regularization_coef: float
     regularization_decay: float
+    reroute_interval: float
     _source: Node
     _path_distribution: Dict[int, RightConstant]
     _path_fitnesses: Dict[int, RightConstant]
@@ -54,6 +55,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         self.regularization = regularization
         self.regularization_coef = regularization_coef
         self.regularization_decay = regularization_decay
+        self.reroute_interval = reroute_interval
 
         self._path_distribution = dict()
         self._path_fitnesses = dict()
@@ -71,7 +73,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
             )
             paths[i] = path
 
-        super().__init__(network_copy, paths, reroute_interval)
+        super().__init__(network_copy, paths)
 
     def _get_tt_grad_approx(self):
         grads = {i: 0.0 for i in self.paths.keys()}

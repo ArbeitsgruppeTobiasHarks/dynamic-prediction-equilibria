@@ -1,6 +1,7 @@
 import os
 
 from core.network import Network
+from core.active_paths import Path
 from core.path_flow_builder import PathFlowBuilder
 from core.predictors.predictor_type import PredictorType
 from importer.sioux_falls_importer import add_od_pairs, import_sioux_falls
@@ -48,11 +49,11 @@ def run_scenario(scenario_dir: str):
 
     paths_edge_ids = [[1, 5, 9, 33], [1, 6, 35, 33], [0, 3, 14, 10, 9, 33]]
     paths = {
-        i: [network.graph.edges[e_id] for e_id in e_ids]
+        i: Path([network.graph.edges[e_id] for e_id in e_ids])
         for i, e_ids in enumerate(paths_edge_ids)
     }
 
-    flow_builder = PathFlowBuilder(network, paths, reroute_interval)
+    flow_builder = PathFlowBuilder(network, paths)
     flow, _ = build_with_times(flow_builder, flow_index, reroute_interval, horizon)
 
     # merged_flow = merge_commodities(

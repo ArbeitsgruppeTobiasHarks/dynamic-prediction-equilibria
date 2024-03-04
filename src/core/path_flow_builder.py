@@ -14,12 +14,9 @@ from utilities.right_constant import RightConstant
 class PathFlowBuilder:
     network: Network
     paths: Dict[int, Path]  # each commodity is associated with a single path
-    reroute_interval: Optional[float]
     _built: bool
     _handle_nodes: Set[Node]
     _flow: DynamicFlow
-    _next_reroute_time: float
-    _route_time: float
     _net_inflow_by_node: Dict[Node, FlowRatesCollection]
     _commodity_ids_by_sink: Dict[Node, Set[int]]
     _network_inflow_changes: PriorityQueue[Tuple[Commodity, Node, float]]
@@ -28,26 +25,12 @@ class PathFlowBuilder:
         self,
         network: Network,
         paths: Dict[int, Path],
-        reroute_interval: Optional[float],
     ):
         self.network = network
         self.paths = paths
-        self.reroute_interval = reroute_interval
         self._built = False
-        self._active_edges = [{} for _ in network.commodities]
         self._handle_nodes = set()
         self._flow = DynamicFlow(network)
-        self._next_reroute_time = self._route_time = self._flow.phi
-        self._important_nodes = [
-            network.graph.get_nodes_reaching(commodity.sink).intersection(
-                set(
-                    node
-                    for source in commodity.sources
-                    for node in network.graph.get_reachable_nodes(source)
-                )
-            )
-            for commodity in self.network.commodities
-        ]
         self._net_inflow_by_node = {
             v: FlowRatesCollection(
                 {
@@ -62,11 +45,6 @@ class PathFlowBuilder:
             v: set(i for i, c in enumerate(self.network.commodities) if c.sink == v)
             for v in network.graph.nodes.values()
         }
-        assert all(
-            source in self._important_nodes[i]
-            for i, c in enumerate(self.network.commodities)
-            for source in c.sources
-        )
         self._network_inflow_changes = PriorityQueue(
             [
                 ((c, s, t), t)
@@ -86,18 +64,9 @@ class PathFlowBuilder:
             while self._flow.phi >= self._network_inflow_changes.min_key():
                 c, s, t = self._network_inflow_changes.pop()
                 self._handle_nodes.add(s)
-            if (
-                self.reroute_interval is None
-                or self._flow.phi >= self._next_reroute_time
-            ):
-                self._route_time = self._next_reroute_time
-                self._next_reroute_time += self.reroute_interval
-                self._handle_nodes = set(self.network.graph.nodes.values())
 
             new_inflow = self._determine_new_inflow()
-            max_ext_time = min(
-                self._next_reroute_time, self._network_inflow_changes.min_key()
-            )
+            max_ext_time = self._network_inflow_changes.min_key()
             edges_with_outflow_change = self._flow.extend(new_inflow, max_ext_time)
             self._handle_nodes = set(
                 self.network.graph.edges[e].node_to for e in edges_with_outflow_change
