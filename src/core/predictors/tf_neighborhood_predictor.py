@@ -82,7 +82,7 @@ class TFNeighborhoodPredictor(Predictor):
                 queues[e_id] = zero_fct
                 continue
 
-            future_queues_raw = self._models[e_id].predict(
+            future_queues_raw: np.ndarray = self._models[e_id](
                 np.array(
                     [
                         [
@@ -91,7 +91,7 @@ class TFNeighborhoodPredictor(Predictor):
                         ]
                     ]
                 ),
-                verbose=0,
+                training=False,
             )[0]
             future_queues_raw = np.maximum(
                 future_queues_raw, np.zeros_like(future_queues_raw)
@@ -170,8 +170,8 @@ class TFNeighborhoodPredictor(Predictor):
                 ]
             )
 
-            future_queues_raw = self._models[e_id].predict(
-                raw_predictions_input, verbose=0
+            future_queues_raw: np.ndarray = self._models[e_id](
+                raw_predictions_input, training=False
             )
             future_queues_raw = np.maximum(
                 future_queues_raw, np.zeros_like(future_queues_raw)

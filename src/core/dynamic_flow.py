@@ -41,6 +41,9 @@ class DepletionQueue:
     def __contains__(self, edge) -> bool:
         return edge in self.depletions
 
+    def __len__(self) -> int:
+        return len(self.depletions)
+
     def remove(self, edge: int) -> None:
         self.depletions.remove(edge)
         if edge in self.change_times:
@@ -162,7 +165,7 @@ class DynamicFlow:
         self.depletions.set(e, depl_time, (planned_change_time, planned_change_value))
 
     def _process_depletions(self):
-        while self.depletions.min_depletion() <= self.phi:
+        while self.depletions.min_depletion() <= self.phi and len(self.depletions) > 0:
             (e, depl_time, change_event) = self.depletions.pop_by_depletion()
             self.queues[e].extend_with_slope(depl_time, 0.0)
             assert abs(self.queues[e].values[-1]) < 1000 * eps
