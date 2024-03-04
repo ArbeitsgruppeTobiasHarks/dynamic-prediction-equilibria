@@ -24,7 +24,7 @@ def run_scenario(scenario_dir: str):
     # network.graph.positions = {0: (0, 0), 1: (1, 1)}
 
     network.add_commodity(
-        {0: RightConstant([0.0], [5.0])},
+        {0: RightConstant([0.0], [5.0], (0.0, float("inf")))},
         3,
         PredictorType.CONSTANT,
     )

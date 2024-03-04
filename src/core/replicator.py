@@ -25,6 +25,8 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
     regularization_coef: float
     regularization_decay: float
     reroute_interval: float
+    _next_reroute_time: float
+    _route_time: float
     _source: Node
     _path_distribution: Dict[int, RightConstant]
     _path_fitnesses: Dict[int, RightConstant]
@@ -56,7 +58,7 @@ class ReplicatorFlowBuilder(PathFlowBuilder):
         self.regularization_coef = regularization_coef
         self.regularization_decay = regularization_decay
         self.reroute_interval = reroute_interval
-
+        self._route_time = self._next_reroute_time = 0.0
         self._path_distribution = dict()
         self._path_fitnesses = dict()
 
