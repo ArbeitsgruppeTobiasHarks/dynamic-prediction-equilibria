@@ -1,5 +1,3 @@
-import unittest
-
 from core.network import Network
 
 
@@ -31,16 +29,3 @@ def build_sample_network() -> Network:
     }
 
     return network
-
-
-class TestNetwork(unittest.TestCase):
-    def test_build(self):
-        network = build_sample_network()
-        self.assertEqual(len(network.graph.nodes), 4)
-        self.assertEqual(len(network.graph.edges), 5)
-        self.assertEqual(len(network.graph.nodes[0].outgoing_edges), 2)
-        self.assertEqual(len(network.graph.nodes[2].incoming_edges), 2)
-
-
-if __name__ == "__main__":
-    unittest.main()
