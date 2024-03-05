@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import List, Optional, Tuple
+from typing import List, Tuple, TypeVar
 
 from core.machine_precision import eps
 from utilities.arrays import elem_lrank, elem_rank, merge_sorted
@@ -56,7 +56,9 @@ class PiecewiseLinear:
         return self.eval(at)
 
     def eval(self, at: float) -> float:
-        assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
+        assert (
+            self.domain[0] <= at <= self.domain[1]
+        ), f"Function not defined at {at}; domain: {self.domain})."
         rnk = elem_rank(self.times, at)
         return self._eval_with_rank(at, rnk)
 
@@ -420,9 +422,9 @@ class PiecewiseLinear:
         rnk = elem_rank(self.values, bound)
         return max(self.domain[0], self.inverse(bound, rnk))
 
-    def max_t_below(
-        self, bound: float, default: Optional[float] = None
-    ) -> float | None:
+    T = TypeVar("T", float, None)
+
+    def max_t_below(self, bound: float, default: T = None) -> float | T:
         """
         Returns max t s.t. self(t) <= bound
         If such a t does not exist, we return default if is given.

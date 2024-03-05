@@ -87,7 +87,7 @@ class FlowBuilder:
 
     @lru_cache(maxsize=None)
     def _get_costs(self, predictor_type: PredictorType) -> List[PiecewiseLinear]:
-        prediction_time = self._next_reroute_time - self.reroute_interval
+        prediction_time = self._route_time
         graph = self.network.graph
         travel_time = self.network.travel_time
         capacity = self.network.capacity

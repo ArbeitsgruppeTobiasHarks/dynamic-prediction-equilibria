@@ -1,7 +1,7 @@
-name: Format & Lint
+name: Format, Lint & Test
 on: [push]
 jobs:
-  format-and-lint:
+  format-lint-test:
     concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
     runs-on: ubuntu-latest
     steps:
@@ -18,8 +18,11 @@ jobs:
         run: |
           poetry env use python3.11
           poetry install
-      - name: Format & Lint
+      - name: Format
         run: |
           poetry run black src --check
           poetry run isort src --profile black --check
-          poetry run pylint src --errors-only
+      - name: Lint
+        run: PYTHONPATH=src poetry run pylint src --errors-only
+      - name: Test
+        run: PYTHONPATH=src poetry run pytest
