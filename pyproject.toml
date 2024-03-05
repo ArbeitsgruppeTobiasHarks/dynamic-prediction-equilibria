@@ -12,7 +12,7 @@ tensorflow = "^2.12.1"
 torch = "^2.0.1"
 click = "^8.1.3"
 pylint = "^2.15.5"
-matplotlib = "^3.6.2"
+matplotlib = "^3.8.3"
 numpy = "^1.23.4"
 scikit-learn = "^1.1.3"
 pandas = "^1.5.1"
@@ -21,6 +21,7 @@ pandas = "^1.5.1"
 black = "^23.3.0"
 isort = "^5.12.0"
 pylint = "^2.17.4"
+pytest = "^8.0.2"
 
 [build-system]
 requires = ["poetry-core"]
