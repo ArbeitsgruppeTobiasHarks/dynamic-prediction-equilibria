@@ -23,6 +23,6 @@ jobs:
           poetry run black src --check
           poetry run isort src --profile black --check
       - name: Lint
-        run: poetry run pylint src --errors-only
+        run: PYTHONPATH=src poetry run pylint src --errors-only
       - name: Test
         run: PYTHONPATH=src poetry run pytest
