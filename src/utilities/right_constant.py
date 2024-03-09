@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import numbers
+from math import ceil, floor
 from typing import List, Tuple
 
 from core.machine_precision import eps
-from utilities.arrays import elem_lrank, merge_sorted, merge_sorted_many
+from utilities.arrays import elem_lrank, elem_rank, merge_sorted, merge_sorted_many
 from utilities.piecewise_linear import PiecewiseLinear
 
 
@@ -138,7 +140,7 @@ class RightConstant:
             new_values[i] = sum(
                 functions[j].values[ptrs[j]] for j in range(len(functions))
             )
-        return RightConstant(new_times, new_values, domain)
+        return RightConstant(new_times, new_values, domain).simplify()
 
     def __add__(self, other):
         return self.__radd__(other)
@@ -150,6 +152,44 @@ class RightConstant:
         if not isinstance(other, RightConstant):
             raise TypeError("Can only subtract a RightConstantFunction.")
         return self + (-other)
+
+    def __rmul__(self, other):
+        if isinstance(other, numbers.Number):
+            return RightConstant(
+                self.times, [float(other) * v for v in self.values], self.domain
+            )
+        elif isinstance(other, RightConstant):
+            assert self.domain == other.domain
+
+            new_times = merge_sorted(self.times, other.times)
+            new_values = [0.0] * len(new_times)
+
+            lptr = 0
+            rptr = 0
+            for i, time in enumerate(new_times):
+                while lptr < len(self.times) - 1 and self.times[lptr + 1] <= time:
+                    lptr += 1
+                while rptr < len(other.times) - 1 and other.times[rptr + 1] <= time:
+                    rptr += 1
+                new_values[i] = self.values[lptr] * other.values[rptr]
+
+            return RightConstant(new_times, new_values, self.domain)
+        else:
+            raise TypeError("Can only multiply by a numeric, a RightConstant.")
+
+    def __mul__(self, other):
+        return self.__rmul__(other)
+
+    def indicator(self) -> Indicator:
+        new_values = list(map(lambda x: float(bool(x)), self.values))
+
+        return Indicator(self.times, new_values, self.domain).simplify()
+
+    def restrict(self, interval: Tuple[float, float]):
+        assert self.domain[0] <= interval[0] <= interval[1] <= self.domain[1]
+
+        restrictor = Indicator.from_interval(*interval)
+        return self.__mul__(restrictor)
 
     def simplify(self) -> RightConstant:
         """
@@ -176,3 +216,79 @@ class RightConstant:
         return PiecewiseLinear(
             times, values, self.values[0], self.values[-1], self.domain
         )
+
+    def project_to_grid(self, delta: float, horizon: float) -> RightConstant:
+        """
+        Returns a RightConstant approximation on the interval (self.domain[0], horizon) with grid size delta.
+        """
+        assert horizon <= self.domain[1]
+        n_nodes = floor((horizon - self.domain[0]) / delta) + 1
+        new_times = [self.domain[0] + delta * n for n in range(n_nodes)]
+        new_values = []
+
+        if new_times == self.times:  # already is an approximation itself
+            return self
+
+        integral = self.integral()
+        for i in range(n_nodes - 1):
+            new_values.append(
+                (integral(new_times[i + 1]) - integral(new_times[i])) / delta
+            )
+        new_values.append(self.values[-1])
+        return RightConstant(new_times, new_values, self.domain)
+
+    def invert(self) -> RightConstant:
+        return RightConstant(
+            self.times,
+            [1.0 / v if v > eps else 1.0 / eps for v in self.values],
+            self.domain,
+        )
+
+
+class Indicator(RightConstant):
+    """
+    Allows only values of 0 and 1
+    """
+
+    @staticmethod
+    def from_interval(start: float, end: float):
+        domain = (0, float("inf"))
+        assert domain[0] <= start <= end <= domain[1]
+
+        times = [start]
+        values = [1.0]
+        if domain[0] < start - eps:
+            times = [domain[0]] + times
+            values = [0.0] + values
+        if end < domain[1] - eps:
+            times = times + [end]
+            values = values + [0.0]
+        return Indicator(times, values, domain)
+
+    def simplify(self) -> Indicator:
+        """
+        This removes unnecessary timesteps
+        """
+        new_times = [self.times[0]]
+        new_values = [self.values[0]]
+        for i in range(0, len(self.times) - 1):
+            if self.values[i] != self.values[i + 1]:
+                new_times.append(self.times[i + 1])
+                new_values.append(self.values[i + 1])
+        return Indicator(new_times, new_values, self.domain)
+
+    def __or__(self, other):
+        result = super().__radd__(other)
+
+        return result.indicator()
+
+    def __invert__(self):
+        new_values = list(map(lambda x: 1.0 - x, self.values))
+
+        return Indicator(self.times, new_values, self.domain)
+
+    def __rmul__(self, other):
+        if isinstance(other, Indicator):
+            return super().__rmul__(other).indicator().simplify()
+        else:
+            return super().__rmul__(other)

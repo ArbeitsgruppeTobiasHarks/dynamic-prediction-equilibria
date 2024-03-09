@@ -26,6 +26,12 @@ class Edge:
     def __str__(self):
         return str(self.id)
 
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
+
 
 class Node:
     id: int
@@ -38,6 +44,12 @@ class Node:
         self._incoming_edges = []
         self._outgoing_edges = []
         self._graph = graph
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
 
     @property
     def incoming_edges(self):
