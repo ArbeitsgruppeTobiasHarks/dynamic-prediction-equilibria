@@ -96,7 +96,7 @@ class DirectedGraph:
             "reversed": self.reversed,
         }
 
-    def add_edge(self, node_from: int, node_to: int):
+    def add_edge(self, node_from: int, node_to: int) -> Edge:
         if node_from not in self.nodes.keys():
             self.nodes[node_from] = Node(node_from, self)
         if node_to not in self.nodes.keys():
@@ -106,6 +106,7 @@ class DirectedGraph:
         self.edges.append(edge)
         self.nodes[node_from].outgoing_edges.append(edge)
         self.nodes[node_to].incoming_edges.append(edge)
+        return edge
 
     def get_nodes_reaching(self, node: Node) -> Set[Node]:
         assert node in self.nodes.values()

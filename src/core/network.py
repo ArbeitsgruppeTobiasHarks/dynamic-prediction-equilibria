@@ -63,10 +63,11 @@ class Network:
 
     def add_edge(
         self, node_from: int, node_to: int, travel_time: float, capacity: float
-    ):
-        self.graph.add_edge(node_from, node_to)
+    ) -> Edge:
+        edge = self.graph.add_edge(node_from, node_to)
         self.travel_time = np.append(self.travel_time, travel_time)
         self.capacity = np.append(self.capacity, capacity)
+        return edge
 
     def add_commodity(
         self,
