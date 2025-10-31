@@ -7,11 +7,13 @@
     "build": "webpack --mode=production",
     "build:poster": "webpack --mode=production --env poster=true",
     "start": "webpack-dev-server --hot",
-    "start:poster": "webpack-dev-server --env poster=true --hot"
+    "start:poster": "webpack-dev-server --env poster=true --hot",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@matejmazur/react-katex": "^3.1.3",
     "import": "^0.0.6",
+    "patch-package": "^8.0.1",
     "prop-types": "^15.8.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",

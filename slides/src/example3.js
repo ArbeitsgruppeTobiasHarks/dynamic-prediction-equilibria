@@ -61,7 +61,7 @@ const SvgContent = ({ width, height, mode = MODE.DEFAULT, svgIdPrefix, t, diagra
     const stopWatch = {
         [MODE.DEFAULT]: <StopWatch t={t} x={v1Pos[0] - 20} size={40} y={5} />,
         [MODE.DEMO]: <StopWatch t={t} x={v1Pos[0] - 20} size={40} y={100} />,
-        [MODE.TIMESERIES]: <StopWatch t={t} x={-100} y={330} size={40} />
+        [MODE.TIMESERIES]: <StopWatch t={t / 6} x={-100} y={330} size={40} />
     }
 
     const transformNet = {

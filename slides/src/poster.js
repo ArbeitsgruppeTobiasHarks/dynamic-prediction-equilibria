@@ -16,7 +16,7 @@ import {
     TableHeader
 } from 'spectacle';
 import styled from 'styled-components'
-import performance from './performance2.png'
+import performance from './performance-new.png'
 import sampleNetwork from './network2.png'
 import { ThemeProvider } from 'styled-components'
 import syntaxTheme from 'react-syntax-highlighter/dist/cjs/styles/prism/vs';
@@ -30,6 +30,10 @@ import { Example3Svg } from './example3';
 
 const ListItem = (props) => <OriginalListItem style={{ margin: "10px" }}  {...props} />
 
+// A0 in mm: 841 x 1189 mm
+// Since we use pxs, let's convert with a factor of 3
+const WIDTH = 841 * 3
+const HEIGHT = 1189 * 3
 
 const theme = {
     fonts: {
@@ -55,21 +59,23 @@ const theme = {
         text: '18px',
     },
     size: {
-        width: 3840,
-        height: 2160
+        width: WIDTH,
+        height: HEIGHT
     }
 }
 
-const SubHeading = (props) => <Text color="secondary" textAlign="center" fontWeight='700' fontSize='32px' {...props} />
+
+
+const SubHeading = (props) => <Text color={theme.colors.secondary} textAlign="center" fontWeight='700' fontSize='32px' {...props} />
 
 const TITLE = "Machine-Learned Prediction Equilibrium for Dynamic Traffic Assignment"
 
-const CustomBox = (props) => <Box margin={40} borderStyle='1px solid lightgray' borderRadius={20} backgroundColor={theme.colors.tertiary} {...props} />
+const CustomBox = (props) => <Box margin={30} borderStyle='1px solid lightgray' borderRadius={20} backgroundColor={theme.colors.tertiary} {...props} />
 
 
 const PhysicalFlowModelBox = () => (
-    <CustomBox width={1075} position="relative" >
-        <SubHeading color={theme.colors.secondary}>The Physical Flow Model</SubHeading>
+    <CustomBox position="relative" >
+        <SubHeading>The Physical Flow Model</SubHeading>
         <Box color={theme.colors.primary}>
             <div>
                 <Text style={{ margin: "0 32px", padding: "0" }}>We are given</Text>
@@ -120,7 +126,7 @@ const PhysicalFlowModelBox = () => (
 )
 
 const BehavioralModelBox = () => (
-    <CustomBox width={1075}>
+    <CustomBox>
         <SubHeading>The Behavioral Model</SubHeading>
         <Box>
             <UnorderedList margin="0 32px">
@@ -157,7 +163,7 @@ const BehavioralModelBox = () => (
 
 
 const ExistenceBox = () => (
-    <CustomBox width={1075}>
+    <CustomBox>
         <SubHeading>Sufficient Conditions for the Existence of DPE</SubHeading>
         <Definition>A predictor {Tex`\hat q_{i,e}`} is <i>continuous</i>, if {BTex`
             \hat q_{i,e} : \mathbb R_{\geq0} \times \mathbb R_{\geq 0} \times C(\mathbb R_{\geq0}, \mathbb R_{\geq0})^{E} \to \mathbb R_{\geq 0},
@@ -189,10 +195,10 @@ const ExistenceBox = () => (
 )
 
 const AnalyzedPredictorsBox = () => (
-    <CustomBox width={1075}>
+    <CustomBox>
         <SubHeading>The Analyzed Predictors</SubHeading>
         <div style={{
-            marginLeft: "875px", width: "200px", textAlign: "center",
+            marginLeft: "1000px", width: "200px", textAlign: "center",
             fontFamily: "'Open Sans'", fontSize: theme.fontSizes.text
         }}>Compatible with Existence-Theorem</div>
         <UnorderedList>
@@ -237,7 +243,7 @@ const AnalyzedPredictorsBox = () => (
 )
 
 const SimulationBox = () => (
-    <CustomBox width={1075}>
+    <CustomBox>
         <SubHeading>Extension-based Simulation</SubHeading>
         <UnorderedList>
             <ListItem>Approximate a DPE by rerouting agents in discrete time intervals {Tex`\bar\theta_k = k\cdot \varepsilon`}.</ListItem>
@@ -276,7 +282,7 @@ const SimulationBox = () => (
 )
 
 const ComparingPerformanceBox = () => (
-    <CustomBox width={1075}>
+    <CustomBox>
         <SubHeading>Comparing the Performance of Predictors</SubHeading>
         <UnorderedList>
             <ListItem>
@@ -316,33 +322,43 @@ const ComparingPerformanceBox = () => (
 )
 
 const TimeSeries = () => {
-    const height = 300
-    const width = 350
-    return <div style={{ position: 'relative', height: 1975, left: '20px' }}>
+    const totalHeight = 550
+    const cellHeight = 300
+    const cellWidth = 350
+    const horizontalGap = 100
+    const rows = 2
+    const cols = 4
+    const totalWidth = cols * cellWidth + cols * horizontalGap
+    return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ position: 'relative', height: `${totalHeight}px`, width: totalWidth + 'px' }}>
         {
             [0, 100, 200, 300, 400, 500, 600, 700].map((t, ind) => {
-                const top = -80 + ind * 200 + (ind >= 2 ? 10 : 0) + (ind >= 3 ? 25 : 0) + (ind >= 4 ? 55 : 0) + (ind >= 5 ? 95 : 0) + (ind >= 6 ? 55 : 0) + (ind >= 7 ? 25 : 0)
-                return <div key={t} style={{ height, width, overflow: 'hidden', position: 'absolute', top }}>
-                    <Example3Svg demo svgIdPrefix={`example3-t`} overrideT={t + 100} height={height} width={width} />
+                const rowInd = Math.floor(ind / cols)
+                const colInd = ind % cols
+                const left = colInd * cellWidth + (2 * colInd + 1) * horizontalGap / 2
+                const bottom = 50 + (rows - rowInd - 1) * cellHeight
+                return <div key={t} style={{ height: cellHeight, width: cellWidth, overflow: 'hidden', position: 'absolute', bottom, left }}>
+                    <Example3Svg demo svgIdPrefix={`example3-t`} overrideT={t + 100} height={cellHeight} width={cellWidth} />
                 </div>;
             })
         }
-        <Text style={{ position: "absolute", bottom: 0, left: 0, right: 0, textAlign: "center" }}>A DPE using predictor {Tex`\hat q_{i,e}^L`}.</Text>
+    </div>
+    <Text style={{ position: "absolute", bottom: 0, left: 0, right: 0, textAlign: "center" }}><i>Figure.</i> A DPE using predictor {Tex`\hat q_{i,e}^L`}.</Text>
     </div>
 }
 
 // const pageSize = 38.5
 
 const Poster = () => (
-    <Deck theme={theme}>
+    <Deck theme={theme} printMode={true}>
         <Slide padding={0} backgroundColor='white' textColor={theme.colors.primary}>
-            <Heading fontSize='64px' color={'white'} backgroundColor={theme.colors.secondary} style={{ margin: '-16px -16px 10px -16px', padding: '32px' }}>{TITLE}</Heading>
-            <div style={{ display: 'flex', flexDirection: 'row' }}>
-                <div style={{ width: '90%', height: 1975, display: 'flex', flexDirection: 'column' }}>
-                    <Text className="authors" textAlign="center" fontSize="h2" style={{ margin: '0.5em', padding: '0px' }}>Lukas Graf<sup>1</sup>, Tobias Harks<sup>1</sup>, Kostas Kollias<sup>2</sup>, and Michael Markl<sup>1</sup>
+            <Heading fontSize='64px' color={theme.colors.secondary} style={{ padding: '16px', paddingBottom: "0px", marginBottom:"0px" }}>{TITLE}</Heading>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', flex: 1 }}>
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Text className="authors" textAlign="center" fontSize="h2" style={{ margin: '0.5em', padding: '0px', marginTop: "0px" }}>Lukas Graf<sup>1</sup>, Tobias Harks<sup>1</sup>, Kostas Kollias<sup>2</sup>, and Michael Markl<sup>1</sup>
                         <div style={{ fontSize: "0.8em", margin: "0.625em", display: "flex", justifyContent: "center" }}><span style={{ width: "300px" }}><b>1</b>: University of Augsburg</span><span style={{ width: "300px" }}><b>2</b>: Google</span></div>
                     </Text>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr', justifyContent: 'space-evenly', alignItems: 'stretch', flex: 1 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr', justifyContent: 'space-evenly', alignItems: 'stretch', flex: 1 }}>
                         <PhysicalFlowModelBox />
                         <BehavioralModelBox />
                         <ExistenceBox />
@@ -351,7 +367,7 @@ const Poster = () => (
                         <ComparingPerformanceBox />
                     </div>
                 </div>
-                <div style={{ width: '10%' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', }}>
                     <TimeSeries />
                 </div>
             </div>
@@ -390,7 +406,7 @@ const MLPredictorStepper = () => {
 const PredictorListItem = ({ text, figure, compatible }) => {
     return <ListItem>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
-            <div style={{ width: '625px', height: '100px' }}>{text}</div>
+            <div style={{ width: '750px', height: '100px' }}>{text}</div>
             <div style={{ height: '90px' }}>{figure(true)}</div>
             <div style={{ height: '100px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginLeft: '60px' }}>
                 {compatible ? '✔️' : '❌'}</div>
