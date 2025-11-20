@@ -113,7 +113,7 @@ In this section we finally carry out the experiments and compare the average tra
 
 We first take a closer look at the synthetic network as shown in Figure~\ref{fig:synthetic-network}.
 Here, we want to analyze how the average travel times of competing predictors evolve while increasing the total network inflow. 
-For each oblivious predictor described in Section~\ref{sec:applied-predictors}, we add a commodity $i\in\{\predq^\predZ, \predq^\predC, \predq^\predL, \predq^\predRL, \predq^\predML \}$.
+For each causal predictor described in Section~\ref{sec:applied-predictors}, we add a commodity $i\in\{\predq^\predZ, \predq^\predC, \predq^\predL, \predq^\predRL, \predq^\predML \}$.
 Each of these commodities has the same source $s$ and sink $t$ and the same constant inflow $\bar u_i$ up to time $h=25$.
 The outcome of running the simulation with time horizon $H=100$ for each sampled total inflow in $(0, 30)$ can be seen in Figure~\ref{fig:synthetic-travel-times}.
 The ML based predictor performed best, while notably the Zero-Predictor, which distributes flow along paths $(s,t)$ and $(s,v,w,t)$ uniformly at all times, performs better than the remaining predictors.

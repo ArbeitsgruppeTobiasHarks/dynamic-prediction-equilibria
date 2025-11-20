@@ -270,7 +270,7 @@ const Presentation = () => (
         to {Tex`\R_{\geq 0}`}.
       </Definition></Appear>
       <Appear><Definition>
-        A predictor {Tex`\hat q_{i,e}`} is <i>oblivious</i>, if for all {Tex`\bar\theta \in\mathbb R_{\geq0}`} it holds {Tex`
+        A predictor {Tex`\hat q_{i,e}`} is <i>causal</i>, if for all {Tex`\bar\theta \in\mathbb R_{\geq0}`} it holds {Tex`
         \quad\forall q,q'\colon\quad
     q_{\hspace{.07em}\vert\hspace{.07em}[0, \bar\theta]^E} = q'_{\hspace{.07em}\vert\hspace{.07em}[0, \bar\theta]^E}
     \implies
@@ -285,7 +285,7 @@ const Presentation = () => (
 
       <Appear><Theorem>
         If all network inflow rates {Tex`u_i`} are bounded and all predictors {Tex`\hat q_{i, e}`} are
-        continuous, oblivious, and respect FIFO, then
+        continuous, causal, and respect FIFO, then
         there exists a dynamic prediction equilibrium {Tex`(\hat q, f)`}.
       </Theorem></Appear>
 

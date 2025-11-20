@@ -68,7 +68,7 @@ DPEs have been introduced in~\cite{mainpaper}.
 For the proof of the existence of DPEs the following two properties are important.
 
 \begin{definition}
-    A predictor $\predq_{e}$  is called \emph{oblivious},
+    A predictor $\predq_{e}$  is called \emph{causal},
 if the following condition holds
     \[
     \forall \theta,\bar\theta, q,q'\colon\quad
@@ -86,7 +86,7 @@ if the following condition holds
 \end{definition}
 
 \begin{theorem}[{\cite[Theorem~10]{mainpaper}}]\label{thm:dpe-existence}
-    For any network with a finite set of commodities, each associated with a locally integrable, bounded network inflow rate and oblivious, continuous, and FIFO-compatible predictors $\predq_{i,e}$ there exists a dynamic prediction flow with respect to $\predq$. 
+    For any network with a finite set of commodities, each associated with a locally integrable, bounded network inflow rate and causal, continuous, and FIFO-compatible predictors $\predq_{i,e}$ there exists a dynamic prediction flow with respect to $\predq$. 
 \end{theorem}
 
 \subsection{Applied Predictors}\label{sec:applied-predictors}
@@ -144,6 +144,6 @@ More details on this method are described in Section~\ref{subsec:implementation-
 Finally, we introduce the \emph{perfect predictor} $\predq^\predP$ which predicts the queues as they will occur with \[
     \predq^\predP_e(\theta,\bar\theta,q) \coloneqq q_e(\theta).
 \]
-As this is a non-oblivious predictor, it is not possible to embed it into a simulation nor does it fulfill the constraints of Theorem~\ref{thm:dpe-existence}.
+As this is a non-causal predictor, it is not possible to embed it into a simulation nor does it fulfill the constraints of Theorem~\ref{thm:dpe-existence}.
 Nevertheless, the flow of a DPE equilibrium, in which all commodities use the perfect predictor, is the same as a dynamic equilibrium as analyzed in~\cite[Definition~2]{Cominetti2015}.
 In this scenario particles can exactly predict the traffic conditions at any future time and choose a shortest path already when starting at the source node.

@@ -30,7 +30,7 @@ import { Example3Svg } from './example3';
 
 const ListItem = (props) => <OriginalListItem style={{ margin: "10px" }}  {...props} />
 
-// A0 in mm: 841 x 1189 mm
+// A1 in mm: 841 x 1189 mm
 // Since we use pxs, let's convert with a factor of 3
 const WIDTH = 841 * 3
 const HEIGHT = 1189 * 3
@@ -56,7 +56,7 @@ const theme = {
         h2: '32px',
         h3: '28px',
         head: '16px',
-        text: '18px',
+        text: '22px',
     },
     size: {
         width: WIDTH,
@@ -70,7 +70,7 @@ const SubHeading = (props) => <Text color={theme.colors.secondary} textAlign="ce
 
 const TITLE = "Machine-Learned Prediction Equilibrium for Dynamic Traffic Assignment"
 
-const CustomBox = (props) => <Box margin={30} borderStyle='1px solid lightgray' borderRadius={20} backgroundColor={theme.colors.tertiary} {...props} />
+const CustomBox = (props) => <Box overflow="hidden" margin={15} borderStyle='1px solid lightgray' borderRadius={20} backgroundColor={theme.colors.tertiary} {...props} />
 
 
 const PhysicalFlowModelBox = () => (
@@ -172,7 +172,7 @@ const ExistenceBox = () => (
             to {Tex`\R_{\geq 0}`}.
         </Definition>
         <Definition>
-            A predictor {Tex`\hat q_{i,e}`} is <i>oblivious</i>, if for all {Tex`\bar\theta \in\mathbb R_{\geq0}`} it holds {BTex`
+            A predictor {Tex`\hat q_{i,e}`} is <i>causal</i>, if for all {Tex`\bar\theta \in\mathbb R_{\geq0}`} it holds {BTex`
             \quad\forall q,q'\colon\quad
             q_{\hspace{.07em}\vert\hspace{.07em}[0, \bar\theta]^E} = q'_{\hspace{.07em}\vert\hspace{.07em}[0, \bar\theta]^E}
             \implies
@@ -187,7 +187,7 @@ const ExistenceBox = () => (
 
         <Theorem>
             If all network inflow rates {Tex`u_i`} are bounded and all predictors {Tex`\hat q_{i, e}`} are
-            continuous, oblivious, and respect FIFO, then
+            continuous, causal, and respect FIFO, then
             there exists a dynamic prediction equilibrium {Tex`(\hat q, f)`}.
         </Theorem>
 
@@ -198,6 +198,7 @@ const AnalyzedPredictorsBox = () => (
     <CustomBox>
         <SubHeading>The Analyzed Predictors</SubHeading>
         <div style={{
+            marginTop: "-80px",
             marginLeft: "1000px", width: "200px", textAlign: "center",
             fontFamily: "'Open Sans'", fontSize: theme.fontSizes.text
         }}>Compatible with Existence-Theorem</div>
@@ -236,7 +237,7 @@ const AnalyzedPredictorsBox = () => (
             </>} figure={(minimize) => <RegressionPredictorSvg minimize={minimize} />} compatible />
             <PredictorListItem text={<>
                 <i>The perfect predictor </i> {Tex`\hat q^{\text{P}}_{i,e}(\theta;\bar\theta;q) \coloneqq q_e(\theta)`}.
-                <p style={{ marginTop: '5px' }}>Will always predict the future correctly and is thus not oblivious. If all commodities use this predictor, a DPE corresponds to a dynamic equilibrium in the full-information model.</p>
+                <p style={{ marginTop: '5px' }}>Predicts the future correctly. Here, a DPE corresponds to a dynamic equilibrium in the full-information model.</p>
             </>} figure={(minimize) => <PerfectPredictorSvg minimize={minimize} />} compatible={false} />
         </UnorderedList>
     </CustomBox>
@@ -248,7 +249,7 @@ const SimulationBox = () => (
         <UnorderedList>
             <ListItem>Approximate a DPE by rerouting agents in discrete time intervals {Tex`\bar\theta_k = k\cdot \varepsilon`}.</ListItem>
             <ListItem>We assume that the network inflow rates are piecewise constant with finite jumps</ListItem>
-            <ListItem>The extension procedure for one routing interval {Tex`(\bar\theta_k,\bar\theta_{k+1})`} given an equilibrium flow up to time {Tex`H = \bar\theta_k`}:
+            <ListItem>Extension procedure for one routing interval {Tex`(\bar\theta_k,\bar\theta_{k+1})`} given an equilibrium flow up to time {Tex`H = \bar\theta_k`}:
                 <div style={{ width: '900px' }}>
                     <ThemeProvider theme={{ size: { width: '900px' } }}>
                         <OrderedList style={{ backgroundColor: 'white', border: '1px solid lightgray', fontFamily: '' }}>
@@ -263,20 +264,17 @@ const SimulationBox = () => (
                 </div>
             </ListItem>
             <ListItem>This simulation enables us to generate training data for the linear regression predictor {Tex`\hat q^{\text{ML}}_{i,e}`}:
-            <UnorderedList>
-                <ListItem>
-                    We use the constant predictor to create sample DPEs.
-                </ListItem>
-                <ListItem>
-                    This allows the model to estimate the progression of queues when agents follow our behavioral model.
-                </ListItem>
-                <ListItem>
-                    In small networks, the weights have been trained seperately on each edge.
-                </ListItem>
-                <ListItem>
-                    In larger networks, a single weight matrix has been learned using the collective data of all edges.
-                </ListItem>
-            </UnorderedList></ListItem>
+                <UnorderedList>
+                    <ListItem>
+                        We use the constant predictor to create sample DPEs.
+                    </ListItem>
+                    <ListItem>
+                        This allows the model to estimate the progression of queues when agents follow our behavioral model.
+                    </ListItem>
+                    <ListItem>
+                        In small networks, the weights were trained separately on each edge.
+                    </ListItem>
+                </UnorderedList></ListItem>
         </UnorderedList>
     </CustomBox>
 )
@@ -322,29 +320,31 @@ const ComparingPerformanceBox = () => (
 )
 
 const TimeSeries = () => {
-    const totalHeight = 550
+    const totalHeight = 600
     const cellHeight = 300
     const cellWidth = 350
     const horizontalGap = 100
     const rows = 2
     const cols = 4
     const totalWidth = cols * cellWidth + cols * horizontalGap
-    return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ position: 'relative', height: `${totalHeight}px`, width: totalWidth + 'px' }}>
-        {
-            [0, 100, 200, 300, 400, 500, 600, 700].map((t, ind) => {
-                const rowInd = Math.floor(ind / cols)
-                const colInd = ind % cols
-                const left = colInd * cellWidth + (2 * colInd + 1) * horizontalGap / 2
-                const bottom = 50 + (rows - rowInd - 1) * cellHeight
-                return <div key={t} style={{ height: cellHeight, width: cellWidth, overflow: 'hidden', position: 'absolute', bottom, left }}>
-                    <Example3Svg demo svgIdPrefix={`example3-t`} overrideT={t + 100} height={cellHeight} width={cellWidth} />
-                </div>;
-            })
-        }
-    </div>
-    <Text style={{ position: "absolute", bottom: 0, left: 0, right: 0, textAlign: "center" }}><i>Figure.</i> A DPE using predictor {Tex`\hat q_{i,e}^L`}.</Text>
-    </div>
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: "relative" }}>
+            <div style={{ position: "relative", height: `${totalHeight}px`, width: totalWidth + 'px' }}>
+                {
+                    [0, 100, 200, 300, 400, 500, 600, 700].map((t, ind) => {
+                        const rowInd = Math.floor(ind / cols)
+                        const colInd = ind % cols
+                        const left = colInd * cellWidth + (2 * colInd + 1) * horizontalGap / 2
+                        const bottom = 90 + (rows - rowInd - 1) * (cellHeight - 10)
+                        return <div key={t} style={{ height: cellHeight, width: cellWidth, overflow: 'hidden', position: 'absolute', bottom, left }}>
+                            <Example3Svg demo svgIdPrefix={`example3-t`} overrideT={t + 100} height={cellHeight} width={cellWidth} />
+                        </div>;
+                    })
+                }
+            <Text style={{ position: "absolute", bottom: 0, left: 0, right: 0, textAlign: "center" }}>A DPE using predictor {Tex`\hat q_{i,e}^L`}.</Text>
+            </div>
+        </div>
+    )
 }
 
 // const pageSize = 38.5
@@ -352,13 +352,13 @@ const TimeSeries = () => {
 const Poster = () => (
     <Deck theme={theme} printMode={true}>
         <Slide padding={0} backgroundColor='white' textColor={theme.colors.primary}>
-            <Heading fontSize='64px' color={theme.colors.secondary} style={{ padding: '16px', paddingBottom: "0px", marginBottom:"0px" }}>{TITLE}</Heading>
+            <Heading fontSize='64px' color={theme.colors.secondary} style={{ padding: '16px', paddingBottom: "0px", marginBottom: "0px" }}>{TITLE}</Heading>
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', flex: 1 }}>
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1, }}>
                     <Text className="authors" textAlign="center" fontSize="h2" style={{ margin: '0.5em', padding: '0px', marginTop: "0px" }}>Lukas Graf<sup>1</sup>, Tobias Harks<sup>1</sup>, Kostas Kollias<sup>2</sup>, and Michael Markl<sup>1</sup>
                         <div style={{ fontSize: "0.8em", margin: "0.625em", display: "flex", justifyContent: "center" }}><span style={{ width: "300px" }}><b>1</b>: University of Augsburg</span><span style={{ width: "300px" }}><b>2</b>: Google</span></div>
                     </Text>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr', justifyContent: 'space-evenly', alignItems: 'stretch', flex: 1 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 0.85fr 0.91fr', justifyContent: 'space-evenly', alignItems: 'stretch', flex: 1 }}>
                         <PhysicalFlowModelBox />
                         <BehavioralModelBox />
                         <ExistenceBox />
@@ -367,7 +367,7 @@ const Poster = () => (
                         <ComparingPerformanceBox />
                     </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', }}>
+                <div style={{ display: 'flex', justifyContent: 'center', flex: "0 0 auto", height: "700px" }}>
                     <TimeSeries />
                 </div>
             </div>
