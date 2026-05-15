@@ -2,27 +2,29 @@ name: Format, Lint & Test
 on: [push]
 jobs:
   format-lint-test:
-    concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
+    concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v3
-      - name: Install Python and Poetry
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Format dynflows
+        working-directory: dynflows
         run: |
-          sudo add-apt-repository ppa:deadsnakes/ppa
-          sudo apt update
-          sudo apt install python3.11
-          curl -sSL https://install.python-poetry.org | python3.11 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install Python Dependencies
+            uv run black . --check
+            uv run isort . --profile black --check
+      - name: Format dpe_experiments
+        working-directory: dpe_experiments
         run: |
-          poetry env use python3.11
-          poetry install
-      - name: Format
-        run: |
-          poetry run black . --check
-          poetry run isort . --profile black --check
-      - name: Lint
-        run: poetry run pylint dynflows tests --errors-only
-      - name: Test
-        run: poetry run pytest
+            uv run black . --check
+            uv run isort . --profile black --check
+      - name: Lint dynflows
+        working-directory: dynflows
+        run: uv run pylint src --errors-only
+      - name: Lint dpe_experiments
+        working-directory: dpe_experiments
+        run: uv run pylint src --errors-only
+      - name: Test dynflows
+        working-directory: dynflows
+        run:  uv run pytest

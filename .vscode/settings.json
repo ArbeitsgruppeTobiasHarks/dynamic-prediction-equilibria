@@ -1,6 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./predictor/src"
+        "${workspaceFolder}/dynflows"
     ],
     "latex-workshop.latex.outDir": "%DIR%/out",
     "gitlens.currentLine.enabled": false,
@@ -12,5 +12,11 @@
         "minted": "ignore"
     },
     "js/ts.implicitProjectConfig.checkJs": true,
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/dynflows"
+    ],
+    "mypy-type-checker.extraPaths": [
+        "${workspaceFolder}/dynflows/src"
+    ]
 }

@@ -5,11 +5,7 @@
 To start working:
 
 * Install Python 3.11 (if not already)
-* Install [poetry](https://python-poetry.org/) (if not already)
-* Run `poetry config virtualenvs.in-project true`
-* Depending on your system, run `poetry env use python3.11` 
-* Run `poetry install`
-* Run `poetry shell` to activate the created virtual environment
+* Install [uv](https://docs.astral.sh/uv/getting-started/) (if not already)
 
 ### Disable Assertions
 
@@ -28,8 +24,8 @@ However, you can also specify a custom directory by setting the `TNPATH` environ
 
 ## Running an experiment
 
-For each experiment described in the manuscript, there is a Python file in the `dynflows/scenarios` folder.
-You can run an experiment by simply executing the corresponding module, e.g. `python -m dynflows.scenarios.sample_scenario`.
+For each experiment described in the manuscript, there is a Python file in the `dpe_experiments/scenarios` folder.
+You can run an experiment by simply executing the corresponding module, e.g. `python -m dpe_experiments.scenarios.sample_scenario`.
 
 Upon execution of an experiment, the following steps are executed:
 
