@@ -20,7 +20,7 @@ class ExpandedLinearRegressionPredictor(Predictor):
 
     def __init__(
         self,
-        predict: Callable[[List[PiecewiseLinear], float], List[PiecewiseLinear]],
+        predict: PredictFunction,
         network: Network,
     ):
         super().__init__(network)
@@ -103,7 +103,9 @@ class ExpandedLinearRegressionPredictor(Predictor):
         with open(model_path, "rb") as file:
             model: LinearRegression = pickle.load(file)
 
-        def predict(old_queues: List[PiecewiseLinear], phi: float):
+        def predict(phi: float, flow: DynamicFlow):
+            old_queues = flow.queues
+
             queues: List[Optional[PiecewiseLinear]] = [None] * len(old_queues)
             for e in network.graph.edges:
                 inputs = [0.0] * ((5 + 1) * past_timesteps)

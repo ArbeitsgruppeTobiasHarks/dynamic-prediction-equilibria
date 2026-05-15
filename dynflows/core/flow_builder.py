@@ -24,6 +24,7 @@ class FlowBuilder:
     # For each commodity, the predictor_type
     predictor_types: List[PredictorType]
     reroute_interval: Optional[float]
+    # For every commodity, node, the list of active outgoing edges.
     _active_edges: List[Dict[Node, List[Edge]]]
     _built: bool
     _handle_nodes: Set[Node]
