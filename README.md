@@ -20,14 +20,6 @@ To disable assertions in your current terminal session, run
  * for PowerShell: `$Env:PYTHONOPTIMIZE="TRUE"`
  * for cmd.exe: `set PYTHONOPTIMIZE=TRUE`
 
-### Set PYTHONPATH variable
-
-As the code is split into multiple modules, the `PYTHONPATH` environment variable declares where Python should look for the files.
-Use the following command to set the variable:
- * for Bash: `export PYTHONPATH=./src`
- * for PowerShell: `$Env:PYTHONPATH=".\src"`
- * for cmd.exe: `set PYTHONPATH=".\src"`
-
 ### Clone the TransportationNetworks repository
 
 Please clone the TransportationNetworks repository from [github.com/bstabler/TransportationNetworks](https://github.com/bstabler/TransportationNetworks) locally.
@@ -36,8 +28,8 @@ However, you can also specify a custom directory by setting the `TNPATH` environ
 
 ## Running an experiment
 
-For each experiment described in the manuscript, there is a Python file in the `src/scenarios` folder.
-You can run an experiment by simply executing the corresponding file, e.g. `python src/scenarios/sample_scenario.py`.
+For each experiment described in the manuscript, there is a Python file in the `dynflows/scenarios` folder.
+You can run an experiment by simply executing the corresponding module, e.g. `python -m dynflows.scenarios.sample_scenario`.
 
 Upon execution of an experiment, the following steps are executed:
 
