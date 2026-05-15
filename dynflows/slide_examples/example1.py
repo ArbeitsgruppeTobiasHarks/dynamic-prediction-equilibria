@@ -18,12 +18,10 @@ def build_example1():
             )
         },
         2,
-        PredictorType.ZERO,
     )
     network.add_commodity(
         {3: RightConstant([0, 1200, 1300], [0, 10, 0], domain=(0, float("inf")))},
         2,
-        PredictorType.ZERO,
     )
 
     network.graph.positions = {
@@ -37,8 +35,13 @@ def build_example1():
 
     horizon = 2000
     predictors = {PredictorType.ZERO: ZeroPredictor(network)}
-
-    builder = FlowBuilder(network=network, predictors=predictors, reroute_interval=100)
+    predictor_types = [PredictorType.ZERO, PredictorType.ZERO]
+    builder = FlowBuilder(
+        network=network,
+        predictors=predictors,
+        predictor_types=predictor_types,
+        reroute_interval=100,
+    )
     generator = builder.build_flow()
     flow = next(generator)
     while flow.phi < horizon:

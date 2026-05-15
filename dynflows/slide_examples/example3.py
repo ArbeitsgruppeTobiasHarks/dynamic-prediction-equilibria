@@ -21,16 +21,19 @@ def build_example3():
     network.add_edge(0, 3, 200, 20)
     network.add_edge(3, 4, 400, 20)
     network.add_edge(4, 2, 200, 20)
-    network.add_commodity(
-        {0: RightConstant([-1, 0, 20000], [0, 20, 0])}, 2, PredictorType.LINEAR
-    )
+    network.add_commodity({0: RightConstant([-1, 0, 20000], [0, 20, 0])}, 2)
 
     horizon = 2000
     predictors: Dict[PredictorType, Predictor] = {
         PredictorType.LINEAR: LinearPredictor(network, 20000)
     }
 
-    builder = FlowBuilder(network=network, predictors=predictors, reroute_interval=0.05)
+    builder = FlowBuilder(
+        network=network,
+        predictors=predictors,
+        predictor_types=[PredictorType.LINEAR],
+        reroute_interval=0.05,
+    )
     generator = builder.build_flow()
     flow = next(generator)
     while flow.phi < horizon:

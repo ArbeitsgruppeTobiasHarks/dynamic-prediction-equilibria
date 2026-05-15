@@ -10,9 +10,7 @@ def test_queues():
     Test whether the queues are calculated correctly.
     """
     network = build_sample_network()
-    network.add_commodity(
-        {0: RightConstant([0.0], [0.0])}, 2, predictor_type=PredictorType.CONSTANT
-    )
+    network.add_commodity({0: RightConstant([0.0], [0.0])}, 2)
 
     m = len(network.graph.edges)
     flow = DynamicFlow(network)

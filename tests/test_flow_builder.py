@@ -21,11 +21,13 @@ def test_flow_builder():
         )
     }
     net_inflow = RightConstant([0.0], [3.0], (0, float("inf")))
-    network.add_commodity({0: net_inflow}, 2, PredictorType.REGULARIZED_LINEAR)
+    network.add_commodity({0: net_inflow}, 2)
 
     reroute_interval = 0.005
     horizon = 100
-    flow_builder = FlowBuilder(network, predictors, reroute_interval)
+    flow_builder = FlowBuilder(
+        network, predictors, [PredictorType.REGULARIZED_LINEAR], reroute_interval
+    )
     generator = flow_builder.build_flow()
     flow = None
     while flow is None or flow.phi < horizon:

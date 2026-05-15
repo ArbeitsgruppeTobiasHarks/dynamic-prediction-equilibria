@@ -1,29 +1,25 @@
 from __future__ import annotations
 
 import pickle
-from typing import Dict, List
+from typing import Callable, Dict, List
 
 import numpy as np
 
 from dynflows.core.graph import DirectedGraph, Edge, Node
-from dynflows.core.predictors.predictor_type import PredictorType
 from dynflows.utilities.right_constant import RightConstant
 
 
 class Commodity:
     sources: Dict[Node, RightConstant]
     sink: Node
-    predictor_type: PredictorType
 
     def __init__(
         self,
         sources: Dict[Node, RightConstant],
         sink: Node,
-        predictor_type: PredictorType,
     ):
         self.sources = sources
         self.sink = sink
-        self.predictor_type = predictor_type
 
 
 class Network:
@@ -47,7 +43,6 @@ class Network:
                 {
                     "sources": {s.id: value for s, value in c.sources.items()},
                     "sink": c.sink.id,
-                    "predictor_type": c.predictor_type,
                 }
                 for c in self.commodities
             ],
@@ -59,7 +54,7 @@ class Network:
         self.travel_time = state["travel_time"]
         self.commodities = []
         for c in state["commodities"]:
-            self.add_commodity(c["sources"], c["sink"], c["predictor_type"])
+            self.add_commodity(c["sources"], c["sink"])
 
     def add_edge(
         self, node_from: int, node_to: int, travel_time: float, capacity: float
@@ -72,7 +67,6 @@ class Network:
         self,
         sources: Dict[int, RightConstant],
         sink: int,
-        predictor_type: PredictorType,
     ):
         nodes = self.graph.nodes
         assert all(
@@ -80,9 +74,7 @@ class Network:
         ), f"No node with id#{sink} in the graph!"
         assert sink in nodes.keys(), f"No node with id#{sink} in the graph!"
         self.commodities.append(
-            Commodity(
-                {nodes[s]: v for s, v in sources.items()}, nodes[sink], predictor_type
-            )
+            Commodity({nodes[s]: v for s, v in sources.items()}, nodes[sink])
         )
 
     def _remove_edge(self, edge: Edge):
@@ -149,9 +141,12 @@ class Network:
             self.graph.nodes.pop(v.id)
         print(f"\rRemoved {len(remove_nodes)} unnecessary nodes.")
 
-    def remove_unnecessary_commodities(self, selected_commodity: int) -> int:
+    def remove_unnecessary_commodities(
+        self, selected_commodity: int, on_removed: Callable[[int], []] = lambda _: _
+    ) -> int:
         """
         Remove all commodities that cannot interfere with commodity i.
+        Returns the index of the selected commodity in the new range of commodities.
         """
         selected_comm = self.commodities[selected_commodity]
         important_nodes = [
@@ -175,7 +170,9 @@ class Network:
             end="\r",
         )
         for comm in remove_commodities:
-            self.commodities.remove(comm)
+            index = self.commodities.index(comm)
+            self.commodities.pop(index)
+            on_removed(index)
         print(f"Removed {len(remove_commodities)} non-interfering commodities.")
 
         return self.commodities.index(selected_comm)
