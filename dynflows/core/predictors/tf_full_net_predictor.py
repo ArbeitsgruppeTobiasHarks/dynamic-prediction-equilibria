@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 import numpy as np
-import tensorflow as tf
+import keras
 
 from dynflows.core.dynamic_flow import DynamicFlow
 from dynflows.core.network import Network
@@ -14,7 +14,7 @@ from dynflows.utilities.piecewise_linear import PiecewiseLinear
 class TFFullNetPredictor(Predictor):
     def __init__(
         self,
-        model: tf.keras.Sequential,
+        model: keras.Sequential,
         input_mask: np.ndarray,
         output_mask: np.ndarray,
         network: Network,
@@ -212,7 +212,7 @@ class TFFullNetPredictor(Predictor):
         future_timesteps: int,
         prediction_interval: float,
     ):
-        model = tf.keras.models.load_model(model_path)
+        model = keras.models.load_model(model_path)
         return TFFullNetPredictor(
             model,
             input_mask,
