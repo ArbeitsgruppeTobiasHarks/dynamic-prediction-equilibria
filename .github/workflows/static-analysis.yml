@@ -20,9 +20,9 @@ jobs:
           poetry install
       - name: Format
         run: |
-          poetry run black src --check
-          poetry run isort src --profile black --check
+          poetry run black . --check
+          poetry run isort . --profile black --check
       - name: Lint
-        run: PYTHONPATH=src poetry run pylint src --errors-only
+        run: poetry run pylint dynflows tests --errors-only
       - name: Test
-        run: PYTHONPATH=src poetry run pytest
+        run: poetry run pytest
