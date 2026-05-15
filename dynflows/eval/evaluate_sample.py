@@ -45,7 +45,7 @@ def eval_sample():
         net_inflow = RightConstant(
             [0.0, inflow_horizon], [demand, 0.0], (0, float("inf"))
         )
-        network.add_commodity({0: net_inflow}, 2, PredictorType.ZERO)
+        network.add_commodity({0: net_inflow}, 2)
         times, comp_time, flow = evaluate_single_run(
             network,
             flow_id=None,

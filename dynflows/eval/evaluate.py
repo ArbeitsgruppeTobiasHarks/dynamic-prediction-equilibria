@@ -1,7 +1,7 @@
 import os
 import pickle
 from math import floor
-from typing import Callable, Dict, Optional, TypeVar
+from typing import Callable, Dict, List, Optional, TypeVar
 
 import numpy as np
 
@@ -97,6 +97,7 @@ def calculate_optimal_average_travel_time(
 
 def evaluate_single_run(
     network: Network,
+    predictor_types: List[PredictorType],
     focused_commodity_index: int,
     split: bool,
     horizon: float,
@@ -145,11 +146,14 @@ def evaluate_single_run(
     )
     for i in predictors:
         network.commodities.append(
-            Commodity({focused_source: demand_per_comm}, commodity.sink, i)
+            Commodity({focused_source: demand_per_comm}, commodity.sink)
         )
+        predictor_types.append(i)
 
     if flow_path is None or not os.path.exists(flow_path):
-        flow_builder = FlowBuilder(network, predictors, reroute_interval)
+        flow_builder = FlowBuilder(
+            network, predictors, predictor_types, reroute_interval
+        )
         flow, computation_time = build_with_times(
             flow_builder,
             flow_id,

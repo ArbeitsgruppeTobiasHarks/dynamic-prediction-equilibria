@@ -93,8 +93,10 @@ def build_flows(
                 flow._network = network
             else:
                 predictors = {PredictorType.CONSTANT: ConstantPredictor(network)}
-
-                flow_builder = FlowBuilder(network, predictors, reroute_interval)
+                predictor_types = [PredictorType.CONSTANT] * len(network.commodities)
+                flow_builder = FlowBuilder(
+                    network, predictors, predictor_types, reroute_interval
+                )
                 flow, _ = build_with_times(
                     flow_builder, flow_index, reroute_interval, horizon
                 )

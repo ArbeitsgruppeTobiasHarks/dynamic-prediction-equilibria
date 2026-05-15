@@ -21,6 +21,8 @@ from dynflows.utilities.queues import PriorityQueue
 class FlowBuilder:
     network: Network
     predictors: Dict[PredictorType, Predictor]
+    # For each commodity, the predictor_type
+    predictor_types: List[PredictorType]
     reroute_interval: Optional[float]
     _active_edges: List[Dict[Node, List[Edge]]]
     _built: bool
@@ -36,11 +38,13 @@ class FlowBuilder:
         self,
         network: Network,
         predictors: Dict[PredictorType, Predictor],
+        predictor_types: List[PredictorType],
         # None means rerouting every time some outflow changes
         reroute_interval: Optional[float],
     ):
         self.network = network
         self.predictors = predictors
+        self.predictor_types = predictor_types
         self.reroute_interval = reroute_interval
         self._built = False
         self._active_edges = [{} for _ in network.commodities]
@@ -149,10 +153,9 @@ class FlowBuilder:
         com_nodes = self._important_nodes[i]
         sink = commodity.sink
 
-        if self.predictors[commodity.predictor_type].is_constant():
-            const_costs = [
-                c.values[0] for c in self._get_costs(commodity.predictor_type)
-            ]
+        predictor_type = self.predictor_types[i]
+        if self.predictors[predictor_type].is_constant():
+            const_costs = [c.values[0] for c in self._get_costs(predictor_type)]
             distances = reverse_dijkstra(commodity.sink, const_costs, com_nodes)
             for v in com_nodes:
                 if v == commodity.sink:
@@ -166,10 +169,7 @@ class FlowBuilder:
                         active_edges.append(e)
                 assert len(active_edges) > 0
                 for j in self._commodity_ids_by_sink[commodity.sink]:
-                    if (
-                        self.network.commodities[j].predictor_type
-                        == commodity.predictor_type
-                    ):
+                    if self.predictor_types[j] == predictor_type:
                         self._active_edges[j][v] = active_edges
         else:
             # Do Time-Dependent dijkstra from s to t to find active outgoing edges of s
@@ -178,13 +178,13 @@ class FlowBuilder:
                 s,
                 sink,
                 com_nodes,
-                self._get_costs(commodity.predictor_type),
+                self._get_costs(predictor_type),
             )
             self._active_edges[i][s] = get_active_edges_from_dijkstra(result, s, sink)
         return self._active_edges[i][s]
 
     def _determine_new_inflow(self) -> Dict[int, Dict[int, float]]:
-        new_inflow = {}
+        new_inflow: Dict[int, Dict[int, float]] = {}
         for v in self._handle_nodes:
             new_inflow.update({e.id: {} for e in v.outgoing_edges})
 

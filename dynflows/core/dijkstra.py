@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, FrozenSet, List, NamedTuple, Set, Tuple
+from typing import Callable, Dict, FrozenSet, List, NamedTuple, Sequence, Set, Tuple
 
 from dynflows.core.graph import Edge, Node
 from dynflows.core.machine_precision import eps
@@ -45,7 +45,7 @@ def dynamic_dijkstra(
     source: Node,
     sink: Node,
     relevant_nodes: Set[Node],
-    costs: List[Callable[[float], float]],
+    costs: Sequence[Callable[[float], float]],
 ) -> DynamicDijkstraResult:
     """
     Assumes costs to follow the FIFO rule and relevant_nodes to contain

@@ -158,6 +158,7 @@ def eval_network_for_commodities(
             file.write("")
 
         network = Network.from_file(network_path)
+        predictor_types = [PredictorType.CONSTANT] * num_commodities
 
         print()
         print(f"Evaluating Commodity {k}...")
@@ -172,17 +173,20 @@ def eval_network_for_commodities(
             commodity = Commodity(
                 {source: RightConstant([0, inflow_horizon], [1, 0], (0, float("inf")))},
                 sink,
-                predictor_type=PredictorType.CONSTANT,
             )
             network.commodities.append(commodity)
+            predictor_types.append(PredictorType.CONSTANT)
             selected_commodity = network.remove_unnecessary_commodities(
-                len(network.commodities) - 1
+                len(network.commodities) - 1, lambda i: predictor_types.pop(i)
             )
         else:
-            selected_commodity = network.remove_unnecessary_commodities(k)
+            selected_commodity = network.remove_unnecessary_commodities(
+                k, lambda i: predictor_types.pop(i)
+            )
 
         _, _, flow = evaluate_single_run(
             network,
+            predictor_types,
             flow_id=k,
             focused_commodity_index=selected_commodity,
             horizon=horizon,
@@ -201,7 +205,7 @@ def eval_network_for_commodities(
             flow,
             network,
             {
-                comm_idx: visualization_config[comm.predictor_type][0]
+                comm_idx: visualization_config[predictor_types[comm_idx]][0]
                 for (comm_idx, comm) in enumerate(network.commodities)
             },
         )
