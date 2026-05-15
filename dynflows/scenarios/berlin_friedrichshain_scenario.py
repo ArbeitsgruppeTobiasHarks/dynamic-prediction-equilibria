@@ -1,6 +1,5 @@
 import json
 import os
-from curses import nonl
 from math import pi
 
 from dynflows.core.dynamic_flow import DynamicFlow
