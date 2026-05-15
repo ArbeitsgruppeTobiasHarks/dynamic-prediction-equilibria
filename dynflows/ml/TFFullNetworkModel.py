@@ -2,7 +2,7 @@ import datetime
 import os
 
 import numpy as np
-import tensorflow as tf
+import keras
 from sklearn.model_selection import train_test_split
 
 from dynflows.core.network import Network
@@ -48,54 +48,54 @@ def train_tf_full_net_model(
             X, Y, test_size=0.1, shuffle=False
         )
 
-        normalization = tf.keras.layers.Normalization()
+        normalization = keras.layers.Normalization()
         normalization.adapt(X_train)
 
-        model: tf.keras.models.Sequential = tf.keras.models.Sequential(
+        model: keras.models.Sequential = keras.models.Sequential(
             [
                 normalization,
-                tf.keras.layers.Dense(
+                keras.layers.Dense(
                     units=X.shape[1],
-                    kernel_regularizer=tf.keras.regularizers.l2(0.001),
-                    bias_regularizer=tf.keras.regularizers.l2(0.001),
+                    kernel_regularizer=keras.regularizers.l2(0.001),
+                    bias_regularizer=keras.regularizers.l2(0.001),
                 ),
-                tf.keras.layers.LeakyReLU(),
-                tf.keras.layers.Dense(
+                keras.layers.LeakyReLU(),
+                keras.layers.Dense(
                     units=X.shape[1],
-                    kernel_regularizer=tf.keras.regularizers.l2(0.001),
-                    bias_regularizer=tf.keras.regularizers.l2(0.001),
+                    kernel_regularizer=keras.regularizers.l2(0.001),
+                    bias_regularizer=keras.regularizers.l2(0.001),
                 ),
-                tf.keras.layers.LeakyReLU(),
-                tf.keras.layers.Dense(
+                keras.layers.LeakyReLU(),
+                keras.layers.Dense(
                     units=X.shape[1],
-                    kernel_regularizer=tf.keras.regularizers.l2(0.001),
-                    bias_regularizer=tf.keras.regularizers.l2(0.001),
+                    kernel_regularizer=keras.regularizers.l2(0.001),
+                    bias_regularizer=keras.regularizers.l2(0.001),
                 ),
-                tf.keras.layers.LeakyReLU(),
-                tf.keras.layers.Dense(
+                keras.layers.LeakyReLU(),
+                keras.layers.Dense(
                     units=Y.shape[1],
-                    kernel_regularizer=tf.keras.regularizers.l2(0.001),
-                    bias_regularizer=tf.keras.regularizers.l2(0.001),
+                    kernel_regularizer=keras.regularizers.l2(0.001),
+                    bias_regularizer=keras.regularizers.l2(0.001),
                 ),
-                tf.keras.layers.LeakyReLU(),
+                keras.layers.LeakyReLU(),
             ]
         )
         log_dir = "log/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(
+        tensorboard_callback = keras.callbacks.TensorBoard(
             log_dir=log_dir, histogram_freq=1
         )
-        optimizer = tf.keras.optimizers.Adam()
+        optimizer = keras.optimizers.Adam()
 
         checkpoint_path = "training/cp.ckpt"
         # Create a callback that saves the model's weights
-        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path)
+        cp_callback = keras.callbacks.ModelCheckpoint(filepath=checkpoint_path)
 
         model.summary()
 
         model.compile(loss="mean_absolute_error", optimizer=optimizer)
 
-        early_stopping_callback = tf.keras.callbacks.EarlyStopping(
+        early_stopping_callback = keras.callbacks.EarlyStopping(
             monitor="loss", patience=3
         )
 

@@ -4,7 +4,7 @@ import os
 from typing import Dict, List, Optional
 
 import numpy as np
-import tensorflow as tf
+import keras
 
 from dynflows.core.dynamic_flow import DynamicFlow
 from dynflows.core.network import Network
@@ -16,7 +16,7 @@ from dynflows.utilities.piecewise_linear import PiecewiseLinear
 class TFNeighborhoodPredictor(Predictor):
     def __init__(
         self,
-        models: Dict[int, tf.keras.Sequential],
+        models: Dict[int, keras.Sequential],
         input_mask: np.ndarray,
         output_mask: np.ndarray,
         network: Network,
@@ -214,7 +214,7 @@ class TFNeighborhoodPredictor(Predictor):
         models = {}
         for edge in network.graph.edges:
             if output_mask[edge.id] == 1:
-                models[edge.id] = tf.keras.models.load_model(
+                models[edge.id] = keras.models.load_model(
                     os.path.join(models_path, str(edge.id))
                 )
         return TFNeighborhoodPredictor(
