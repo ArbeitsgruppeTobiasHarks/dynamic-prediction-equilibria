@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from dynflows.core.machine_precision import eps
 from dynflows.utilities.arrays import merge_sorted
@@ -33,7 +33,7 @@ class FlowRatesCollection:
         self.accumulative = RightConstant.sum(
             list(self._functions_dict.values())
         ).integral()
-        times = []
+        times: List[float] = []
         for fun in self._functions_dict.values():
             times = merge_sorted(times, fun.times)
         for time in times:
