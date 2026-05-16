@@ -1,6 +1,6 @@
 [project]
 name = "dynflows"
-version = "0.1.1"
+version = "0.1.2"
 description = "A library for computing, illustrating, and evaluating dynamic flows, a.k.a. flows over time, in Vickrey's fluid queuing model mainly used in dynamic traffic assignment."
 authors = [
     {name = "Michael Markl", email = "marklmichael98@gmail.com"}
