@@ -7,7 +7,7 @@ from matplotlib.testing.decorators import image_comparison
 from dynflows.utilities.piecewise_linear import PiecewiseLinear
 
 
-def test_inverse():
+def test_inverse() -> None:
     f = PiecewiseLinear([0.0, 1.0], [1.0, 3.0], 4.0, 1.0)
     assert f.inverse(-1.0, -1) == -0.5
     assert f.inverse(1.0, 0) == 0.0
@@ -19,7 +19,7 @@ def test_inverse():
 
 
 @image_comparison(baseline_images=["compose"], extensions=["pdf"])
-def test_compose():
+def test_compose() -> None:
     g = PiecewiseLinear([0.0, 1.0], [0.0, 2.0], 0.5, 1.0)
     f = PiecewiseLinear([0.5, 1.0], [0.5, 1.0], 1.0, 1.0)
     comp = g.compose(f)
@@ -29,7 +29,7 @@ def test_compose():
 
 
 @image_comparison(baseline_images=["compose_bounded"], extensions=["pdf"])
-def test_compose_bounded():
+def test_compose_bounded() -> None:
     f = PiecewiseLinear([0.0, 1.0, 5.0], [1.0, 2.0, 15.0], 0.0, 2.0, (0, float("inf")))
     g = PiecewiseLinear([0.0, 1.0], [0.0, 1.0], 0.0, 1.0, (0, float("inf")))
     comp = g.compose(f)
@@ -39,7 +39,7 @@ def test_compose_bounded():
 
 
 @image_comparison(baseline_images=["compose_non_monotone"], extensions=["pdf"])
-def test_compose_non_monotone():
+def test_compose_non_monotone() -> None:
     g = PiecewiseLinear([0.0, 1.0, 2.0], [0.0, 2.0, 0.0], 2, -2)
     f = PiecewiseLinear([0.5, 1.0], [0.5, 1.0], 1.0, 1.0)
     comp = g.compose(f)
@@ -49,7 +49,7 @@ def test_compose_non_monotone():
 
 
 @image_comparison(baseline_images=["compose_with_domain"], extensions=["pdf"])
-def test_compose_with_domain():
+def test_compose_with_domain() -> None:
     g = PiecewiseLinear([0.0, 1.0, 2.0], [1.0, 2.0, 0.0], 1, -2, (float("-inf"), 6.0))
     f = PiecewiseLinear([-10.0, -5.0, -2.0], [-5.0, 0.0, 6.0], 1, 2, (-12.0, -2.0))
     comp = g.compose(f)
@@ -59,7 +59,7 @@ def test_compose_with_domain():
 
 
 @image_comparison(baseline_images=["another_compose"], extensions=["pdf"])
-def test_another_compose():
+def test_another_compose() -> None:
     g = PiecewiseLinear([0.0, 1.0], [0.0, 1.0], 0.0, 1.0, (0.0, float("inf")))
     f = PiecewiseLinear([0.0, 1.0], [3.0, 4.0], 0.0, 1.0, (0.0, float("inf")))
     comp = g.compose(f)
@@ -69,7 +69,7 @@ def test_another_compose():
 
 
 @image_comparison(baseline_images=["yet_another_compose"], extensions=["pdf"])
-def test_yet_another_compose():
+def test_yet_another_compose() -> None:
     g = PiecewiseLinear([7.0, 8.0], [7.0, 8.0], 1.0, 1.0, (7.0, float("inf")))
     f = PiecewiseLinear(
         [7.0, 8.0, 9.0, 10.0],
@@ -84,7 +84,7 @@ def test_yet_another_compose():
 
 
 @image_comparison(baseline_images=["sum"], extensions=["pdf"])
-def test_sum():
+def test_sum() -> None:
     f1 = PiecewiseLinear([0, 1, 2], [0.0, 1.0, 4.0], 1.0, 3.0)
     f2 = PiecewiseLinear([-1, 4], [-1, 10], 11.0 / 5, 11.0 / 5)
 
@@ -93,7 +93,7 @@ def test_sum():
 
 
 @image_comparison(baseline_images=["sum_with_domains"], extensions=["pdf"])
-def test_sum_with_domains():
+def test_sum_with_domains() -> None:
     f1 = PiecewiseLinear([0, 1, 2], [0.0, 1.0, 4.0], 1.0, 3.0, (-0.5, float("inf")))
     f2 = PiecewiseLinear([-1, 4], [-1, 10], 11.0 / 5, 11.0 / 5, (float("-inf"), 10.0))
 
@@ -103,7 +103,7 @@ def test_sum_with_domains():
 
 
 @image_comparison(baseline_images=["min"], extensions=["pdf"])
-def test_min():
+def test_min() -> None:
     f1 = PiecewiseLinear([0], [0.0], 0.0, 0.0, (0, float("inf")))
     f2 = PiecewiseLinear([0, 1, 2], [1.0, -1.0, 1.0], -2, 2, (0, float("inf")))
     min = f1.minimum(f2)
@@ -111,7 +111,7 @@ def test_min():
 
 
 @image_comparison(baseline_images=["min_inf"], extensions=["pdf"])
-def test_min_inf():
+def test_min_inf() -> None:
     f1 = PiecewiseLinear([0.0, 1.0, 2.0], [0.0, 1.0, 4], 1, 3.0, (0, float("inf")))
     f2 = PiecewiseLinear([0.0, 1.0, 2.0], [0.0, -1.0, 3], -1, 4, (0, float("inf")))
     min = f1.minimum(f2)
@@ -119,7 +119,7 @@ def test_min_inf():
 
 
 @image_comparison(baseline_images=["another_min"], extensions=["pdf"])
-def test_another_min():
+def test_another_min() -> None:
     f = PiecewiseLinear(
         [0.4, 1.4, 2.4, 3.4],
         [3.8, 5.2, 6.6, 7.6],
@@ -139,7 +139,7 @@ def test_another_min():
 
 
 @image_comparison(baseline_images=["advanced_min"], extensions=["pdf"])
-def test_advanced_min():
+def test_advanced_min() -> None:
     f = PiecewiseLinear(
         times=[
             0.0,
@@ -596,7 +596,7 @@ def test_advanced_min():
     plot_many([f, g, min])
 
 
-def test_max_before_bound():
+def test_max_before_bound() -> None:
     f = PiecewiseLinear([0, 2.0, 3.0], [1.0, 1.0, 1.5], 0.0, 3.0, (0, float("inf")))
     assert f.max_t_below(0.0, default=0.0) == 0.0
 

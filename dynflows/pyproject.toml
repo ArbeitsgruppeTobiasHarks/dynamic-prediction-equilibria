@@ -20,8 +20,19 @@ dev = [
     "black >= 23.3.0, < 24",
     "isort >= 5.12.0, < 6",
     "pylint >= 4, < 5",
-    "pytest >= 8.0.2, < 9"
+    "pytest >= 8.0.2, < 9",
+    "mypy>=2.1.0",
+    "pandas-stubs>=3.0.0.260204",
 ]
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
 
 [build-system]
 requires = ["uv_build>=0.11.14,<0.12"]

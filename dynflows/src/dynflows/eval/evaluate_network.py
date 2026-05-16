@@ -2,7 +2,7 @@ import json
 import os
 import random
 from math import ceil, log10
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -22,7 +22,7 @@ def generate_network_demands(
     random_seed: int,
     inflow_horizon: float,
     sigma: Optional[float] = None,
-):
+) -> None:
     if sigma is None:
         sigma = min(network.capacity) / 2.0
     random.seed(random_seed)
@@ -46,6 +46,9 @@ def generate_network_demands(
         )
 
 
+type VisualizationConfig = Dict[PredictorType, Tuple[str, str]]
+
+
 def eval_network_demand(
     network_path: str,
     number_flows: int,
@@ -57,12 +60,12 @@ def eval_network_demand(
     horizon: float,
     build_predictors: PredictorBuilder,
     demand_sigma: Optional[float],
-    visualization_config: Dict[PredictorType, Tuple[str, str]],
+    visualization_config: VisualizationConfig,
     split: bool = False,
-    suppress_log=True,
+    suppress_log: bool = True,
     check_for_optimizations: bool = True,
     generate_flow_visualization: bool = True,
-):
+) -> None:
     """
     Evaluates a single (randomly chosen) commodity.
     """
@@ -84,7 +87,7 @@ def eval_network_demand(
             f"{str(flow_id).zfill(ceil(log10(number_flows)))}.vis.json",
         )
 
-        def handle(_):
+        def handle(_: Any) -> None:
             network = Network.from_file(network_path)
             original_num_commodities = len(network.commodities)
             seed = -flow_id - 1
@@ -150,12 +153,12 @@ def eval_network_for_commodities(
     reroute_interval: float,
     horizon: float,
     build_predictors: PredictorBuilder,
-    visualization_config: Dict[PredictorType, Tuple[str, str]],
+    visualization_config: VisualizationConfig,
     split: bool = False,
     random_commodities: bool = False,
-    suppress_log=True,
+    suppress_log: bool = True,
     check_for_optimizations: bool = True,
-):
+) -> None:
     if check_for_optimizations:
         assert (lambda: False)(), "Use PYTHONOPTIMIZE=TRUE for a faster evaluation."
     print(
@@ -254,11 +257,11 @@ def eval_network_for_commodities(
     compare_mae_with_perf(out_dir, visualization_config)
 
 
-def compare_mae_with_perf(dir: str, visualization_config):
+def compare_mae_with_perf(dir: str, visualization_config: VisualizationConfig) -> None:
     files = sorted([file for file in os.listdir(dir) if file.endswith(".json")])
     # Zero, Constant, Linear, RegularizedLinear, ML
     colors = [t[0] for t in visualization_config.values()]
-    coordinates = [[] for _ in colors]
+    coordinates: Any = [[] for _ in colors]
     for file_path in files:
         with open(os.path.join(dir, file_path), "r") as file:
             res_dict = json.load(file)
@@ -296,13 +299,15 @@ def compare_mae_with_perf(dir: str, visualization_config):
         file.write(tikz)
 
 
-def generate_slowdown_boxplot(dir: str, visualization_config):
+def generate_slowdown_boxplot(
+    dir: str, visualization_config: VisualizationConfig
+) -> None:
     files = [file for file in os.listdir(dir) if file.endswith(".json")]
 
     colors = [t[0] for t in visualization_config.values()]
     labels = [t[1] for t in visualization_config.values()]
 
-    slowdowns = [[] for _ in visualization_config]
+    slowdowns: Any = [[] for _ in visualization_config]
     means = [0.0 for _ in visualization_config]
     for file_path in files:
         with open(os.path.join(dir, file_path), "r") as file:
@@ -332,13 +337,13 @@ def generate_slowdown_boxplot(dir: str, visualization_config):
         print(means[j] / len(files))
 
 
-def generate_mae_boxplot(dir: str, visualization_config):
+def generate_mae_boxplot(dir: str, visualization_config: VisualizationConfig) -> None:
     files = [file for file in os.listdir(dir) if file.endswith(".json")]
 
     colors = [t[0] for t in visualization_config.values()]
     labels = [t[1] for t in visualization_config.values()]
 
-    maes = [[] for _ in visualization_config]
+    maes: Any = [[] for _ in visualization_config]
     for file_path in files:
         with open(os.path.join(dir, file_path), "r") as file:
             res_dict = json.load(file)
@@ -357,10 +362,12 @@ def generate_mae_boxplot(dir: str, visualization_config):
     print("Successfully saved a MAE boxplot in the output directory.")
 
 
-def eval_jsons_to_avg_slowdowns(dir: str, visualization_config):
+def eval_jsons_to_avg_slowdowns(
+    dir: str, visualization_config: VisualizationConfig
+) -> None:
     files = [file for file in os.listdir(dir) if file.endswith(".json")]
 
-    slowdowns_by_predictor = [[] for _ in visualization_config]
+    slowdowns_by_predictor: Any = [[] for _ in visualization_config]
     for file_path in files:
         with open(os.path.join(dir, file_path), "r") as file:
             res_dict = json.load(file)
@@ -379,9 +386,9 @@ def eval_jsons_to_avg_slowdowns(dir: str, visualization_config):
         JSONEncoder().dump(avg_slowdowns_by_predictor, file)
 
 
-def eval_jsons_to_avg_eps(dir: str, visualization_config):
+def eval_jsons_to_avg_eps(dir: str, visualization_config: VisualizationConfig) -> None:
     files = [file for file in os.listdir(dir) if file.endswith(".json")]
-    slowdowns_by_predictor = [[] for _ in visualization_config]
+    slowdowns_by_predictor: Any = [[] for _ in visualization_config]
     means = [0.0 for _ in visualization_config]
     for file_path in files:
         with open(os.path.join(dir, file_path), "r") as file:
@@ -403,7 +410,7 @@ def eval_jsons_to_avg_eps(dir: str, visualization_config):
 
 if __name__ == "__main__":
 
-    def main():
+    def main() -> None:
         # network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/tokyo_tiny/default_demands.pickle"
         network_path = "/home/michael/Nextcloud/Universität/2021/softwareproject/data/sioux-falls/random-demands.pickle"
         Network.from_file(network_path).print_info()

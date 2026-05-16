@@ -25,7 +25,7 @@ class PriorityQueue(Generic[T]):
             self._index = 0
             self._index_dict = {}
 
-    def push(self, item: T, key: float):
+    def push(self, item: T, key: float) -> None:
         assert item not in self._index_dict.keys()
         new_entry = (key, self._index, item)
         self._data.append(new_entry)
@@ -33,7 +33,7 @@ class PriorityQueue(Generic[T]):
         self._siftdown(0, len(self._data) - 1)
         self._index += 1
 
-    def _siftdown(self, startpos, pos):
+    def _siftdown(self, startpos: int, pos: int) -> None:
         newitem = self._data[pos]
         # Follow the path to the root, moving parents down until finding a place
         # newitem fits.
@@ -63,7 +63,7 @@ class PriorityQueue(Generic[T]):
             return returnitem[2]
         return lastelt[2]
 
-    def _siftup(self, pos):
+    def _siftup(self, pos: int) -> None:
         endpos = len(self._data)
         startpos = pos
         newitem = self._data[pos]
@@ -89,12 +89,12 @@ class PriorityQueue(Generic[T]):
     def next(self) -> T:
         return self._data[0][2]
 
-    def key_of(self, item: T, default: Optional[float] = None) -> float:
+    def key_of(self, item: T, default: Optional[float] = None) -> float | None:
         if item not in self._index_dict:
             return default
         return self._data[self._index_dict[item]][0]
 
-    def decrease_key(self, item: T, key: float):
+    def decrease_key(self, item: T, key: float) -> None:
         assert item in self._index_dict.keys()
         pos = self._index_dict[item]
         self._data[pos] = (key, self._data[pos][1], item)
@@ -111,13 +111,13 @@ class PriorityQueue(Generic[T]):
     def __len__(self) -> int:
         return self._data.__len__()
 
-    def __contains__(self, item):
+    def __contains__(self, item: T) -> bool:
         return self.has(item)
 
     def has(self, item: T) -> bool:
         return item in self._index_dict.keys()
 
-    def update(self, item: T, new_key: float):
+    def update(self, item: T, new_key: float) -> None:
         assert self.has(item)
         index = self._index_dict[item]
         if new_key <= self._data[index][0]:
@@ -126,13 +126,13 @@ class PriorityQueue(Generic[T]):
             self._data[index] = (new_key, self._data[index][1], item)
             self._siftup(index)
 
-    def set(self, item: T, new_key: float):
+    def set(self, item: T, new_key: float) -> None:
         if self.has(item):
             self.update(item, new_key)
         else:
             self.push(item, new_key)
 
-    def increase_key(self, item: T, new_key: float):
+    def increase_key(self, item: T, new_key: float) -> None:
         assert self.has(item)
         pos = self._index_dict[item]
         new_entry = (new_key, self._data[pos][1], item)
@@ -155,7 +155,7 @@ class PriorityQueue(Generic[T]):
             left_child = 2 * pos + 1  # leftmost child position
             right_child = 2 * pos + 2
 
-    def remove(self, item: T):
+    def remove(self, item: T) -> None:
         assert self.has(item)
         pos: int = self._index_dict[item]
         self._data[pos] = (float("-inf"), -1, item)

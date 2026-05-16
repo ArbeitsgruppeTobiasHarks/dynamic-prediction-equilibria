@@ -65,10 +65,12 @@ def add_demands_to_network(
             else:
                 demand = random.randint(20, 100)
             network.add_commodity(
-                row[0],
+                {
+                    row[0]: RightConstant(
+                        [0.0, inflow_horizon], [demand, 0.0], (0, float("inf"))
+                    )
+                },
                 row[1],
-                RightConstant([0.0, inflow_horizon], [demand, 0.0], (0, float("inf"))),
-                PredictorType.CONSTANT,
             )
 
     if not suppress_log and removed_rows:

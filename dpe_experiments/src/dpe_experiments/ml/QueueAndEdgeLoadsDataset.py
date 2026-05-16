@@ -122,7 +122,7 @@ class QueueAndEdgeLoadDataset:
         return input_mask, output_mask
 
     @staticmethod
-    def mask_exists(folder_path: str) -> np.ndarray:
+    def mask_exists(folder_path: str) -> bool:
         return os.path.exists(
             os.path.join(folder_path, "../input-mask.txt")
         ) and os.path.exists(os.path.join(folder_path, "../output-mask.txt"))

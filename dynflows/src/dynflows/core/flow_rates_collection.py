@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from dynflows.core.machine_precision import eps
 from dynflows.utilities.arrays import merge_sorted
@@ -13,7 +13,12 @@ class FlowRatesCollectionItem:
     values: Dict[int, float]
     next_item: Optional[FlowRatesCollectionItem]
 
-    def __init__(self, time: float, values: Dict[int, float], next_item=None):
+    def __init__(
+        self,
+        time: float,
+        values: Dict[int, float],
+        next_item: Optional[FlowRatesCollectionItem] = None,
+    ) -> None:
         assert all(value > 0 for value in values.values())
         self.time = time
         self.values = values
@@ -48,7 +53,7 @@ class FlowRatesCollection:
             self._queue_tail.next_item = item
             self._queue_tail = item
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         """Return state values to be pickled."""
         state = self.__dict__.copy()
         # Don't pickle _network b.c. of recursive structure
@@ -63,7 +68,7 @@ class FlowRatesCollection:
         state["_queue"] = unrolled_queue
         return state
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         queue = state["_queue"]
         del state["_queue"]
         self.__dict__.update(state)
@@ -82,7 +87,7 @@ class FlowRatesCollection:
                 self._queue_tail.next_item = next_item
                 self._queue_tail = next_item
 
-    def extend(self, time: float, values: Dict[int, float], values_sum: float):
+    def extend(self, time: float, values: Dict[int, float], values_sum: float) -> None:
         item = FlowRatesCollectionItem(time, values)
         if self._queue_tail is None:
             self._queue_head = item
@@ -117,5 +122,5 @@ class FlowRatesCollection:
             return self._queue_head.values
 
     @staticmethod
-    def _new_flow_fn():
+    def _new_flow_fn() -> RightConstant:
         return RightConstant([0.0], [0.0], (0.0, float("inf")))

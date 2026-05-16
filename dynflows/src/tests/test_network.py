@@ -1,7 +1,7 @@
 from tests.sample_network import build_sample_network
 
 
-def test_build():
+def test_build() -> None:
     network = build_sample_network()
     assert len(network.graph.nodes) == 4
     assert len(network.graph.edges) == 5

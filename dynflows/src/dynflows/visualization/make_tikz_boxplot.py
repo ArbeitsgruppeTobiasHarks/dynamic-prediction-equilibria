@@ -9,7 +9,7 @@ class BoxPlot:
     data: List[float]
 
 
-def make_tikz_boxplot(ylabel: str, plots: List[BoxPlot]):
+def make_tikz_boxplot(ylabel: str, plots: List[BoxPlot]) -> str:
     tikz = (
         """\\begin{tikzpicture}
         \\begin{axis}

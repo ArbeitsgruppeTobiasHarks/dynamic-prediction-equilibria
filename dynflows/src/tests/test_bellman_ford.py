@@ -3,7 +3,7 @@ from dynflows.utilities.piecewise_linear import PiecewiseLinear
 from tests.sample_network import build_sample_network
 
 
-def test_flow_bellman_ford():
+def test_flow_bellman_ford() -> None:
     network = build_sample_network()
     costs = [
         PiecewiseLinear(

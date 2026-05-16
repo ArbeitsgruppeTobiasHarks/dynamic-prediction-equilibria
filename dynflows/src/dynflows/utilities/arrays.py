@@ -1,9 +1,28 @@
-from typing import Iterable, List
+from abc import abstractmethod
+from typing import (
+    Callable,
+    Iterable,
+    List,
+    Protocol,
+    Self,
+    SupportsAbs,
+    TypeVar,
+    runtime_checkable,
+)
 
 from dynflows.core.machine_precision import eps
 
+T = TypeVar("T")
 
-def arg_min(list: Iterable, key=lambda x: x):
+
+@runtime_checkable
+class SupportsLt(Protocol):
+    @abstractmethod
+    def __lt__(self, other: Self) -> bool:
+        ...
+
+
+def arg_min(list: Iterable[T], key: Callable[[T], SupportsLt]) -> T | None:
     minimum = None
     min_item = None
     for item in list:
@@ -60,7 +79,7 @@ def merge_sorted_many(arrays: List[List[float]]) -> List[float]:
     Merge multiple sorted arrays into a sorted array without duplicates (up to eps)
     """
     num_arrays = len(arrays)
-    merged = []
+    merged: List[float] = []
     indices = [0 for _ in arrays]
     while True:  # any(indices[i] < len(arrays[i]) for i in range(num_arrays))
         i = min(
@@ -83,7 +102,7 @@ def merge_sorted(arr1: List[float], arr2: List[float]) -> List[float]:
     """
     Merge two sorted arrays into a sorted array without duplicates (up to eps)
     """
-    merged = []
+    merged: List[float] = []
 
     ind1 = 0
     ind2 = 0

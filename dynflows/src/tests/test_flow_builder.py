@@ -13,7 +13,7 @@ from tests.sample_network import build_sample_network
 
 
 @image_comparison(baseline_images=["reg_linear_1", "reg_linear_2"], extensions=["pdf"])
-def test_flow_builder():
+def test_flow_builder() -> None:
     network = build_sample_network()
     predictors: Dict[PredictorType, Predictor] = {
         PredictorType.REGULARIZED_LINEAR: RegularizedLinearPredictor(

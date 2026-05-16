@@ -29,7 +29,7 @@ class FlowBuilder:
     _built: bool
     _handle_nodes: Set[Node]
     _flow: DynamicFlow
-    _next_reroute_time: float
+    _next_reroute_time: float | None
     _route_time: float
     _net_inflow_by_node: Dict[Node, FlowRatesCollection]
     _commodity_ids_by_sink: Dict[Node, Set[int]]
@@ -51,14 +51,11 @@ class FlowBuilder:
         self._active_edges = [{} for _ in network.commodities]
         self._handle_nodes = set()
         self._flow = DynamicFlow(network)
-        self._next_reroute_time = self._route_time = self._flow.phi
+        self._next_reroute_time = None if reroute_interval is None else self._flow.phi
+        self._route_time = self._flow.phi
         self._important_nodes = [
             network.graph.get_nodes_reaching(commodity.sink).intersection(
-                set(
-                    node
-                    for source in commodity.sources
-                    for node in network.graph.get_reachable_nodes(source)
-                )
+                network.graph.get_reachable_nodes(set(commodity.sources.keys()))
             )
             for commodity in self.network.commodities
         ]
@@ -125,19 +122,29 @@ class FlowBuilder:
                 c, s, t = self._network_inflow_changes.pop()
                 self._handle_nodes.add(s)
             if (
-                self.reroute_interval is None
+                self._next_reroute_time is None
                 or self._flow.phi >= self._next_reroute_time
             ):
                 self._get_costs.cache_clear()
 
                 self._active_edges = [{} for _ in self.network.commodities]
-                self._route_time = self._next_reroute_time
-                self._next_reroute_time += self.reroute_interval
+                self._route_time = (
+                    self._next_reroute_time
+                    if self._next_reroute_time is not None
+                    else self._flow.phi
+                )
+                if self._next_reroute_time is not None:
+                    assert self.reroute_interval is not None
+                    self._next_reroute_time += self.reroute_interval
                 self._handle_nodes = set(self.network.graph.nodes.values())
 
             new_inflow = self._determine_new_inflow()
-            max_ext_time = min(
-                self._next_reroute_time, self._network_inflow_changes.min_key()
+            max_ext_time = (
+                self._network_inflow_changes.min_key()
+                if self._next_reroute_time is None
+                else min(
+                    self._next_reroute_time, self._network_inflow_changes.min_key()
+                )
             )
             edges_with_outflow_change = self._flow.extend(new_inflow, max_ext_time)
             self._handle_nodes = set(

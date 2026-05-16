@@ -178,8 +178,8 @@ def run_scenario(edges_tntp_path: str, geojson_path: str, scenario_dir: str):
     for file in os.listdir(eval_dir):
         if file.endswith(".json"):
             path = os.path.join(eval_dir, file)
-            with open(path, "r") as file:
-                d = json.load(file)
+            with open(path, "r") as f:
+                d = json.load(f)
             average_comp_times.append(d["computation_time"])
 
     avg_comp_time = sum(average_comp_times) / len(average_comp_times)

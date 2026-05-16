@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import pickle
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List, Set
 
 import numpy as np
+from numpy import dtype
 
 from dynflows.core.graph import DirectedGraph, Edge, Node
 from dynflows.utilities.right_constant import RightConstant
+
+fndarray = np.ndarray[Any, np.dtype[np.float64]]
 
 
 class Commodity:
@@ -24,17 +27,17 @@ class Commodity:
 
 class Network:
     graph: DirectedGraph
-    capacity: np.ndarray[float]
-    travel_time: np.ndarray[float]
+    capacity: fndarray
+    travel_time: fndarray
     commodities: List[Commodity]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.graph = DirectedGraph()
         self.capacity = np.array([])
         self.travel_time = np.array([])
         self.commodities = []
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         return {
             "graph": self.graph,
             "capacity": self.capacity,
@@ -48,7 +51,7 @@ class Network:
             ],
         }
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         self.graph = state["graph"]
         self.capacity = state["capacity"]
         self.travel_time = state["travel_time"]
@@ -58,7 +61,7 @@ class Network:
 
     def add_edge(
         self, node_from: int, node_to: int, travel_time: float, capacity: float
-    ):
+    ) -> None:
         self.graph.add_edge(node_from, node_to)
         self.travel_time = np.append(self.travel_time, travel_time)
         self.capacity = np.append(self.capacity, capacity)
@@ -67,7 +70,7 @@ class Network:
         self,
         sources: Dict[int, RightConstant],
         sink: int,
-    ):
+    ) -> None:
         nodes = self.graph.nodes
         assert all(
             s in nodes.keys() for s in sources
@@ -77,7 +80,7 @@ class Network:
             Commodity({nodes[s]: v for s, v in sources.items()}, nodes[sink])
         )
 
-    def _remove_edge(self, edge: Edge):
+    def _remove_edge(self, edge: Edge) -> None:
         edge.node_to.incoming_edges.remove(edge)
         edge.node_from.outgoing_edges.remove(edge)
         del self.graph.edges[edge.id]
@@ -86,7 +89,7 @@ class Network:
         for i in range(len(self.graph.edges)):
             self.graph.edges[i].id = i
 
-    def compress_lonely_nodes(self):
+    def compress_lonely_nodes(self) -> None:
         """
         A node is lonely, if it is no source or sink and if it has a single incoming and a single outgoing edge.
         This function removes these useless nodes to speed up computation
@@ -94,7 +97,7 @@ class Network:
         remove_nodes = []
         for v in self.graph.nodes.values():
             if len(v.outgoing_edges) == 1 == len(v.incoming_edges) and all(
-                c.source != v != c.sink for c in self.commodities
+                all(v != s for s in c.sources) and v != c.sink for c in self.commodities
             ):
                 edge1 = v.incoming_edges[0]
                 edge2 = v.outgoing_edges[0]
@@ -115,15 +118,17 @@ class Network:
         for v in remove_nodes:
             self.graph.nodes.pop(v.id)
 
-    def remove_unnecessary_nodes(self):
+    def remove_unnecessary_nodes(self) -> None:
         """
         This functions checks whether a node is necessary for any commodity.
         A node v is necessary for a commodity, if there is a path from its source to its sink passing through v.
         """
-        important_nodes = set()
+        important_nodes: Set[Node] = set()
         for commodity in self.commodities:
             reaching_t = self.graph.get_nodes_reaching(commodity.sink)
-            reachable_from_s = self.graph.get_reachable_nodes(commodity.source)
+            reachable_from_s = self.graph.get_reachable_nodes(
+                set(commodity.sources.keys())
+            )
             important_nodes = important_nodes.union(
                 reaching_t.intersection(reachable_from_s)
             )
@@ -142,7 +147,7 @@ class Network:
         print(f"\rRemoved {len(remove_nodes)} unnecessary nodes.")
 
     def remove_unnecessary_commodities(
-        self, selected_commodity: int, on_removed: Callable[[int], []] = lambda _: _
+        self, selected_commodity: int, on_removed: Callable[[int], Any] = lambda _: None
     ) -> int:
         """
         Remove all commodities that cannot interfere with commodity i.
@@ -150,7 +155,7 @@ class Network:
         """
         selected_comm = self.commodities[selected_commodity]
         important_nodes = [
-            self.graph.get_reachable_nodes(i.source).intersection(
+            self.graph.get_reachable_nodes(set(i.sources.keys())).intersection(
                 self.graph.get_nodes_reaching(i.sink)
             )
             for i in self.commodities
@@ -177,7 +182,7 @@ class Network:
 
         return self.commodities.index(selected_comm)
 
-    def print_info(self):
+    def print_info(self) -> None:
         print(
             f"The network contains {len(self.graph.nodes)} nodes and {len(self.graph.edges)} edges."
         )
@@ -209,11 +214,11 @@ class Network:
         )
         print(f"Average demand: {avg_demand}")
 
-    def to_file(self, file_path: str):
+    def to_file(self, file_path: str) -> None:
         with open(file_path, "wb") as file:
             pickle.dump(self, file)
 
     @staticmethod
     def from_file(file_path: str) -> Network:
         with open(file_path, "rb") as file:
-            return pickle.load(file)
+            return pickle.load(file)  # type: ignore[no-any-return]

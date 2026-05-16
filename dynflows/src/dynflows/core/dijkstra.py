@@ -44,7 +44,7 @@ def dynamic_dijkstra(
     phi: float,
     source: Node,
     sink: Node,
-    relevant_nodes: Set[Node],
+    relevant_nodes: Set[Node] | FrozenSet[Node],
     costs: Sequence[Callable[[float], float]],
 ) -> DynamicDijkstraResult:
     """
@@ -69,7 +69,7 @@ def dynamic_dijkstra(
             relaxation = arrival_times[v] + realized_cost[e]
             if not queue.has(w):
                 queue.push(w, relaxation)
-            elif relaxation < queue.key_of(w):
+            elif relaxation < queue.key_of(w):  # type: ignore[operator]
                 queue.decrease_key(w, relaxation)
     return DynamicDijkstraResult(arrival_times, realized_cost)
 

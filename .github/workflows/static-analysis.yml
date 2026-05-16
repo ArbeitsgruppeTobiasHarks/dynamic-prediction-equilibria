@@ -25,6 +25,9 @@ jobs:
       - name: Lint dpe_experiments
         working-directory: dpe_experiments
         run: uv run pylint src --errors-only
+      - name: Type check dynflows
+        working-directory: dynflows
+        run: uv run mypy .
       - name: Test dynflows
         working-directory: dynflows
         run:  uv run pytest

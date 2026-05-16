@@ -31,7 +31,9 @@ def natural_earth_projection(latInRad: float, lngInRad: float) -> Tuple[float, f
     return (x * 1000 + 1333, -y * 1000 + 768)
 
 
-def add_commodities(network: Network, trips_tntp_file_path: str, inflow_horizon: float):
+def add_commodities(
+    network: Network, trips_tntp_file_path: str, inflow_horizon: float
+) -> None:
     with open(trips_tntp_file_path, "r") as file:
         all_rows = file.read()
 
@@ -55,11 +57,10 @@ def add_commodities(network: Network, trips_tntp_file_path: str, inflow_horizon:
         network.add_commodity(
             {origin: get_demand_with_inflow_horizon(demand, inflow_horizon)},
             destination,
-            PredictorType.CONSTANT,
         )
 
 
-def add_node_positions(network: Network, node_tntp_file_path: str):
+def add_node_positions(network: Network, node_tntp_file_path: str) -> None:
     nodes = pd.read_csv(node_tntp_file_path, sep="\t", skip_blank_lines=True)
     nodes.columns = [s.strip().lower() for s in nodes.columns]
     nodes.drop([";"], axis=1, inplace=True)

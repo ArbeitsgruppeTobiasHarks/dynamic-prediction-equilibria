@@ -51,12 +51,12 @@ def get_active_edges(
         new_costs: List[Callable[[float], float]] = [
             lambda t: -trav.reversal(-t) - t for trav in traversals
         ]
-        neg_departures = dynamic_dijkstra(
+        result = dynamic_dijkstra(
             arrivals[sink], sink, source, relevant_nodes, new_costs
         )
         graph.reverse()
         active_edges = set()
         for e in source.outgoing_edges:
-            if traversals[e.id](theta) <= -neg_departures[e.node_to]:
+            if traversals[e.id](theta) <= -result.arrival_times[e.node_to]:
                 active_edges.add(e)
         return active_edges

@@ -16,9 +16,8 @@ def _generate_commodities(
     number: int,
     inflow_horizon: float,
     demands_range: Tuple[float, float],
-):
+) -> None:
     assert number < len(network.graph.nodes)
-    commodities = []
     nodes = list(network.graph.nodes.values())
     while len(network.commodities) < number:
         source = random.choice(nodes)
@@ -41,19 +40,19 @@ def _generate_commodities(
                 sink,
             )
         network.commodities.append(commodity)
-    return commodities
 
 
 DemandsRangeBuilder = Callable[[Network], Tuple[float, float]]
 
 
-def add_od_pairs(network: Network, od_pairs_file_path: str, inflow_horizon: float):
+def add_od_pairs(
+    network: Network, od_pairs_file_path: str, inflow_horizon: float
+) -> None:
     od_pairs = pd.read_csv(od_pairs_file_path, header=0)
     for _, e in od_pairs.iterrows():
         network.add_commodity(
             {int(e["O"]): get_demand_with_inflow_horizon(e["Ton"], inflow_horizon)},
             int(e["D"]),
-            PredictorType.CONSTANT,
         )
 
 

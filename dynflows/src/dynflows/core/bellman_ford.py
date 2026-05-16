@@ -23,7 +23,7 @@ def bellman_ford(
     g: Dict[Node, PiecewiseLinear] = {sink: identity}
     node_distance: Dict[Node, int] = {sink: 0}
 
-    def get_fifo_arrival_time(traversal: PiecewiseLinear):
+    def get_fifo_arrival_time(traversal: PiecewiseLinear) -> PiecewiseLinear:
         new_values = traversal.values.copy()
         for i in range(len(new_values) - 1):
             assert new_values[i] <= new_values[i + 1] + eps

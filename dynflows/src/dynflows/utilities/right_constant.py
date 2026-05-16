@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from dynflows.core.machine_precision import eps
 from dynflows.utilities.arrays import elem_lrank, merge_sorted, merge_sorted_many
@@ -19,7 +19,7 @@ class RightConstant:
     values: List[float]
     domain: Tuple[float, float] = (float("-inf"), float("inf"))
 
-    def __json__(self):
+    def __json__(self) -> Dict[str, Any]:
         return {
             "times": self.times,
             "values": self.values,
@@ -68,7 +68,7 @@ class RightConstant:
         rnk = elem_lrank(self.times, at)
         return self._eval_with_lrank(at, rnk)
 
-    def _eval_with_lrank(self, at: float, rnk: int):
+    def _eval_with_lrank(self, at: float, rnk: int) -> float:
         assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         assert -1 <= rnk <= len(self.times)
         assert rnk == elem_lrank(self.times, at)
@@ -78,7 +78,7 @@ class RightConstant:
         else:
             return self.values[rnk]
 
-    def extend(self, start_time: float, value: float):
+    def extend(self, start_time: float, value: float) -> None:
         assert start_time >= self.times[-1] - eps
         if abs(self.values[-1] - value) <= eps:
             return
@@ -89,7 +89,7 @@ class RightConstant:
             self.times.append(start_time)
             self.values.append(value)
 
-    def equals(self, other):
+    def equals(self, other: object) -> bool:
         if not isinstance(other, RightConstant):
             return False
         return (
@@ -98,7 +98,7 @@ class RightConstant:
             and self.domain == other.domain
         )
 
-    def __radd__(self, other):
+    def __radd__(self, other: object) -> RightConstant:
         if other == 0:
             return self
         if not isinstance(other, RightConstant):
@@ -121,7 +121,9 @@ class RightConstant:
         return RightConstant(new_times, new_values, self.domain)
 
     @staticmethod
-    def sum(functions: List[RightConstant], domain=(0, float("inf"))) -> RightConstant:
+    def sum(
+        functions: List[RightConstant], domain: Tuple[float, float] = (0, float("inf"))
+    ) -> RightConstant:
         if len(functions) == 0:
             return RightConstant([0.0], [0.0], domain)
         new_times = merge_sorted_many([f.times for f in functions])
@@ -140,13 +142,13 @@ class RightConstant:
             )
         return RightConstant(new_times, new_values, domain)
 
-    def __add__(self, other):
+    def __add__(self, other: object) -> RightConstant:
         return self.__radd__(other)
 
-    def __neg__(self):
+    def __neg__(self) -> RightConstant:
         return RightConstant(self.times, [-v for v in self.values], self.domain)
 
-    def __sub__(self, other):
+    def __sub__(self, other: RightConstant) -> RightConstant:
         if not isinstance(other, RightConstant):
             raise TypeError("Can only subtract a RightConstantFunction.")
         return self + (-other)

@@ -32,3 +32,6 @@ dev = [
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+mypy_path = "../dynflows/src"

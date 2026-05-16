@@ -1,7 +1,7 @@
 import os
 import pickle
 from math import floor
-from typing import Callable, Dict, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 
 import numpy as np
 
@@ -43,7 +43,7 @@ def calculate_optimal_average_travel_time(
     inflow_horizon: float,
     horizon: float,
     commodity: Commodity,
-):
+) -> float:
     with StatusLogger("Computing optimal average travel time..."):
         if len(commodity.sources) != 1:
             raise ValueError("Expected a single source!")
@@ -110,7 +110,7 @@ def evaluate_single_run(
     json_eval_path: Optional[str] = None,
     flow_id: Optional[int] = None,
     suppress_log: bool = False,
-):
+) -> Tuple[List[float], float, DynamicFlow]:
     if flow_path is not None:
         os.makedirs(os.path.dirname(flow_path), exist_ok=True)
     if json_eval_path is not None:
@@ -177,9 +177,9 @@ def evaluate_single_run(
             "Succesfully loaded flow from disk.",
         ):
             with open(flow_path, "rb") as file:
-                box = pickle.load(file)
-            computation_time: float = box["computation_time"]
-            flow: DynamicFlow = box["flow"]
+                box: Any = pickle.load(file)
+            computation_time = box["computation_time"]
+            flow = box["flow"]
             flow._network = network
 
     travel_times = [
@@ -237,7 +237,7 @@ def evaluate_mean_absolute_error(
     reroute_interval: float,
     prediction_interval: float,
     horizon: float,
-):
+) -> Dict[PredictorType, float]:
     with StatusLogger("Evaluating prediction accuracy MAE...") as status:
         eval_horizon = horizon - (future_timesteps + 1) * prediction_interval
         predictions = {}
@@ -258,7 +258,7 @@ def evaluate_mean_absolute_error(
         for predictor_type, predictor in predictors.items():
             predictor_predictions = predictor.batch_predict(pred_times, flow)
 
-            def to_samples(i, pred_time):
+            def to_samples(i: int, pred_time: float) -> List[List[float]]:
                 pred_queues = predictor_predictions[i]
                 return [
                     [
