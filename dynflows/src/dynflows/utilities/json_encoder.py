@@ -1,7 +1,7 @@
 import dataclasses
 import json
 from abc import abstractmethod
-from typing import Any
+from typing import IO, Any
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -11,14 +11,12 @@ class JSONEncoder(json.JSONEncoder):
             json_method = getattr(obj.__class__, "__json__")
         if callable(json_method):
             return json_method(obj)
-        if dataclasses.is_dataclass(obj):
+        if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
             return dataclasses.asdict(obj)
         return super().default(obj)
 
-    @abstractmethod
-    def dump(self, obj: Any, file):
+    def dump(self, obj: Any, file: IO[str]) -> None:
         json.dump(obj, file, cls=JSONEncoder)
 
-    @abstractmethod
-    def dumps(self, obj: Any):
+    def dumps(self, obj: Any) -> str:
         return json.dumps(obj, cls=JSONEncoder)

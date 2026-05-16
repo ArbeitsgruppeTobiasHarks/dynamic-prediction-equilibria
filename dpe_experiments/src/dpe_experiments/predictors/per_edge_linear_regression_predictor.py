@@ -38,7 +38,7 @@ class PerEdgeLinearRegressionPredictor(Predictor):
         edges = self.network.graph.edges
         assert len(edges) == len(flow.queues)
         past_times = [prediction_time - t for t in range(-self._past_timesteps + 1, 1)]
-        queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+        queues: List[PiecewiseLinear] = []
         for e in edges:
             inputs = (
                 [
@@ -65,7 +65,7 @@ class PerEdgeLinearRegressionPredictor(Predictor):
                     else prediction[t]
                 )
                 new_values[t] = max(new_values[t], new_values[t - 1] - cap, 0.0)
-            queues[e.id] = PiecewiseLinear(times, new_values, 0.0, 0.0).simplify()
+            queues.append(PiecewiseLinear(times, new_values, 0.0, 0.0).simplify())
 
         return queues
 

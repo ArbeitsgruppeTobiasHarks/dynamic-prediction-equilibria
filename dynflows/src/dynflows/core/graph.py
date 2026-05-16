@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 
 class Edge:
@@ -23,7 +23,7 @@ class Edge:
     def node_to(self) -> Node:
         return self._node_to if not self._graph.reversed else self._node_from
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.id)
 
 
@@ -40,32 +40,32 @@ class Node:
         self._graph = graph
 
     @property
-    def incoming_edges(self):
+    def incoming_edges(self) -> List[Edge]:
         return (
             self._incoming_edges if not self._graph.reversed else self._outgoing_edges
         )
 
     @incoming_edges.setter
-    def incoming_edges(self, value: List[Edge]):
+    def incoming_edges(self, value: List[Edge]) -> None:
         if not self._graph.reversed:
             self._incoming_edges = value
         else:
             self._outgoing_edges = value
 
     @property
-    def outgoing_edges(self):
+    def outgoing_edges(self) -> List[Edge]:
         return (
             self._outgoing_edges if not self._graph.reversed else self._incoming_edges
         )
 
     @outgoing_edges.setter
-    def outgoing_edges(self, value: List[Edge]):
+    def outgoing_edges(self, value: List[Edge]) -> None:
         if not self._graph.reversed:
             self._outgoing_edges = value
         else:
             self._incoming_edges = value
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.id)
 
 
@@ -75,13 +75,13 @@ class DirectedGraph:
     reversed: bool
     positions: Dict[int, Tuple[float, float]]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.edges = []
         self.nodes = {}
         self.reversed = False
         self.positions = {}
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         self.reversed = state["reversed"]
         self.edges = []
         self.nodes = {}
@@ -89,14 +89,14 @@ class DirectedGraph:
         for [node_from, node_to] in state["edges"]:
             self.add_edge(node_from, node_to)
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         return {
             "edges": [[e.node_from.id, e.node_to.id] for e in self.edges],
             "positions": self.positions,
             "reversed": self.reversed,
         }
 
-    def add_edge(self, node_from: int, node_to: int):
+    def add_edge(self, node_from: int, node_to: int) -> None:
         if node_from not in self.nodes.keys():
             self.nodes[node_from] = Node(node_from, self)
         if node_to not in self.nodes.keys():
@@ -119,12 +119,14 @@ class DirectedGraph:
                     queue.append(e.node_from)
         return nodes_found
 
-    def get_reachable_nodes(self, source: Node) -> Set[Node]:
+    def get_reachable_nodes(self, sources: Node | Set[Node]) -> Set[Node]:
         """
         Returns all nodes that are reachable from source
         """
-        nodes_found: Set[Node] = {source}
-        queue = [source]
+        nodes_found: Set[Node] = (
+            sources.copy() if isinstance(sources, set) else {sources}
+        )
+        queue: List[Node] = [*nodes_found]
         while queue:
             v = queue.pop()
             for e in v.outgoing_edges:
@@ -133,5 +135,5 @@ class DirectedGraph:
                     queue.append(e.node_to)
         return nodes_found
 
-    def reverse(self):
+    def reverse(self) -> None:
         self.reversed = not self.reversed

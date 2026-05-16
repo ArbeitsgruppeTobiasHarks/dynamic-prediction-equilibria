@@ -56,7 +56,7 @@ class TFNeighborhoodPredictor(Predictor):
             prediction_time + t * self._prediction_interval
             for t in range(-self._past_timesteps + 1, 1)
         ]
-        queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+        queues: List[PiecewiseLinear] = []
 
         edge_loads = flow.get_edge_loads()
 
@@ -79,7 +79,7 @@ class TFNeighborhoodPredictor(Predictor):
 
         for e_id, old_queue in enumerate(flow.queues):
             if not self._output_mask[e_id]:
-                queues[e_id] = zero_fct
+                queues.append(zero_fct)
                 continue
 
             future_queues_raw: np.ndarray = self._models[e_id](
@@ -106,7 +106,7 @@ class TFNeighborhoodPredictor(Predictor):
                     - self._prediction_interval * self._network.capacity[e_id],
                 )
 
-            queues[e_id] = PiecewiseLinear(times, new_values, 0.0, 0.0)
+            queues.append(PiecewiseLinear(times, new_values, 0.0, 0.0))
 
         return queues
 
@@ -137,7 +137,7 @@ class TFNeighborhoodPredictor(Predictor):
         zero_fct = PiecewiseLinear([0.0], [0.0], 0.0, 0.0)
         assert len(edges) == len(flow.queues)
 
-        result_predictions = [[] for _ in prediction_times]
+        result_predictions: List[List[PiecewiseLinear]] = [[] for _ in prediction_times]
 
         for e_id, queue in enumerate(flow.queues):
             if not self._output_mask[e_id]:

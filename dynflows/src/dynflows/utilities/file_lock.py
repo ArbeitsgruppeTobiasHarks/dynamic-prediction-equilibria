@@ -9,7 +9,7 @@ def with_file_lock(
     file_path: str,
     handle: Callable[[Callable[[str], IO]], None] = no_op,
     expect_exists: Optional[List[str]] = None,
-):
+) -> None:
     if expect_exists is None:
         expect_exists = [file_path]
 
@@ -35,7 +35,7 @@ def with_file_lock(
             print(f"An error occurred while removing lock file {lock_path}.", e)
 
 
-def wait_for_locks(dir: str):
+def wait_for_locks(dir: str) -> None:
     locks: Optional[List[str]] = None
     curr_backoff_secs = 1
     while locks is None or len(locks) > 0:

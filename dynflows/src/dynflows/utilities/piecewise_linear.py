@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import List, Tuple, TypeVar
+from typing import Any, Dict, List, Tuple, TypeVar, overload
 
 from dynflows.core.machine_precision import eps
 from dynflows.utilities.arrays import elem_lrank, elem_rank, merge_sorted
@@ -14,7 +14,7 @@ class PiecewiseLinear:
     last_slope: float
     first_slope: float
 
-    def __json__(self):
+    def __json__(self) -> Dict[str, Any]:
         return {
             "times": self.times,
             "values": self.values,
@@ -85,7 +85,7 @@ class PiecewiseLinear:
         start_rnk: int,
         end_rnk: int,
         values: List[float],
-    ):
+    ) -> None:
         if end_index - start_index < 2:
             for i in range(start_index + 1, end_index):
                 rnk = PiecewiseLinear._find_rnk_between(
@@ -150,7 +150,7 @@ class PiecewiseLinear:
         )
 
     @lru_cache
-    def _eval_with_rank(self, at: float, rnk: int):
+    def _eval_with_rank(self, at: float, rnk: int) -> float:
         assert self.domain[0] <= at <= self.domain[1], f"Function not defined at {at}."
         assert -1 <= rnk <= len(self.times)
         assert rnk != -1 or at <= self.times[0]
@@ -188,7 +188,7 @@ class PiecewiseLinear:
             self.times[i + 1] - self.times[i]
         )
 
-    def __neg__(self):
+    def __neg__(self) -> PiecewiseLinear:
         return PiecewiseLinear(
             self.times,
             [-v for v in self.values],
@@ -197,12 +197,12 @@ class PiecewiseLinear:
             self.domain,
         )
 
-    def __sub__(self, other):
+    def __sub__(self, other: PiecewiseLinear) -> PiecewiseLinear:
         if not isinstance(other, PiecewiseLinear):
             raise TypeError("Can only subtract a RightConstant function.")
         return self + (-other)
 
-    def __add__(self, other):
+    def __add__(self, other: PiecewiseLinear) -> PiecewiseLinear:
         if not isinstance(other, PiecewiseLinear):
             raise TypeError("Can only add a PiecewiseLinear function.")
         return self.plus(other)
@@ -276,7 +276,7 @@ class PiecewiseLinear:
             g.domain[0] <= f.image()[0] + eps and g.domain[1] >= f.image()[1] - eps
         ), "The domains do not match for composition!"
 
-        times = []
+        times: List[float] = []
         values = []
         f_image = f.image()
 
@@ -347,7 +347,7 @@ class PiecewiseLinear:
         curr_min = 0 if f[0](new_domain[0]) < f[1](new_domain[0]) else 1
         other = 1 - curr_min
         ind = [0, 0]
-        times = []
+        times: List[float] = []
         first_slope = f[curr_min].first_slope
         while ind[0] < len(f[0].times) or ind[1] < len(f[1].times):
             if ind[other] >= len(f[other].times):
@@ -401,7 +401,7 @@ class PiecewiseLinear:
         values = [min(self(t), otherf(t)) for t in times]
         return PiecewiseLinear(times, values, first_slope, last_slope, new_domain)
 
-    def is_monotone(self):
+    def is_monotone(self) -> bool:
         return all(
             self.values[i] <= self.values[i + 1] for i in range(len(self.values) - 1)
         )
@@ -410,10 +410,10 @@ class PiecewiseLinear:
         assert self.is_monotone(), "Only implemented for monotone functions"
         return self(self.domain[0]), self(self.domain[1])
 
-    def reversal(self, at: float):
+    def reversal(self, at: float) -> float:
         return self.max_t_below(at)
 
-    def min_t_above(self, bound: float):
+    def min_t_above(self, bound: float) -> float:
         """
         Returns min t s.t. self(t) >= bound
         """
@@ -422,17 +422,19 @@ class PiecewiseLinear:
         rnk = elem_rank(self.values, bound)
         return max(self.domain[0], self.inverse(bound, rnk))
 
-    T = TypeVar("T", float, None)
-
-    def max_t_below(self, bound: float, default: T = None) -> float | T:
+    def max_t_below(self, bound: float, default: float | None = None) -> float:
         """
         Returns max t s.t. self(t) <= bound
-        If such a t does not exist, we return default if is given.
-        Otherwise we throw an error.
+        If such a t does not exist, we return default if is provided.
+        Otherwise, throws an error.
         """
         assert self.is_monotone(), "Only implemented for monotone functions"
         assert default is not None or self(self.domain[0]) <= bound
         if self(self.domain[0]) > bound + eps:
+            if default is None:
+                raise ValueError(
+                    f"No default provided for invocation of max_t_below, but self.domain[0] = {self.domain[0]} > f{bound} = bound"
+                )
             return default
         index = None
         for index_j in range(len(self.times)):
@@ -511,7 +513,7 @@ class PiecewiseLinear:
                 f.gradient(len(f.times) - 1) <= g.gradient(len(g.times) - 1) + precision
             )
 
-    def extend_with_slope(self, time, slope):
+    def extend_with_slope(self, time: float, slope: float) -> None:
         assert time >= self.times[-1] - eps
         if abs(self.last_slope - slope) <= eps:
             return
@@ -529,7 +531,7 @@ class PiecewiseLinear:
         self.compose.cache_clear()
         # pylint: enable=no-member
 
-    def restrict(self, domain: Tuple[float, float]):
+    def restrict(self, domain: Tuple[float, float]) -> PiecewiseLinear:
         assert self.domain[0] <= domain[0] <= domain[1] <= self.domain[1]
         # assert any(t for t in self.times if domain[0] <= t <= domain[1])
 
@@ -546,7 +548,7 @@ class PiecewiseLinear:
             values = [self(domain[0])]
         return PiecewiseLinear(times, values, first_slope, last_slope, domain)
 
-    def equals(self, other):
+    def equals(self, other: object) -> bool:
         if not isinstance(other, PiecewiseLinear):
             return False
         return (
@@ -557,7 +559,7 @@ class PiecewiseLinear:
             and self.last_slope == other.last_slope
         )
 
-    def integrate(self, start: float, end: float):
+    def integrate(self, start: float, end: float) -> float:
         assert self.domain[0] <= start < end <= self.domain[1]
         assert min(self.values) >= 0
         # For two time steps, we integrate by adding (max + min) / 2 * delta_t
@@ -583,7 +585,7 @@ class PiecewiseLinear:
         value += (self(end) + self.values[rnk]) / 2 * (end - self.times[rnk])
         return value
 
-    def left_extend(self, other):
+    def left_extend(self, other: PiecewiseLinear) -> PiecewiseLinear:
         assert self.domain[0] > other.domain[0] + eps
         rnk = elem_rank(other.times, self.domain[0])
         new_times = other.times[: rnk + 1]
@@ -602,7 +604,7 @@ class PiecewiseLinear:
             (other.domain[0], self.domain[1]),
         )
 
-    def right_extend(self, other):
+    def right_extend(self, other: PiecewiseLinear) -> PiecewiseLinear:
         assert self.domain[1] < other.domain[1] - eps
         rnk = elem_rank(other.times, self.domain[1]) + 1
         new_times = self.times

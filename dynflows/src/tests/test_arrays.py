@@ -1,7 +1,7 @@
 from dynflows.utilities.arrays import elem_lrank, elem_rank
 
 
-def test_urank():
+def test_urank() -> None:
     arr = [0.0, 1.0, 2.0]
     assert elem_rank(arr, -0.5) == -1
     for i, val in enumerate(arr):
@@ -9,7 +9,7 @@ def test_urank():
         assert elem_rank(arr, val + 0.5) == i
 
 
-def test_lrank():
+def test_lrank() -> None:
     arr = [0.0, 1.0, 2.0]
     assert elem_lrank(arr, -0.5) == -1
     for i, val in enumerate(arr):

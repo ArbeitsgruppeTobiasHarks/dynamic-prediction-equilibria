@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-from typing import Optional
+from typing import Optional, Self
 
 
 class StatusLogger:
@@ -9,12 +9,12 @@ class StatusLogger:
         self.start_msg = start_msg
         self.finish_msg = finish_msg
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         sys.stdout.write("\r" + self.start_msg)
         sys.stdout.flush()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
         if exc_type is None:
             if self.finish_msg is None:
                 sys.stdout.write("\r\033[K\r")
@@ -29,12 +29,12 @@ class TimedStatusLogger:
         self.start_time = time.perf_counter_ns()
         self.finish_msg = finish_msg
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         sys.stdout.write("\r" + self.start_msg)
         sys.stdout.flush()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
         end_time = time.perf_counter_ns()
         elapsed_secs = (end_time - self.start_time) / 1e9
         if exc_type is None:

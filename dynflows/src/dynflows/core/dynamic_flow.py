@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from dynflows.core.flow_rates_collection import FlowRatesCollection
 from dynflows.core.machine_precision import eps
@@ -11,7 +11,7 @@ from dynflows.utilities.queues import PriorityQueue
 from dynflows.utilities.right_constant import RightConstant
 
 ChangeEventValue = Tuple[Dict[int, float], float]
-ChangeEvent = Optional[Tuple[float, ChangeEventValue]]
+ChangeEvent = Tuple[float, ChangeEventValue] | None
 
 
 class DepletionQueue:
@@ -19,7 +19,7 @@ class DepletionQueue:
     change_times: PriorityQueue[int]
     new_outflow: Dict[int, ChangeEventValue]  # time, comm: outflow, sum over outflow
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.depletions = PriorityQueue()
         self.change_times = PriorityQueue()
         self.new_outflow = {}
@@ -38,7 +38,7 @@ class DepletionQueue:
             self.change_times.remove(edge)
             self.new_outflow.pop(edge)
 
-    def __contains__(self, edge) -> bool:
+    def __contains__(self, edge: int) -> bool:
         return edge in self.depletions
 
     def __len__(self) -> int:
@@ -61,6 +61,7 @@ class DepletionQueue:
         change_event = None
         if e in self.change_times:
             change_time = self.change_times.key_of(e)
+            assert change_time is not None
             self.change_times.remove(e)
             new_outflow, new_outflow_sum = self.new_outflow.pop(e)
             change_event = (change_time, (new_outflow, new_outflow_sum))
@@ -94,18 +95,18 @@ class DynamicFlow:
         self.outflow_changes = PriorityQueue()
         self.depletions = DepletionQueue()
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         """Return state values to be pickled."""
         state = self.__dict__.copy()
         # Don't pickle _network b.c. of recursive structure
         del state["_network"]
         return state
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         self.__dict__.update(state)
         print("Please reset network on flow before accessing its functions")
 
-    def _extend_case_i(self, e: int, cur_queue: float):
+    def _extend_case_i(self, e: int, cur_queue: float) -> None:
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
@@ -124,7 +125,7 @@ class DynamicFlow:
 
     def _extend_case_ii(
         self, e: int, new_inflow: Dict[int, float], cur_queue: float, acc_in: float
-    ):
+    ) -> None:
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
@@ -143,7 +144,7 @@ class DynamicFlow:
 
     def _extend_case_iii(
         self, e: int, new_inflow: Dict[int, float], cur_queue: float, acc_in: float
-    ):
+    ) -> None:
         capacity, travel_time = self._network.capacity[e], self._network.travel_time[e]
         arrival = self.phi + cur_queue / capacity + travel_time
 
@@ -164,7 +165,7 @@ class DynamicFlow:
 
         self.depletions.set(e, depl_time, (planned_change_time, planned_change_value))
 
-    def _process_depletions(self):
+    def _process_depletions(self) -> None:
         while self.depletions.min_depletion() <= self.phi and len(self.depletions) > 0:
             (e, depl_time, change_event) = self.depletions.pop_by_depletion()
             self.queues[e].extend_with_slope(depl_time, 0.0)

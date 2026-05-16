@@ -56,11 +56,7 @@ def approximate_max_predicted_delay(
 
             com_nodes = set(
                 network.graph.get_nodes_reaching(commodity.sink).intersection(
-                    set(
-                        node
-                        for source in commodity.sources
-                        for node in network.graph.get_reachable_nodes(source)
-                    )
+                    network.graph.get_reachable_nodes(set(commodity.sources.keys()))
                 )
             )
 
@@ -165,7 +161,7 @@ def get_pred_edge_delay(
     sink: Node,
     com_nodes: Set[Node],
     costs: List[PiecewiseLinear],
-):
+) -> float:
     edge = network.graph.edges[edge_idx]
     result_from_sink = dynamic_dijkstra(at, edge.node_from, sink, com_nodes, costs)
     active_edges = get_active_edges_from_dijkstra(
@@ -180,7 +176,7 @@ def get_pred_edge_delay(
         return arrival_times_using_e[sink] - result_from_sink.arrival_times[sink]
 
 
-def is_positive_during(f: RightConstant, start: float, end: float):
+def is_positive_during(f: RightConstant, start: float, end: float) -> bool:
     """
     Returns true, if f is postive at any point during the interval [start, end).
     """

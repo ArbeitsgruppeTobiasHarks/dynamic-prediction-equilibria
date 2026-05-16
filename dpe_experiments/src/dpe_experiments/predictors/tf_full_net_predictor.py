@@ -50,7 +50,7 @@ class TFFullNetPredictor(Predictor):
             prediction_time + t * self._prediction_interval
             for t in range(-self._past_timesteps + 1, 1)
         ]
-        queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+        queues: List[PiecewiseLinear] = []
 
         edge_loads = flow.get_edge_loads()
 
@@ -77,7 +77,7 @@ class TFFullNetPredictor(Predictor):
         )
         for e_id, old_queue in enumerate(flow.queues):
             if not self._output_mask[e_id]:
-                queues[e_id] = zero_fct
+                queues.append(zero_fct)
                 continue
             masked_id = np.count_nonzero(self._output_mask[:e_id])
 
@@ -97,7 +97,7 @@ class TFFullNetPredictor(Predictor):
                     - self._prediction_interval * self._network.capacity[e_id],
                 )
 
-            queues[e_id] = PiecewiseLinear(times, new_values, 0.0, 0.0)
+            queues.append(PiecewiseLinear(times, new_values, 0.0, 0.0))
 
         return queues
 
@@ -166,7 +166,7 @@ class TFFullNetPredictor(Predictor):
 
         for prediction_ind, prediction_time in enumerate(prediction_times):
             zero_fct = PiecewiseLinear([prediction_time], [0.0], 0.0, 0.0)
-            queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+            queues: List[PiecewiseLinear] = []
 
             id_in_output_mask = -1
             times = [
@@ -175,7 +175,7 @@ class TFFullNetPredictor(Predictor):
             ]
             for e_id, queue in enumerate(flow.queues):
                 if not self._output_mask[e_id]:
-                    queues[e_id] = zero_fct
+                    queues.append(zero_fct)
                     continue
                 id_in_output_mask += 1
 
@@ -196,7 +196,7 @@ class TFFullNetPredictor(Predictor):
                         - self._prediction_interval * self._network.capacity[e_id],
                     )
 
-                queues[e_id] = PiecewiseLinear(times, new_values, 0.0, 0.0)
+                queues.append(PiecewiseLinear(times, new_values, 0.0, 0.0))
 
             result_predictions.append(queues)
         return result_predictions

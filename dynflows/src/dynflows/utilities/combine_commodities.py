@@ -9,12 +9,15 @@ def combine_commodities_with_same_sink(
     network: Network,
     predictor_types: List[PredictorType] | None = None,
     exceptions: Set[Commodity] = set(),
-):
-    groups: Dict[Tuple[PredictorType, Node], Set[Commodity]] = {}
+) -> None:
+    groups: Dict[Tuple[PredictorType | None, Node], Set[Commodity]] = {}
     for comm_idx, commodity in enumerate(network.commodities):
         if commodity in exceptions:
             continue
-        key = (predictor_types and predictor_types[comm_idx], commodity.sink)
+        key: Tuple[PredictorType | None, Node] = (
+            predictor_types[comm_idx] if predictor_types is not None else None,
+            commodity.sink,
+        )
         if key not in groups:
             groups[key] = {commodity}
         else:
@@ -32,6 +35,9 @@ def combine_commodities_with_same_sink(
                     sources[source] += value
         network.commodities.append(Commodity(sources, key[1]))
         if predictor_types is not None:
+            assert (
+                key[0] is not None
+            ), "Cannot be none, since predictor_types is not None!"
             predictor_types.append(key[0])
     for commodity in exceptions:
         network.commodities.append(commodity)

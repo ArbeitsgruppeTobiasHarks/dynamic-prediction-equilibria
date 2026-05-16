@@ -5,7 +5,7 @@ from dynflows.utilities.right_constant import RightConstant
 from tests.sample_network import build_sample_network
 
 
-def test_queues():
+def test_queues() -> None:
     """
     Test whether the queues are calculated correctly.
     """

@@ -26,7 +26,7 @@ class RegularizedLinearPredictor(Predictor):
     ) -> List[PiecewiseLinear]:
         times = [prediction_time, prediction_time + self.horizon]
         phi_minus_delta = prediction_time - self.delta
-        queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+        queues: List[PiecewiseLinear] = []
         for i, old_queue in enumerate(flow.queues):
             queue_at_phi = max(0.0, old_queue(prediction_time))
             queue_at_phi_minus_delta = max(0.0, old_queue(phi_minus_delta))
@@ -35,11 +35,15 @@ class RegularizedLinearPredictor(Predictor):
 
             if new_queue < 0 and queue_at_phi > eps:
                 new_time = prediction_time - queue_at_phi / gradient
-                queues[i] = PiecewiseLinear(
-                    [prediction_time, new_time], [queue_at_phi, 0.0], 0.0, 0.0
+                queues.append(
+                    PiecewiseLinear(
+                        [prediction_time, new_time], [queue_at_phi, 0.0], 0.0, 0.0
+                    )
                 )
             else:
-                queues[i] = PiecewiseLinear(times, [queue_at_phi, new_queue], 0.0, 0.0)
+                queues.append(
+                    PiecewiseLinear(times, [queue_at_phi, new_queue], 0.0, 0.0)
+                )
 
         return queues
 

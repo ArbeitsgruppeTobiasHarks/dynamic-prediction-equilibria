@@ -37,7 +37,10 @@ def build_with_times(
     milestone_interval = reroute_interval
     milestone = flow.phi
 
-    def log_time():
+    now = new_milestone_time = remaining_time = 0.0
+    finish_time = datetime.now().time()
+
+    def log_time() -> None:
         nonlocal now
         nonlocal last_log_time
         nonlocal start_time
@@ -70,15 +73,10 @@ def build_with_times(
                     / milestone_interval
                 ),
             )
-            finish_time = (
-                (
-                    datetime(1970, 1, 1)
-                    + timedelta(seconds=round(new_milestone_time + remaining_time))
-                )
-                .replace(tzinfo=timezone.utc)
-                .astimezone(tz=None)
-                .time()
+            a: datetime = datetime(1970, 1, 1) + timedelta(
+                seconds=round(new_milestone_time + remaining_time)
             )
+            finish_time = a.replace(tzinfo=timezone.utc).astimezone(tz=None).time()
             milestone += milestone_interval
             last_milestone_time = new_milestone_time
         now = time()

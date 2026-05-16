@@ -10,7 +10,7 @@ from tests.test_interpolate import plot as plot_pw_linear
 
 
 @image_comparison(baseline_images=["integral"], extensions=["pdf"])
-def test_integral():
+def test_integral() -> None:
     times = [
         0.0,
         3.0,

@@ -57,7 +57,7 @@ class SKNeighborhoodPredictor(Predictor):
             prediction_time + t * self._prediction_interval
             for t in range(-self._past_timesteps + 1, 1)
         ]
-        queues: List[Optional[PiecewiseLinear]] = [None] * len(flow.queues)
+        queues: List[PiecewiseLinear] = []
 
         edge_loads = flow.get_edge_loads()
 
@@ -80,7 +80,7 @@ class SKNeighborhoodPredictor(Predictor):
 
         for e_id, old_queue in enumerate(flow.queues):
             if not self._output_mask[e_id]:
-                queues[e_id] = zero_fct
+                queues.append(zero_fct)
                 continue
 
             future_queues_raw = self._models[e_id].predict(
@@ -106,7 +106,7 @@ class SKNeighborhoodPredictor(Predictor):
                     - self._prediction_interval * self._network.capacity[e_id],
                 )
 
-            queues[e_id] = PiecewiseLinear(times, new_values, 0.0, 0.0)
+            queues.append(PiecewiseLinear(times, new_values, 0.0, 0.0))
 
         return queues
 
