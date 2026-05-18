@@ -37,10 +37,20 @@ def merge_commodities(
 
 
 def to_visualization_json(
-    path: str, flow: DynamicFlow, network: Network, color_by_comm_idx: Dict[int, str]
+    path: str,
+    flow: DynamicFlow,
+    network: Network,
+    color_by_comm_idx: Dict[int, str],
+    compress: bool | None = None,
 ) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with gzip.open(path, "wt", encoding="UTF-8") as file:
+    if compress is None:
+        compress = path.endswith(".gz")
+    with (
+        gzip.open(path, "wt", encoding="UTF-8")
+        if compress
+        else open(path, "wt", encoding="UTF-8")
+    ) as file:
         JSONEncoder().dump(
             {
                 "network": {
